@@ -42,4 +42,3 @@ next-env.d.ts
 
 # generated docs
 docs/*
-!docs/BUILD_GUIDE.md

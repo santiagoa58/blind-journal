@@ -16,6 +16,9 @@
     "incremental": true,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedSideEffectImports": true,
     "plugins": [
       {
         "name": "next"
