@@ -1,36 +1,211 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Blind Journal
 
-## Getting Started
+Blind Journal is an interactive, frontend-only simulation of a production-style zero-knowledge encrypted journal.
 
-First, run the development server:
+The application lets someone create an account, unlock a vault, and manage dated plain-text journal entries while a synchronized system view explains what would happen across the client, cryptographic worker, HTTPS connection, server, and database in a real deployment.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Everything physically runs in one browser. The client/server separation and its security controls are therefore modeled boundaries, not real isolation. Within that model, the simulated server receives only authentication material, session metadata, and encrypted records; journal dates and journal text remain encrypted outside the unlocked client.
+
+## Project status
+
+The project foundation is complete:
+
+- Next.js and React are configured.
+- TypeScript strict mode and additional indexed-access checks are enabled.
+- Radix Themes and Radix Icons are installed and provide the UI system.
+- XState, TanStack Query, Zod, MSW, Dexie, libsodium, Motion, and Vitest are installed.
+- The MSW browser worker has been generated.
+- The Blind Journal vector identity, browser icons, Apple touch icon, maskable PWA icons, and web app manifest are configured.
+
+Application behavior has not been implemented yet. Work is intentionally divided into reviewable phases in the [build guide](docs/BUILD_GUIDE.md).
+
+## Goals
+
+- Demonstrate a credible zero-knowledge client architecture without operating a backend.
+- Keep journal dates and content encrypted in the simulated database.
+- Keep password derivation and unlocked key material away from React state.
+- Validate every simulated request, response, and persisted envelope at runtime.
+- Model opaque sessions, CSRF protection, authorization, rate limiting, HTTPS, and security headers.
+- Drive the visualization from real application events rather than canned animation.
+- Preserve a client API boundary that can later target a real server without rewriting the UI or client cryptography.
+
+## Non-goals
+
+- Claiming that browser modules create genuine client/server isolation.
+- Protecting data from malicious browser extensions, a compromised browser, or arbitrary script execution while the vault is unlocked.
+- Hiding all metadata. The simulated server can still observe account identifiers, encrypted-record counts and sizes, revisions, request timing, and access patterns.
+- Building a real database or production authentication service.
+- Supporting rich text, attachments, sharing, or multi-user collaboration.
+- Pursuing broad end-to-end or snapshot-test coverage.
+
+## Technology
+
+The repository currently pins the following runtime and package-manager baseline:
+
+- Node.js 24 or newer
+- PNPM 11.18.0 through Corepack
+- Next.js 16.2.12
+- React 19.2.4
+- TypeScript 5 in strict mode
+
+Primary libraries:
+
+| Responsibility | Library |
+| --- | --- |
+| UI system and styling | Radix Themes (`@radix-ui/themes`) |
+| Interface icons | Radix Icons (`@radix-ui/react-icons`) |
+| Workflow orchestration | XState 5 and `@xstate/react` |
+| Request and mutation state | TanStack Query 5 |
+| Runtime protocol validation | Zod 4 |
+| Simulated HTTP | MSW 2 |
+| Simulated server database | Dexie 4 and IndexedDB |
+| Password KDF | Argon2id through `libsodium-wrappers-sumo` |
+| Symmetric cryptography | Native Web Crypto API |
+| Motion | Motion for React |
+| System visualization | Radix Themes layout with Motion for React |
+| Focused unit tests | Vitest 4 |
+
+The exact installed versions are recorded in `package.json` and `pnpm-lock.yaml`.
+
+## Architecture
+
+```text
+Journal UI
+    |
+    +--> XState workflow actors
+    |
+    +--> TanStack Query --> client API --> fetch('/api/...')
+                                              |
+                                              v
+                                      MSW request handlers
+                                              |
+                                              v
+                                  simulated server services
+                                              |
+                                              v
+                                       Dexie / IndexedDB
+
+Journal UI --> crypto worker client --> dedicated Web Worker
+                                          |
+                                          +--> Argon2id
+                                          +--> HKDF
+                                          +--> AES-256-GCM
+
+Every boundary --> redacted semantic events --> synchronized visualization
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The journal UI may communicate with the simulated backend only through the client API and `fetch`. It must never import Dexie or simulated-server services directly.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Planned project structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Directories should be created only when their phase begins.
 
-## Learn More
+```text
+app/                    Next.js routes, layouts, providers, and route errors
+components/
+  ui/                   App-specific compositions of Radix Themes components
+  auth/                 Authentication screens and forms
+  journal/              Journal list, editor, and vault UI
+  simulation/           Timeline, lanes, packets, and explanations
+lib/
+  api/                  Transferable browser API client
+  crypto/               Crypto types, codecs, and worker client
+  protocol/             Shared Zod contracts and envelope schemas
+  query/                TanStack Query keys and options
+  utils/                Small framework-independent utilities
+machines/               XState machines and actor logic
+mocks/                  MSW browser setup and HTTP handlers
+simulation/
+  server/               Mocked application services and authorization
+  database/             Dexie schema, records, and migrations
+  session/              Modeled cookie jar and opaque sessions
+  security/             CSRF, origin checks, and rate limiting
+  events/               Sanitized system-event publisher
+workers/                 Dedicated cryptographic Web Worker
+tests/                   Focused cross-module tests where colocation is unsuitable
+public/                  Brand/PWA assets and the generated MSW worker
+```
 
-To learn more about Next.js, take a look at the following resources:
+There is deliberately no `features/` directory. For this application, top-level runtime and trust boundaries are more informative than placing most of the product beneath a generic feature label. UI components are still grouped by the part of the interface they render.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## State ownership
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| State | Owner |
+| --- | --- |
+| Authentication, unlock, lock, save, and playback workflows | XState actors |
+| API requests, mutations, and unlocked journal query data | TanStack Query |
+| Form fields, editor drafts, and local display controls | React component state |
+| Unwrapped vault key and derived cryptographic keys | Crypto Worker |
+| Accounts, ciphertext, sessions, and rate-limit records | Dexie behind the simulated server |
+| Sanitized timeline and playback position | Simulation actor |
 
-## Deploy on Vercel
+Passwords and raw keys must never enter XState events, query keys, browser logs, or visualization records. Decrypted query data is memory-only and is cleared whenever the vault locks or the session ends.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Getting started
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Corepack will select the PNPM version pinned by the project:
+
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+MSW uses a Service Worker. `localhost` is treated as a secure development context by browsers; deployed builds must use HTTPS.
+
+### Styling policy
+
+Use Radix Themes components, responsive props, variants, and design tokens for application UI. Do not recreate Radix components or introduce a parallel utility-CSS system. Global CSS is limited to Radix’s documented setup and document-level integration that its component API cannot express; any such CSS should consume Radix theme tokens.
+
+### Branding and PWA assets
+
+The transparent vector source of truth is `public/brand/blind-journal-mark.svg`. The repository also includes a 1024px transparent PNG, an opaque maskable source, 192px and 512px install icons, `app/favicon.ico`, `app/icon.svg`, and `app/apple-icon.png`. `app/manifest.ts` publishes them through Next.js’s App Router metadata conventions.
+
+The project intentionally does not register a second offline-caching Service Worker: MSW owns the root Service Worker scope for the simulation. The current Next.js PWA guidance does not require offline support for installation, so the manifest and install assets remain valid without introducing a competing worker.
+
+## Commands
+
+```bash
+pnpm dev          # Start the Next.js development server
+pnpm lint         # Run ESLint
+pnpm typecheck    # Run TypeScript without emitting files
+pnpm test         # Run the focused Vitest suite once
+pnpm test:watch   # Run Vitest in watch mode
+pnpm check        # Run lint, typecheck, and tests
+pnpm build        # Create a production Next.js build
+pnpm start        # Serve a completed production build
+```
+
+## Security model
+
+Blind Journal treats the following as real implementation requirements even though the server is simulated:
+
+- Per-account, versioned Argon2id parameters and a random salt
+- HKDF domain separation for independent key purposes
+- A random vault key wrapped by password-derived key material
+- AES-256-GCM with a fresh 96-bit IV for every encryption
+- Authenticated additional data binding account, entry, revision, and schema version
+- Runtime validation at every transport and persistence boundary
+- Opaque, expiring, revocable sessions
+- Authorization on every simulated server operation
+- CSRF token and origin validation for cookie-authenticated mutations
+- Generic login failures and decoy parameters for unknown usernames
+- No plaintext journal records or reusable session tokens in persistent browser storage
+- No raw HTML rendering of journal content
+- A restrictive production Content Security Policy and other browser security headers
+
+Some properties can only be represented visually in this frontend-only build. In particular, JavaScript cannot create a genuine `HttpOnly` cookie, and no server secret stored in downloaded browser code is actually secret. Those limitations must always be labeled in the UI and documentation.
+
+## Documentation
+
+- [Build guide and implementation phases](docs/BUILD_GUIDE.md)
+- [Next.js documentation](https://nextjs.org/docs)
+- [MSW browser integration](https://mswjs.io/docs/integrations/browser/)
+- [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
+- [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+
+## Working agreement
+
+Implementation proceeds one explicitly approved phase or task at a time. The build guide describes the intended result, but it does not authorize implementing later phases automatically.
