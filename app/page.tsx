@@ -1,4 +1,4 @@
-import { LoginCard } from "@/components/pages/login/login-card";
+import { LoginCard } from "@/components/auth/login-card";
 import { Box } from "@radix-ui/themes";
 
 export default function Home() {
