@@ -1,7 +1,7 @@
 "use client";
 
 import { LabeledInput } from "@/components/labeled-input";
-import { API_BASE_URL } from "@/lib/constants/api.constants";
+import { apiFetch } from "@/lib/api/client";
 import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import {
   Button,
@@ -13,17 +13,42 @@ import {
 } from "@radix-ui/themes";
 
 async function fetchUserSalt(username: string) {
-  return fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await apiFetch("/auth/login", {
     method: "POST",
     headers: {
+      Accept: "application/json",
       "Content-Type": "application/json",
     },
+    cache: "no-store",
     body: JSON.stringify({ username }),
   });
+
+  const contentType = response.headers.get("content-type");
+
+  if (!contentType?.includes("application/json")) {
+    throw new Error(
+      `Expected a JSON response, but received ${contentType ?? "no content type"}.`,
+    );
+  }
+
+  const payload: unknown = await response.json();
+
+  if (!response.ok) {
+    const message =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof payload.error === "string"
+        ? payload.error
+        : `Request failed with status ${response.status}.`;
+
+    throw new Error(message);
+  }
+
+  return payload;
 }
 async function handleSubmit(username: string, _password: string) {
-  const res = await fetchUserSalt(username);
-  const userSalt = await res.json();
+  const userSalt = await fetchUserSalt(username);
   console.log("User salt:", userSalt);
 }
 
@@ -32,11 +57,11 @@ export function LoginCard(props: CardProps) {
     <Card {...props}>
       <Heading>Sign in</Heading>
       <form
-        action={function search(formData) {
+        action={async function signIn(formData) {
           const username = formData.get("username");
           const password = formData.get("password");
           if (username && password) {
-            handleSubmit(username.toString(), password.toString());
+            await handleSubmit(username.toString(), password.toString());
           }
         }}
       >

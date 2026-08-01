@@ -1,5 +1,7 @@
 import { API_BASE_URL } from "@/lib/constants/api.constants";
-import { JournalEntriesResponse } from "@/lib/types/api/journal-response.type";
+import type { JournalEntriesResponse } from "@/lib/types/api/journal-response.type";
+import type { ApiSuccessResponse } from "@/lib/types/api/response.type";
+import type { User } from "@/lib/types/user.type";
 import { http, HttpResponse } from "msw";
 import { journalEntries } from "./journal-entries.mock";
 import { users } from "./users.mock";
@@ -14,33 +16,45 @@ const mockUserNotFoundResponse = {
   status: 404,
 };
 
+const mockInvalidRequestResponse = {
+  error: "A username is required",
+  status: 400,
+};
+
 const getUser = (username: string) => {
   return users.find((user) => user.username === username);
 };
-const generateSalt = () => crypto.getRandomValues(new Uint8Array(16)).join("");
 
 export const handlers = [
-  http.get(`${API_BASE_URL}/entries`, (_args) => {
-    return HttpResponse.json(mockGetJournalEntriesResponse);
+  http.get(`${API_BASE_URL}/entries`, () => {
+    return HttpResponse.json(mockGetJournalEntriesResponse, { status: 200 });
   }),
-  http.post(`${API_BASE_URL}/auth/login`, async (args) => {
-    const body = await args.request.json();
-    if (typeof body != "object" || body == null || !("username" in body)) {
-      console.error("Invalid request body:", body);
-      return HttpResponse.json(mockUserNotFoundResponse);
-    }
-    const user = getUser(body?.username);
-    if (!user) {
-      console.error("User not found:", body, body?.username);
-      return HttpResponse.json(mockUserNotFoundResponse);
+  http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
+    const body: unknown = await request.json().catch(() => null);
+
+    if (
+      typeof body !== "object" ||
+      body === null ||
+      !("username" in body) ||
+      typeof body.username !== "string" ||
+      body.username.trim() === ""
+    ) {
+      return HttpResponse.json(mockInvalidRequestResponse, { status: 400 });
     }
 
-    return HttpResponse.json({
+    const user = getUser(body.username.trim());
+
+    if (!user) {
+      return HttpResponse.json(mockUserNotFoundResponse, { status: 404 });
+    }
+
+    const response = {
       data: {
         ...user,
-        salt: generateSalt(),
       },
       status: 200,
-    });
+    } satisfies ApiSuccessResponse<User>;
+
+    return HttpResponse.json(response, { status: 200 });
   }),
 ];
