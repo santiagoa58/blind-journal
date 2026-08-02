@@ -1,7 +1,8 @@
 "use client";
 
+import { fetchUserSalt } from "@/api/auth/auth";
+import type { UserSaltRequest, UserSaltResponse } from "@/api/auth/auth.type";
 import { LabeledInput } from "@/components/labeled-input";
-import { useUserSalt } from "@/features/auth/use-user-salt";
 import { getAuthErrorMessage, messages } from "@/messages";
 import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import {
@@ -13,9 +14,17 @@ import {
   Link,
   Text,
 } from "@radix-ui/themes";
+import { useMutation } from "@tanstack/react-query";
 
 export function LoginCard(props: CardProps) {
-  const userSaltMutation = useUserSalt();
+  const userSaltMutation = useMutation<
+    UserSaltResponse,
+    Error,
+    UserSaltRequest
+  >({
+    mutationKey: ["auth", "user-salt"],
+    mutationFn: fetchUserSalt,
+  });
   const copy = messages.auth;
   const response = userSaltMutation.data;
   const errorMessage = userSaltMutation.isError
