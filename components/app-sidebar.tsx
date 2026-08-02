@@ -1,5 +1,18 @@
-"use client"
+"use client";
 
+import {
+  ArchiveIcon,
+  CalendarIcon,
+  ChevronDownIcon,
+  GearIcon,
+  HeartIcon,
+  LockClosedIcon,
+  MagicWandIcon,
+  PersonIcon,
+  PlusIcon,
+  ReaderIcon,
+  TrashIcon,
+} from "@radix-ui/react-icons";
 import {
   Avatar,
   Badge,
@@ -13,42 +26,36 @@ import {
   Separator,
   Text,
   Tooltip,
-} from "@radix-ui/themes"
-import {
-  ArchiveIcon,
-  CalendarIcon,
-  ChevronDownIcon,
-  GearIcon,
-  HeartIcon,
-  LockClosedIcon,
-  MagicWandIcon,
-  PersonIcon,
-  PlusIcon,
-  ReaderIcon,
-  TrashIcon,
-} from "@radix-ui/react-icons"
+} from "@radix-ui/themes";
+import { messages } from "@/messages";
 
-import { BrandMark } from "./brand-mark"
+import { BrandMark } from "./brand-mark";
 
-export type SidebarSection = "journal" | "calendar" | "favorites" | "archive" | "trash"
+export type SidebarSection = "journal" | "calendar" | "favorites" | "archive" | "trash";
 
 type AppSidebarProps = {
-  activeSection: SidebarSection
-  onSectionChange: (section: SidebarSection) => void
-  onNewEntry: () => void
-  onOpenSettings: () => void
-}
+  activeSection: SidebarSection;
+  currentUser: {
+    avatarFallback: string;
+    displayName: string;
+  };
+  onSectionChange: (section: SidebarSection) => void;
+  onNewEntry: () => void;
+  onOpenSettings: () => void;
+};
+
+const copy = messages.navigation;
 
 const primaryItems = [
-  { value: "journal" as const, label: "Journal", icon: ReaderIcon },
-  { value: "calendar" as const, label: "Calendar", icon: CalendarIcon },
-  { value: "favorites" as const, label: "Favorites", icon: HeartIcon },
-]
+  { value: "journal" as const, label: copy.sections.journal, icon: ReaderIcon },
+  { value: "calendar" as const, label: copy.sections.calendar, icon: CalendarIcon },
+  { value: "favorites" as const, label: copy.sections.favorites, icon: HeartIcon },
+];
 
 const utilityItems = [
-  { value: "archive" as const, label: "Archive", icon: ArchiveIcon },
-  { value: "trash" as const, label: "Trash", icon: TrashIcon },
-]
+  { value: "archive" as const, label: copy.sections.archive, icon: ArchiveIcon },
+  { value: "trash" as const, label: copy.sections.trash, icon: TrashIcon },
+];
 
 function SidebarButton({
   active,
@@ -56,10 +63,10 @@ function SidebarButton({
   label,
   onClick,
 }: {
-  active?: boolean
-  icon: typeof ReaderIcon
-  label: string
-  onClick: () => void
+  active?: boolean;
+  icon: typeof ReaderIcon;
+  label: string;
+  onClick: () => void;
 }) {
   return (
     <Card asChild size="1" variant={active ? "surface" : "ghost"}>
@@ -72,7 +79,7 @@ function SidebarButton({
         </Flex>
       </button>
     </Card>
-  )
+  );
 }
 
 function CollectionButton({
@@ -80,9 +87,9 @@ function CollectionButton({
   label,
   count,
 }: {
-  icon: typeof MagicWandIcon
-  label: string
-  count: number
+  icon: typeof MagicWandIcon;
+  label: string;
+  count: number;
 }) {
   return (
     <Card asChild size="1" variant="ghost">
@@ -96,11 +103,12 @@ function CollectionButton({
         </Flex>
       </button>
     </Card>
-  )
+  );
 }
 
 export function AppSidebar({
   activeSection,
+  currentUser,
   onSectionChange,
   onNewEntry,
   onOpenSettings,
@@ -116,7 +124,7 @@ export function AppSidebar({
       gap="3"
       display={{ initial: "none", lg: "flex" }}
     >
-      <aside aria-label="Journal navigation">
+      <aside aria-label={copy.journalNavigationLabel}>
         <Box px="2" py="2">
           <BrandMark />
         </Box>
@@ -124,15 +132,15 @@ export function AppSidebar({
         <Box asChild width="100%">
           <Button onClick={onNewEntry} size="3">
             <PlusIcon aria-hidden width={17} height={17} />
-            New entry
+            {copy.newEntry}
             <Kbd ml="auto" size="1">
-              N
+              {copy.newEntryShortcut}
             </Kbd>
           </Button>
         </Box>
 
         <Flex asChild direction="column" gap="1" mt="2">
-          <nav aria-label="Primary">
+          <nav aria-label={copy.primaryLabel}>
             {primaryItems.map((item) => (
               <SidebarButton
                 key={item.value}
@@ -146,14 +154,18 @@ export function AppSidebar({
 
         <Box mt="3" px="2">
           <Text as="div" size="1" weight="medium" color="gray">
-            COLLECTIONS
+            {copy.collectionsTitle}
           </Text>
         </Box>
 
         <Flex asChild direction="column" gap="1">
-          <nav aria-label="Collections">
-            <CollectionButton icon={MagicWandIcon} label="Personal growth" count={12} />
-            <CollectionButton icon={HeartIcon} label="People I love" count={8} />
+          <nav aria-label={copy.collectionsLabel}>
+            <CollectionButton
+              icon={MagicWandIcon}
+              label={copy.collections.personalGrowth}
+              count={12}
+            />
+            <CollectionButton icon={HeartIcon} label={copy.collections.peopleILove} count={8} />
           </nav>
         </Flex>
 
@@ -175,9 +187,9 @@ export function AppSidebar({
             </Callout.Icon>
             <Callout.Text>
               <Text as="span" weight="medium">
-                Private by design. 
+                {copy.privacy.title}{" "}
               </Text>
-              Your journal is encrypted before it leaves this device.
+              {copy.privacy.description}
             </Callout.Text>
           </Callout.Root>
 
@@ -186,35 +198,34 @@ export function AppSidebar({
           <Flex align="center" gap="1">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <Button variant="ghost" color="gray" highContrast size="2">
-                  <Avatar size="1" fallback="SG" color="iris" />
-                  Santiago
+                <Button variant="ghost" color="gray" size="2">
+                  <Avatar size="1" fallback={currentUser.avatarFallback} color="iris" />
+                  {currentUser.displayName}
                   <ChevronDownIcon aria-hidden width={14} height={14} />
                 </Button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="top">
-                <DropdownMenu.Label>Account</DropdownMenu.Label>
+                <DropdownMenu.Label>{copy.account.menuLabel}</DropdownMenu.Label>
                 <DropdownMenu.Item>
-                  <PersonIcon aria-hidden width={15} height={15} /> Profile
+                  <PersonIcon aria-hidden width={15} height={15} /> {copy.account.profile}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item onSelect={onOpenSettings}>
-                  <GearIcon aria-hidden width={15} height={15} /> Privacy settings
+                  <GearIcon aria-hidden width={15} height={15} /> {copy.account.privacySettings}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item>
-                  <LockClosedIcon aria-hidden width={15} height={15} /> Lock journal
+                  <LockClosedIcon aria-hidden width={15} height={15} /> {copy.account.lockJournal}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
 
-            <Tooltip content="Settings">
+            <Tooltip content={copy.account.settings}>
               <Button
                 ml="auto"
                 variant="ghost"
                 color="gray"
-                highContrast
                 onClick={onOpenSettings}
-                aria-label="Settings"
+                aria-label={copy.account.settings}
               >
                 <GearIcon aria-hidden width={16} height={16} />
               </Button>
@@ -223,5 +234,5 @@ export function AppSidebar({
         </Box>
       </aside>
     </Flex>
-  )
+  );
 }

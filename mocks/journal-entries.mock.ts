@@ -1,4 +1,4 @@
-import { JournalEntry } from "@/lib/types/journal.type";
+import type { JournalEntry } from "@/api/journal/journal.type";
 
 export const journalEntries: JournalEntry[] = [
   {

@@ -30,7 +30,8 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 
-import type { JournalEntry } from "@/lib/types/journal.type";
+import { formatMessage, messages } from "@/messages";
+import type { JournalEntry } from "@/api/journal/journal.type";
 
 type JournalEditorProps = {
   entry: JournalEntry;
@@ -38,60 +39,43 @@ type JournalEditorProps = {
 };
 
 const formatActions = [
-  { label: "Bold", icon: FontBoldIcon },
-  { label: "Italic", icon: FontItalicIcon },
-  { label: "Bulleted list", icon: ListBulletIcon },
-  { label: "Numbered list", icon: RowsIcon },
-  { label: "Quote", icon: QuoteIcon },
+  { label: messages.journal.editor.formatting.bold, icon: FontBoldIcon },
+  { label: messages.journal.editor.formatting.italic, icon: FontItalicIcon },
+  { label: messages.journal.editor.formatting.bulletedList, icon: ListBulletIcon },
+  { label: messages.journal.editor.formatting.numberedList, icon: RowsIcon },
+  { label: messages.journal.editor.formatting.quote, icon: QuoteIcon },
 ];
 
 export function JournalEditor({ entry, onChange }: JournalEditorProps) {
-  const setField = <Key extends keyof JournalEntry>(
-    key: Key,
-    value: JournalEntry[Key],
-  ) => {
-    onChange({ ...entry, [key]: value, updatedAt: "Saved just now" });
+  const copy = messages.journal.editor;
+  const favoriteLabel = entry.favorite ? copy.removeFromFavorites : copy.addToFavorites;
+  const setField = <Key extends keyof JournalEntry>(key: Key, value: JournalEntry[Key]) => {
+    onChange({ ...entry, [key]: value, updatedAt: copy.savedJustNow });
   };
 
   return (
     <Flex asChild direction="column" height="100vh" minWidth="0" flexGrow="1">
       <main>
-        <Flex
-          align="center"
-          justify="between"
-          gap="3"
-          px={{ initial: "3", sm: "5" }}
-          py="3"
-        >
+        <Flex align="center" justify="between" gap="3" px={{ initial: "3", sm: "5" }} py="3">
           <Flex align="center" gap="2" minWidth="0">
             <Badge size="2" variant="surface" color="iris">
               <CheckCircledIcon aria-hidden width={14} height={14} />
-              Encrypted on this device
+              {copy.encryptedOnDevice}
             </Badge>
-            <Tooltip content="Only you can read this entry">
-              <IconButton
-                variant="ghost"
-                color="gray"
-                aria-label="Encryption details"
-              >
+            <Tooltip content={copy.privateEntry}>
+              <IconButton variant="ghost" color="gray" aria-label={copy.encryptionDetails}>
                 <LockClosedIcon aria-hidden width={16} height={16} />
               </IconButton>
             </Tooltip>
           </Flex>
 
           <Flex align="center" gap="1">
-            <Tooltip
-              content={
-                entry.favorite ? "Remove from favorites" : "Add to favorites"
-              }
-            >
+            <Tooltip content={favoriteLabel}>
               <IconButton
                 variant={entry.favorite ? "soft" : "ghost"}
                 color={entry.favorite ? "iris" : "gray"}
                 onClick={() => setField("favorite", !entry.favorite)}
-                aria-label={
-                  entry.favorite ? "Remove from favorites" : "Add to favorites"
-                }
+                aria-label={favoriteLabel}
               >
                 {entry.favorite ? (
                   <HeartFilledIcon aria-hidden width={16} height={16} />
@@ -103,33 +87,26 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
 
             <Box asChild display={{ initial: "none", sm: "block" }}>
               <Button variant="ghost" color="gray">
-                Share privately{" "}
-                <ChevronDownIcon aria-hidden width={14} height={14} />
+                {copy.sharePrivately} <ChevronDownIcon aria-hidden width={14} height={14} />
               </Button>
             </Box>
 
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <IconButton
-                  variant="ghost"
-                  color="gray"
-                  aria-label="Entry actions"
-                >
+                <IconButton variant="ghost" color="gray" aria-label={copy.entryActions}>
                   <DotsHorizontalIcon aria-hidden width={17} height={17} />
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="end">
                 <DropdownMenu.Item>
-                  <DownloadIcon aria-hidden width={15} height={15} /> Export
-                  encrypted copy
+                  <DownloadIcon aria-hidden width={15} height={15} /> {copy.exportEncryptedCopy}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item>
-                  <BookmarkIcon aria-hidden width={15} height={15} /> Manage
-                  tags
+                  <BookmarkIcon aria-hidden width={15} height={15} /> {copy.manageTags}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item color="red">
-                  <TrashIcon aria-hidden width={15} height={15} /> Move to trash
+                  <TrashIcon aria-hidden width={15} height={15} /> {copy.moveToTrash}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -148,7 +125,7 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
           ))}
           <Separator orientation="vertical" size="2" mx="2" />
           <Button variant="ghost" color="gray">
-            <BookmarkIcon aria-hidden width={15} height={15} /> Add tag
+            <BookmarkIcon aria-hidden width={15} height={15} /> {copy.addTag}
           </Button>
         </Flex>
 
@@ -176,12 +153,12 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
                   ·
                 </Text>
                 <Button size="1" variant="ghost">
-                  {entry.mood}
+                  {messages.journal.moods[entry.mood]}
                 </Button>
               </Flex>
 
               <TextArea
-                aria-label="Entry title"
+                aria-label={copy.entryTitleLabel}
                 value={entry.title}
                 onChange={(event) => setField("title", event.target.value)}
                 mt="4"
@@ -192,19 +169,17 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
               />
 
               <TextArea
-                aria-label="Journal entry"
+                aria-label={copy.entryBodyLabel}
                 value={entry.body}
                 onChange={(event) => {
                   const body = event.target.value;
-                  const wordCount = body.trim()
-                    ? body.trim().split(/\s+/).length
-                    : 0;
+                  const wordCount = body.trim() ? body.trim().split(/\s+/).length : 0;
                   onChange({
                     ...entry,
                     body,
-                    preview: body.slice(0, 120) || "Start writing…",
+                    preview: body.slice(0, 120) || copy.startWriting,
                     wordCount,
-                    updatedAt: "Saved just now",
+                    updatedAt: copy.savedJustNow,
                   });
                 }}
                 mt="4"
@@ -212,7 +187,7 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
                 variant="soft"
                 resize="vertical"
                 rows={16}
-                placeholder="Start writing…"
+                placeholder={copy.startWriting}
               />
 
               <Flex wrap="wrap" gap="2" mt="5">
@@ -227,17 +202,14 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
         </Flex>
 
         <Separator size="4" />
-        <Flex
-          align="center"
-          justify="between"
-          px={{ initial: "3", sm: "5" }}
-          py="2"
-        >
+        <Flex align="center" justify="between" px={{ initial: "3", sm: "5" }} py="2">
           <Text size="1" color="gray">
             {entry.updatedAt}
           </Text>
           <Text size="1" color="gray">
-            {entry.wordCount} words
+            {formatMessage(entry.wordCount === 1 ? copy.wordsCountOne : copy.wordsCountOther, {
+              count: entry.wordCount,
+            })}
           </Text>
         </Flex>
       </main>

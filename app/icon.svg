@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Blind Journal</title>
   <path fill="#1f2a44" d="M94 64h48v384H94c-17.7 0-32-14.3-32-32V96c0-17.7 14.3-32 32-32Z"/>
   <path fill="#5b5bd6" d="M166 64h252c17.7 0 32 14.3 32 32v320c0 17.7-14.3 32-32 32H166V64Z"/>
   <path fill="none" stroke="#fff" stroke-linejoin="miter" stroke-width="24" d="M194 256c23-27 57-46 94-46s71 19 94 46c-23 27-57 46-94 46s-71-19-94-46Z"/>

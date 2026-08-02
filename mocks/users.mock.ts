@@ -1,4 +1,4 @@
-import { User } from "@/lib/types/user.type";
+import type { User } from "@/types/user.type";
 
 export const users: User[] = [
   {

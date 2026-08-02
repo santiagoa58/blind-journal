@@ -5,12 +5,7 @@ interface LabeledInputProps extends TextField.RootProps {
   name: string;
   children?: React.ReactNode;
 }
-export function LabeledInput({
-  name,
-  label,
-  children,
-  ...inputProps
-}: LabeledInputProps) {
+export function LabeledInput({ name, label, children, ...inputProps }: LabeledInputProps) {
   return (
     <>
       <label htmlFor={name}>

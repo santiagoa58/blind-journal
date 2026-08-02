@@ -1,9 +1,10 @@
 "use client";
 
+import type { JournalEntry } from "@/api/journal/journal.type";
+import { messages } from "@/messages";
+import { currentSessionUser } from "@/mocks/current-session.mock";
 import { Box, Flex, Separator } from "@radix-ui/themes";
 import { useMemo, useState } from "react";
-
-import { JournalEntry } from "@/lib/types/journal.type";
 import { journalEntries as initialEntries } from "../mocks/journal-entries.mock";
 import { AppSidebar, type SidebarSection } from "./app-sidebar";
 import { EntryList } from "./entry-list";
@@ -28,14 +29,15 @@ export function JournalWorkspace() {
   }
 
   function createEntry() {
+    const copy = messages.journal.newEntry;
     const nextEntry: JournalEntry = {
       id: `entry-${Date.now()}`,
-      title: "Untitled entry",
-      preview: "Start writing…",
+      title: copy.title,
+      preview: copy.preview,
       body: "",
-      dateLabel: "Friday, July 31",
-      timeLabel: "Now",
-      updatedAt: "New entry",
+      dateLabel: copy.dateLabel,
+      timeLabel: copy.timeLabel,
+      updatedAt: copy.updatedAt,
       favorite: false,
       mood: "reflective",
       tags: [],
@@ -52,6 +54,7 @@ export function JournalWorkspace() {
       <Flex width="100%" height="100vh" overflow="hidden">
         <AppSidebar
           activeSection={activeSection}
+          currentUser={currentSessionUser}
           onSectionChange={setActiveSection}
           onNewEntry={createEntry}
           onOpenSettings={() => setSettingsOpen(true)}

@@ -1,5 +1,13 @@
-"use client"
+"use client";
 
+import {
+  CheckCircledIcon,
+  FaceIcon,
+  GlobeIcon,
+  IdCardIcon,
+  LaptopIcon,
+  LockClosedIcon,
+} from "@radix-ui/react-icons";
 import {
   Avatar,
   Badge,
@@ -11,15 +19,8 @@ import {
   Separator,
   Switch,
   Text,
-} from "@radix-ui/themes"
-import {
-  CheckCircledIcon,
-  FaceIcon,
-  GlobeIcon,
-  IdCardIcon,
-  LaptopIcon,
-  LockClosedIcon,
-} from "@radix-ui/react-icons"
+} from "@radix-ui/themes";
+import { messages } from "@/messages";
 
 function SettingRow({
   icon: Icon,
@@ -28,11 +29,11 @@ function SettingRow({
   defaultChecked = false,
   disabled = false,
 }: {
-  icon: typeof GlobeIcon
-  title: string
-  description: string
-  defaultChecked?: boolean
-  disabled?: boolean
+  icon: typeof GlobeIcon;
+  title: string;
+  description: string;
+  defaultChecked?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <Flex align="start" gap="3" py="3">
@@ -50,7 +51,7 @@ function SettingRow({
           </Text>
           {disabled ? (
             <Badge color="gray" variant="outline">
-              Soon
+              {messages.common.labels.soon}
             </Badge>
           ) : null}
         </Flex>
@@ -60,16 +61,18 @@ function SettingRow({
       </Box>
       <Switch defaultChecked={defaultChecked} disabled={disabled} aria-label={title} />
     </Flex>
-  )
+  );
 }
 
 export function PrivacySettingsDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
+  const copy = messages.privacy;
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Content maxWidth="560px">
@@ -82,38 +85,38 @@ export function PrivacySettingsDialog({
               color="iris"
               fallback={<CheckCircledIcon aria-hidden width={22} height={22} />}
             />
-            <Dialog.Title mt="3">Privacy and security</Dialog.Title>
+            <Dialog.Title mt="3">{copy.title}</Dialog.Title>
             <Dialog.Description size="2" color="gray" mt="1">
-              Visual settings for how Blind Journal protects and unlocks your private writing.
+              {copy.description}
             </Dialog.Description>
           </Box>
 
           <Card size="3">
             <SettingRow
               icon={FaceIcon}
-              title="Biometric unlock"
-              description="Use Touch ID or your device biometrics after your first unlock."
+              title={copy.settings.biometricUnlock.title}
+              description={copy.settings.biometricUnlock.description}
               defaultChecked
             />
             <Separator size="4" />
             <SettingRow
               icon={LockClosedIcon}
-              title="Auto-lock"
-              description="Lock the journal after five minutes of inactivity."
+              title={copy.settings.autoLock.title}
+              description={copy.settings.autoLock.description}
               defaultChecked
             />
             <Separator size="4" />
             <SettingRow
               icon={GlobeIcon}
-              title="Encrypted sync"
-              description="Sync encrypted journal data across your trusted devices."
+              title={copy.settings.encryptedSync.title}
+              description={copy.settings.encryptedSync.description}
               defaultChecked
             />
             <Separator size="4" />
             <SettingRow
               icon={LaptopIcon}
-              title="Trusted devices"
-              description="Require approval before a new device can access your journal."
+              title={copy.settings.trustedDevices.title}
+              description={copy.settings.trustedDevices.description}
               defaultChecked
             />
           </Card>
@@ -129,13 +132,13 @@ export function PrivacySettingsDialog({
               />
               <Box flexGrow="1">
                 <Text as="div" size="2" weight="medium">
-                  Recovery key
+                  {copy.recovery.title}
                 </Text>
                 <Text as="p" size="1" color="gray" mt="1">
-                  Blind Journal cannot read or recover your entries. Keep your recovery key somewhere safe.
+                  {copy.recovery.description}
                 </Text>
                 <Button mt="3" size="1" variant="surface">
-                  View recovery options
+                  {copy.recovery.action}
                 </Button>
               </Box>
             </Flex>
@@ -143,11 +146,11 @@ export function PrivacySettingsDialog({
 
           <Flex justify="end">
             <Dialog.Close>
-              <Button>Done</Button>
+              <Button>{messages.common.actions.done}</Button>
             </Dialog.Close>
           </Flex>
         </Flex>
       </Dialog.Content>
     </Dialog.Root>
-  )
+  );
 }

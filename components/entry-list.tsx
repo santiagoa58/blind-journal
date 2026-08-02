@@ -22,20 +22,21 @@ import {
 } from "@radix-ui/themes";
 import { useMemo, useState } from "react";
 
-import type { JournalEntry } from "@/lib/types/journal.type";
+import { formatMessage, messages } from "@/messages";
+import type { JournalEntry } from "@/api/journal/journal.type";
 
 type EntryListProps = {
   entries: JournalEntry[];
-  selectedId?: string;
+  selectedId: string | undefined;
   onSelect: (entryId: string) => void;
 };
 
 const moodLabels: Record<JournalEntry["mood"], string> = {
-  calm: "Calm",
-  hopeful: "Hopeful",
-  reflective: "Reflective",
-  tired: "Tired",
-  grateful: "Grateful",
+  calm: messages.journal.moods.calm,
+  hopeful: messages.journal.moods.hopeful,
+  reflective: messages.journal.moods.reflective,
+  tired: messages.journal.moods.tired,
+  grateful: messages.journal.moods.grateful,
 };
 
 function truncatePreview(preview: string) {
@@ -43,6 +44,7 @@ function truncatePreview(preview: string) {
 }
 
 export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
+  const copy = messages.journal.list;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "favorites">("all");
   const [showMood, setShowMood] = useState(true);
@@ -71,40 +73,35 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
       flexShrink="0"
       display={{ initial: "none", md: "flex" }}
     >
-      <section aria-label="Journal entries">
+      <section aria-label={copy.sectionLabel}>
         <Box p="4">
           <Flex align="start" justify="between" gap="4">
             <Box>
               <Text as="div" size="1" weight="medium" color="iris">
-                PERSONAL JOURNAL
+                {copy.eyebrow}
               </Text>
               <Heading as="h1" size="6" mt="1">
-                Your entries
+                {copy.title}
               </Heading>
             </Box>
 
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <IconButton
-                  variant="ghost"
-                  color="gray"
-                  aria-label="Entry filters"
-                >
+                <IconButton variant="ghost" color="gray" aria-label={copy.filtersLabel}>
                   <MixerHorizontalIcon aria-hidden width={16} height={16} />
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="end">
-                <DropdownMenu.Label>Display</DropdownMenu.Label>
+                <DropdownMenu.Label>{copy.displayLabel}</DropdownMenu.Label>
                 <DropdownMenu.CheckboxItem
                   checked={showMood}
                   onCheckedChange={(value) => setShowMood(Boolean(value))}
                 >
-                  Show mood
+                  {copy.showMood}
                 </DropdownMenu.CheckboxItem>
                 <DropdownMenu.Separator />
                 <DropdownMenu.CheckboxItem checked>
-                  <CaretSortIcon aria-hidden width={15} height={15} /> Newest
-                  first
+                  <CaretSortIcon aria-hidden width={15} height={15} /> {copy.newestFirst}
                 </DropdownMenu.CheckboxItem>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -113,7 +110,7 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
           <TextField.Root
             mt="4"
             size="3"
-            placeholder="Search your journal"
+            placeholder={copy.searchPlaceholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           >
@@ -128,13 +125,14 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
               value={filter}
               onValueChange={(value) => setFilter(value as "all" | "favorites")}
             >
-              <SegmentedControl.Item value="all">All</SegmentedControl.Item>
-              <SegmentedControl.Item value="favorites">
-                Favorites
-              </SegmentedControl.Item>
+              <SegmentedControl.Item value="all">{copy.all}</SegmentedControl.Item>
+              <SegmentedControl.Item value="favorites">{copy.favorites}</SegmentedControl.Item>
             </SegmentedControl.Root>
             <Text size="1" color="gray">
-              {visibleEntries.length} entries
+              {formatMessage(
+                visibleEntries.length === 1 ? copy.entriesCountOne : copy.entriesCountOther,
+                { count: visibleEntries.length },
+              )}
             </Text>
           </Flex>
         </Box>
@@ -146,12 +144,7 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
                 const selected = entry.id === selectedId;
 
                 return (
-                  <Card
-                    asChild
-                    key={entry.id}
-                    size="2"
-                    variant={selected ? "classic" : "ghost"}
-                  >
+                  <Card asChild key={entry.id} size="2" variant={selected ? "classic" : "ghost"}>
                     <button type="button" onClick={() => onSelect(entry.id)}>
                       <Flex direction="column" gap="2">
                         <Flex align="start" gap="2">
@@ -162,7 +155,7 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
                           </Box>
                           {entry.favorite ? (
                             <HeartFilledIcon
-                              aria-label="Favorite"
+                              aria-label={copy.favoriteLabel}
                               width={15}
                               height={15}
                             />
@@ -183,19 +176,11 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
                           <Text size="1" color="gray">
                             {entry.timeLabel}
                           </Text>
-                          <LockClosedIcon
-                            aria-label="Encrypted"
-                            width={13}
-                            height={13}
-                          />
+                          <LockClosedIcon aria-label={copy.encryptedLabel} width={13} height={13} />
                         </Flex>
 
                         {showMood ? (
-                          <Badge
-                            size="1"
-                            variant="soft"
-                            color={selected ? "iris" : "gray"}
-                          >
+                          <Badge size="1" variant="soft" color={selected ? "iris" : "gray"}>
                             {moodLabels[entry.mood]}
                           </Badge>
                         ) : null}
@@ -206,19 +191,13 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
               })}
 
               {visibleEntries.length === 0 ? (
-                <Flex
-                  direction="column"
-                  align="center"
-                  justify="center"
-                  py="9"
-                  px="5"
-                >
+                <Flex direction="column" align="center" justify="center" py="9" px="5">
                   <MagnifyingGlassIcon aria-hidden width={20} height={20} />
                   <Text as="p" size="2" weight="medium" mt="3">
-                    No matching entries
+                    {copy.emptyTitle}
                   </Text>
                   <Text as="p" size="1" color="gray" mt="1" align="center">
-                    Try a title, tag, or a phrase you remember.
+                    {copy.emptyDescription}
                   </Text>
                 </Flex>
               ) : null}

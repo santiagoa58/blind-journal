@@ -1,6 +1,7 @@
 import "@radix-ui/themes/styles.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { defaultLocale, messages } from "@/messages";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -10,12 +11,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  applicationName: "Blind Journal",
+  applicationName: messages.metadata.applicationName,
   title: {
-    default: "Blind Journal",
-    template: "%s · Blind Journal",
+    default: messages.metadata.title,
+    template: messages.metadata.titleTemplate,
   },
-  description: "A private, end-to-end encrypted personal journal.",
+  description: messages.metadata.description,
 };
 
 export default function RootLayout({
@@ -24,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={defaultLocale} suppressHydrationWarning>
       <body className={`${inter.variable}`}>
         <Providers>{children}</Providers>
       </body>
