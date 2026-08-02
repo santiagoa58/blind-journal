@@ -46,8 +46,7 @@ export const journalEntries: JournalEntry[] = [
   {
     id: "rain-window",
     title: "Rain against the window",
-    preview:
-      "No agenda tonight. Just the sound of rain, a dim room, and a little space to think.",
+    preview: "No agenda tonight. Just the sound of rain, a dim room, and a little space to think.",
     body: "No agenda tonight. Just the sound of rain, a dim room, and a little space to think.\n\nI keep trying to optimize every quiet moment. Tonight I am letting it remain quiet.",
     dateLabel: "Monday, July 27",
     timeLabel: "11:31 PM",
@@ -60,8 +59,7 @@ export const journalEntries: JournalEntry[] = [
   {
     id: "rest",
     title: "Rest is not a reward",
-    preview:
-      "I am trying to unlearn the idea that rest must be justified by exhaustion.",
+    preview: "I am trying to unlearn the idea that rest must be justified by exhaustion.",
     body: "I am trying to unlearn the idea that rest must be justified by exhaustion.\n\nThere will always be more to do. That cannot be the standard for whether I am allowed to stop.",
     dateLabel: "Saturday, July 25",
     timeLabel: "3:14 PM",

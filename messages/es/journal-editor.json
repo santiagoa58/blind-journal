@@ -1,0 +1,25 @@
+{
+  "encryptedOnDevice": "Cifrada en este dispositivo",
+  "privateEntry": "Solo tú puedes leer esta entrada",
+  "encryptionDetails": "Detalles del cifrado",
+  "removeFromFavorites": "Quitar de favoritos",
+  "addToFavorites": "Agregar a favoritos",
+  "sharePrivately": "Compartir de forma privada",
+  "entryActions": "Acciones de la entrada",
+  "exportEncryptedCopy": "Exportar copia cifrada",
+  "manageTags": "Administrar etiquetas",
+  "moveToTrash": "Mover a la papelera",
+  "addTag": "Agregar etiqueta",
+  "entryTitleLabel": "Título de la entrada",
+  "entryBodyLabel": "Entrada del diario",
+  "startWriting": "Empieza a escribir…",
+  "savedJustNow": "Guardado ahora",
+  "wordsCount": "{count, plural, one {# palabra} other {# palabras}}",
+  "formatting": {
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "bulletedList": "Lista con viñetas",
+    "numberedList": "Lista numerada",
+    "quote": "Cita"
+  }
+}

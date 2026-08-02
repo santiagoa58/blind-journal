@@ -1,10 +1,11 @@
+import { HttpResponse, http } from "msw";
+import { describe, expect, it } from "vitest";
 import { fetchUserSalt } from "@/api/auth/auth";
+import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { UserSaltResponse } from "@/api/auth/auth.type";
 import { API_BASE_URL } from "@/api/constants";
 import { users } from "@/mocks/users.mock";
 import { mockServer } from "@/tests/mocks/server";
-import { HttpResponse, http } from "msw";
-import { describe, expect, it } from "vitest";
 
 describe("fetchUserSalt", () => {
   it("returns the agreed success envelope for a known username", async () => {
@@ -16,9 +17,7 @@ describe("fetchUserSalt", () => {
       throw new Error("The user fixture must contain at least one user.");
     }
 
-    await expect(
-      fetchUserSalt({ username: `  ${existingUser.username}  ` }),
-    ).resolves.toEqual({
+    await expect(fetchUserSalt({ username: `  ${existingUser.username}  ` })).resolves.toEqual({
       success: true,
       data: existingUser,
     });
@@ -28,7 +27,7 @@ describe("fetchUserSalt", () => {
     await expect(fetchUserSalt({ username: "unknown-user" })).resolves.toEqual({
       success: false,
       error: {
-        code: API_ERROR_CODES.authUserNotFound,
+        code: AUTH_ERROR_CODES.userNotFound,
       },
     });
   });
@@ -37,7 +36,7 @@ describe("fetchUserSalt", () => {
     await expect(fetchUserSalt({ username: "   " })).resolves.toEqual({
       success: false,
       error: {
-        code: API_ERROR_CODES.authUsernameRequired,
+        code: AUTH_ERROR_CODES.usernameRequired,
       },
     });
   });
@@ -58,18 +57,12 @@ describe("fetchUserSalt", () => {
       ),
     );
 
-    await expect(
-      fetchUserSalt({ username: "rate-limited-user" }),
-    ).resolves.toEqual(response);
+    await expect(fetchUserSalt({ username: "rate-limited-user" })).resolves.toEqual(response);
   });
 
   it("leaves transport failures as ordinary request errors", async () => {
-    mockServer.use(
-      http.post(`${API_BASE_URL}/auth/login`, () => HttpResponse.error()),
-    );
+    mockServer.use(http.post(`${API_BASE_URL}/auth/login`, () => HttpResponse.error()));
 
-    await expect(
-      fetchUserSalt({ username: "offline-user" }),
-    ).rejects.toBeInstanceOf(Error);
+    await expect(fetchUserSalt({ username: "offline-user" })).rejects.toBeInstanceOf(Error);
   });
 });

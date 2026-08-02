@@ -29,8 +29,7 @@ import {
   TextArea,
   Tooltip,
 } from "@radix-ui/themes";
-
-import { formatMessage, messages } from "@/messages";
+import { useTranslations } from "next-intl";
 import type { JournalEntry } from "@/api/journal/journal.type";
 
 type JournalEditorProps = {
@@ -38,19 +37,19 @@ type JournalEditorProps = {
   onChange: (entry: JournalEntry) => void;
 };
 
-const formatActions = [
-  { label: messages.journal.editor.formatting.bold, icon: FontBoldIcon },
-  { label: messages.journal.editor.formatting.italic, icon: FontItalicIcon },
-  { label: messages.journal.editor.formatting.bulletedList, icon: ListBulletIcon },
-  { label: messages.journal.editor.formatting.numberedList, icon: RowsIcon },
-  { label: messages.journal.editor.formatting.quote, icon: QuoteIcon },
-];
-
 export function JournalEditor({ entry, onChange }: JournalEditorProps) {
-  const copy = messages.journal.editor;
-  const favoriteLabel = entry.favorite ? copy.removeFromFavorites : copy.addToFavorites;
+  const t = useTranslations("journal-editor");
+  const tJournal = useTranslations("journal");
+  const formatActions = [
+    { label: t("formatting.bold"), icon: FontBoldIcon },
+    { label: t("formatting.italic"), icon: FontItalicIcon },
+    { label: t("formatting.bulletedList"), icon: ListBulletIcon },
+    { label: t("formatting.numberedList"), icon: RowsIcon },
+    { label: t("formatting.quote"), icon: QuoteIcon },
+  ];
+  const favoriteLabel = entry.favorite ? t("removeFromFavorites") : t("addToFavorites");
   const setField = <Key extends keyof JournalEntry>(key: Key, value: JournalEntry[Key]) => {
-    onChange({ ...entry, [key]: value, updatedAt: copy.savedJustNow });
+    onChange({ ...entry, [key]: value, updatedAt: t("savedJustNow") });
   };
 
   return (
@@ -60,10 +59,10 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
           <Flex align="center" gap="2" minWidth="0">
             <Badge size="2" variant="surface" color="iris">
               <CheckCircledIcon aria-hidden width={14} height={14} />
-              {copy.encryptedOnDevice}
+              {t("encryptedOnDevice")}
             </Badge>
-            <Tooltip content={copy.privateEntry}>
-              <IconButton variant="ghost" color="gray" aria-label={copy.encryptionDetails}>
+            <Tooltip content={t("privateEntry")}>
+              <IconButton variant="ghost" color="gray" aria-label={t("encryptionDetails")}>
                 <LockClosedIcon aria-hidden width={16} height={16} />
               </IconButton>
             </Tooltip>
@@ -87,26 +86,26 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
 
             <Box asChild display={{ initial: "none", sm: "block" }}>
               <Button variant="ghost" color="gray">
-                {copy.sharePrivately} <ChevronDownIcon aria-hidden width={14} height={14} />
+                {t("sharePrivately")} <ChevronDownIcon aria-hidden width={14} height={14} />
               </Button>
             </Box>
 
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <IconButton variant="ghost" color="gray" aria-label={copy.entryActions}>
+                <IconButton variant="ghost" color="gray" aria-label={t("entryActions")}>
                   <DotsHorizontalIcon aria-hidden width={17} height={17} />
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="end">
                 <DropdownMenu.Item>
-                  <DownloadIcon aria-hidden width={15} height={15} /> {copy.exportEncryptedCopy}
+                  <DownloadIcon aria-hidden width={15} height={15} /> {t("exportEncryptedCopy")}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item>
-                  <BookmarkIcon aria-hidden width={15} height={15} /> {copy.manageTags}
+                  <BookmarkIcon aria-hidden width={15} height={15} /> {t("manageTags")}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item color="red">
-                  <TrashIcon aria-hidden width={15} height={15} /> {copy.moveToTrash}
+                  <TrashIcon aria-hidden width={15} height={15} /> {t("moveToTrash")}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -125,7 +124,7 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
           ))}
           <Separator orientation="vertical" size="2" mx="2" />
           <Button variant="ghost" color="gray">
-            <BookmarkIcon aria-hidden width={15} height={15} /> {copy.addTag}
+            <BookmarkIcon aria-hidden width={15} height={15} /> {t("addTag")}
           </Button>
         </Flex>
 
@@ -153,12 +152,12 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
                   ·
                 </Text>
                 <Button size="1" variant="ghost">
-                  {messages.journal.moods[entry.mood]}
+                  {tJournal(`moods.${entry.mood}`)}
                 </Button>
               </Flex>
 
               <TextArea
-                aria-label={copy.entryTitleLabel}
+                aria-label={t("entryTitleLabel")}
                 value={entry.title}
                 onChange={(event) => setField("title", event.target.value)}
                 mt="4"
@@ -169,7 +168,7 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
               />
 
               <TextArea
-                aria-label={copy.entryBodyLabel}
+                aria-label={t("entryBodyLabel")}
                 value={entry.body}
                 onChange={(event) => {
                   const body = event.target.value;
@@ -177,9 +176,9 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
                   onChange({
                     ...entry,
                     body,
-                    preview: body.slice(0, 120) || copy.startWriting,
+                    preview: body.slice(0, 120) || t("startWriting"),
                     wordCount,
-                    updatedAt: copy.savedJustNow,
+                    updatedAt: t("savedJustNow"),
                   });
                 }}
                 mt="4"
@@ -187,7 +186,7 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
                 variant="soft"
                 resize="vertical"
                 rows={16}
-                placeholder={copy.startWriting}
+                placeholder={t("startWriting")}
               />
 
               <Flex wrap="wrap" gap="2" mt="5">
@@ -207,9 +206,7 @@ export function JournalEditor({ entry, onChange }: JournalEditorProps) {
             {entry.updatedAt}
           </Text>
           <Text size="1" color="gray">
-            {formatMessage(entry.wordCount === 1 ? copy.wordsCountOne : copy.wordsCountOther, {
-              count: entry.wordCount,
-            })}
+            {t("wordsCount", { count: entry.wordCount })}
           </Text>
         </Flex>
       </main>

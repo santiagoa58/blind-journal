@@ -27,7 +27,7 @@ import {
   Text,
   Tooltip,
 } from "@radix-ui/themes";
-import { messages } from "@/messages";
+import { useTranslations } from "next-intl";
 
 import { BrandMark } from "./brand-mark";
 
@@ -43,19 +43,6 @@ type AppSidebarProps = {
   onNewEntry: () => void;
   onOpenSettings: () => void;
 };
-
-const copy = messages.navigation;
-
-const primaryItems = [
-  { value: "journal" as const, label: copy.sections.journal, icon: ReaderIcon },
-  { value: "calendar" as const, label: copy.sections.calendar, icon: CalendarIcon },
-  { value: "favorites" as const, label: copy.sections.favorites, icon: HeartIcon },
-];
-
-const utilityItems = [
-  { value: "archive" as const, label: copy.sections.archive, icon: ArchiveIcon },
-  { value: "trash" as const, label: copy.sections.trash, icon: TrashIcon },
-];
 
 function SidebarButton({
   active,
@@ -113,6 +100,17 @@ export function AppSidebar({
   onNewEntry,
   onOpenSettings,
 }: AppSidebarProps) {
+  const t = useTranslations("sidebar");
+  const primaryItems = [
+    { value: "journal" as const, label: t("sections.journal"), icon: ReaderIcon },
+    { value: "calendar" as const, label: t("sections.calendar"), icon: CalendarIcon },
+    { value: "favorites" as const, label: t("sections.favorites"), icon: HeartIcon },
+  ];
+  const utilityItems = [
+    { value: "archive" as const, label: t("sections.archive"), icon: ArchiveIcon },
+    { value: "trash" as const, label: t("sections.trash"), icon: TrashIcon },
+  ];
+
   return (
     <Flex
       asChild
@@ -124,7 +122,7 @@ export function AppSidebar({
       gap="3"
       display={{ initial: "none", lg: "flex" }}
     >
-      <aside aria-label={copy.journalNavigationLabel}>
+      <aside aria-label={t("journalNavigationLabel")}>
         <Box px="2" py="2">
           <BrandMark />
         </Box>
@@ -132,15 +130,15 @@ export function AppSidebar({
         <Box asChild width="100%">
           <Button onClick={onNewEntry} size="3">
             <PlusIcon aria-hidden width={17} height={17} />
-            {copy.newEntry}
+            {t("newEntry")}
             <Kbd ml="auto" size="1">
-              {copy.newEntryShortcut}
+              {t("newEntryShortcut")}
             </Kbd>
           </Button>
         </Box>
 
         <Flex asChild direction="column" gap="1" mt="2">
-          <nav aria-label={copy.primaryLabel}>
+          <nav aria-label={t("primaryLabel")}>
             {primaryItems.map((item) => (
               <SidebarButton
                 key={item.value}
@@ -154,18 +152,18 @@ export function AppSidebar({
 
         <Box mt="3" px="2">
           <Text as="div" size="1" weight="medium" color="gray">
-            {copy.collectionsTitle}
+            {t("collectionsTitle")}
           </Text>
         </Box>
 
         <Flex asChild direction="column" gap="1">
-          <nav aria-label={copy.collectionsLabel}>
+          <nav aria-label={t("collectionsLabel")}>
             <CollectionButton
               icon={MagicWandIcon}
-              label={copy.collections.personalGrowth}
+              label={t("collections.personalGrowth")}
               count={12}
             />
-            <CollectionButton icon={HeartIcon} label={copy.collections.peopleILove} count={8} />
+            <CollectionButton icon={HeartIcon} label={t("collections.peopleILove")} count={8} />
           </nav>
         </Flex>
 
@@ -187,9 +185,9 @@ export function AppSidebar({
             </Callout.Icon>
             <Callout.Text>
               <Text as="span" weight="medium">
-                {copy.privacy.title}{" "}
+                {t("privacy.title")}{" "}
               </Text>
-              {copy.privacy.description}
+              {t("privacy.description")}
             </Callout.Text>
           </Callout.Root>
 
@@ -205,27 +203,27 @@ export function AppSidebar({
                 </Button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="top">
-                <DropdownMenu.Label>{copy.account.menuLabel}</DropdownMenu.Label>
+                <DropdownMenu.Label>{t("account.menuLabel")}</DropdownMenu.Label>
                 <DropdownMenu.Item>
-                  <PersonIcon aria-hidden width={15} height={15} /> {copy.account.profile}
+                  <PersonIcon aria-hidden width={15} height={15} /> {t("account.profile")}
                 </DropdownMenu.Item>
                 <DropdownMenu.Item onSelect={onOpenSettings}>
-                  <GearIcon aria-hidden width={15} height={15} /> {copy.account.privacySettings}
+                  <GearIcon aria-hidden width={15} height={15} /> {t("account.privacySettings")}
                 </DropdownMenu.Item>
                 <DropdownMenu.Separator />
                 <DropdownMenu.Item>
-                  <LockClosedIcon aria-hidden width={15} height={15} /> {copy.account.lockJournal}
+                  <LockClosedIcon aria-hidden width={15} height={15} /> {t("account.lockJournal")}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
 
-            <Tooltip content={copy.account.settings}>
+            <Tooltip content={t("account.settings")}>
               <Button
                 ml="auto"
                 variant="ghost"
                 color="gray"
                 onClick={onOpenSettings}
-                aria-label={copy.account.settings}
+                aria-label={t("account.settings")}
               >
                 <GearIcon aria-hidden width={16} height={16} />
               </Button>

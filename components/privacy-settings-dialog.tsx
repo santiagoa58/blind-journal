@@ -20,7 +20,7 @@ import {
   Switch,
   Text,
 } from "@radix-ui/themes";
-import { messages } from "@/messages";
+import { useTranslations } from "next-intl";
 
 function SettingRow({
   icon: Icon,
@@ -35,6 +35,8 @@ function SettingRow({
   defaultChecked?: boolean;
   disabled?: boolean;
 }) {
+  const tCommon = useTranslations("common");
+
   return (
     <Flex align="start" gap="3" py="3">
       <Avatar
@@ -51,7 +53,7 @@ function SettingRow({
           </Text>
           {disabled ? (
             <Badge color="gray" variant="outline">
-              {messages.common.labels.soon}
+              {tCommon("labels.soon")}
             </Badge>
           ) : null}
         </Flex>
@@ -71,7 +73,8 @@ export function PrivacySettingsDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const copy = messages.privacy;
+  const t = useTranslations("privacy-settings");
+  const tCommon = useTranslations("common");
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -85,38 +88,38 @@ export function PrivacySettingsDialog({
               color="iris"
               fallback={<CheckCircledIcon aria-hidden width={22} height={22} />}
             />
-            <Dialog.Title mt="3">{copy.title}</Dialog.Title>
+            <Dialog.Title mt="3">{t("title")}</Dialog.Title>
             <Dialog.Description size="2" color="gray" mt="1">
-              {copy.description}
+              {t("description")}
             </Dialog.Description>
           </Box>
 
           <Card size="3">
             <SettingRow
               icon={FaceIcon}
-              title={copy.settings.biometricUnlock.title}
-              description={copy.settings.biometricUnlock.description}
+              title={t("settings.biometricUnlock.title")}
+              description={t("settings.biometricUnlock.description")}
               defaultChecked
             />
             <Separator size="4" />
             <SettingRow
               icon={LockClosedIcon}
-              title={copy.settings.autoLock.title}
-              description={copy.settings.autoLock.description}
+              title={t("settings.autoLock.title")}
+              description={t("settings.autoLock.description")}
               defaultChecked
             />
             <Separator size="4" />
             <SettingRow
               icon={GlobeIcon}
-              title={copy.settings.encryptedSync.title}
-              description={copy.settings.encryptedSync.description}
+              title={t("settings.encryptedSync.title")}
+              description={t("settings.encryptedSync.description")}
               defaultChecked
             />
             <Separator size="4" />
             <SettingRow
               icon={LaptopIcon}
-              title={copy.settings.trustedDevices.title}
-              description={copy.settings.trustedDevices.description}
+              title={t("settings.trustedDevices.title")}
+              description={t("settings.trustedDevices.description")}
               defaultChecked
             />
           </Card>
@@ -132,13 +135,13 @@ export function PrivacySettingsDialog({
               />
               <Box flexGrow="1">
                 <Text as="div" size="2" weight="medium">
-                  {copy.recovery.title}
+                  {t("recovery.title")}
                 </Text>
                 <Text as="p" size="1" color="gray" mt="1">
-                  {copy.recovery.description}
+                  {t("recovery.description")}
                 </Text>
                 <Button mt="3" size="1" variant="surface">
-                  {copy.recovery.action}
+                  {t("recovery.action")}
                 </Button>
               </Box>
             </Flex>
@@ -146,7 +149,7 @@ export function PrivacySettingsDialog({
 
           <Flex justify="end">
             <Dialog.Close>
-              <Button>{messages.common.actions.done}</Button>
+              <Button>{tCommon("actions.done")}</Button>
             </Dialog.Close>
           </Flex>
         </Flex>

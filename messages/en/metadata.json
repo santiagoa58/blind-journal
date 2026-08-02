@@ -1,0 +1,6 @@
+{
+  "applicationName": "Blind Journal",
+  "title": "Blind Journal",
+  "titleTemplate": "%s · Blind Journal",
+  "description": "A private, end-to-end encrypted personal journal."
+}

@@ -1,20 +1,16 @@
 "use client";
 
 import { Flex, Spinner, Text } from "@radix-ui/themes";
+import { useTranslations } from "next-intl";
 import { type PropsWithChildren, useEffect, useState } from "react";
-import { messages } from "@/messages";
-
-const mockingEnabled = process.env["NEXT_PUBLIC_BACKEND_MODE"] !== "remote";
 
 export function MockServiceWorkerProvider({ children }: PropsWithChildren) {
-  const [ready, setReady] = useState(!mockingEnabled);
+  const t = useTranslations("common");
+  const startupErrorMessage = t("errors.mockServerStartup");
+  const [ready, setReady] = useState(false);
   const [startupError, setStartupError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!mockingEnabled) {
-      return;
-    }
-
     let active = true;
 
     void import("@/mocks/browser")
@@ -26,16 +22,14 @@ export function MockServiceWorkerProvider({ children }: PropsWithChildren) {
       })
       .catch((error: unknown) => {
         if (active) {
-          setStartupError(
-            error instanceof Error ? error : new Error("Failed to start Mock Service Worker."),
-          );
+          setStartupError(new Error(startupErrorMessage, { cause: error }));
         }
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [startupErrorMessage]);
 
   if (startupError) {
     throw startupError;
@@ -44,8 +38,8 @@ export function MockServiceWorkerProvider({ children }: PropsWithChildren) {
   if (!ready) {
     return (
       <Flex align="center" justify="center" gap="2" minHeight="100vh">
-        <Spinner aria-label={messages.common.labels.loading} />
-        <Text color="gray">{messages.common.labels.loading}</Text>
+        <Spinner aria-label={t("labels.loading")} />
+        <Text color="gray">{t("labels.loading")}</Text>
       </Flex>
     );
   }

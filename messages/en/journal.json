@@ -1,0 +1,16 @@
+{
+  "moods": {
+    "calm": "Calm",
+    "hopeful": "Hopeful",
+    "reflective": "Reflective",
+    "tired": "Tired",
+    "grateful": "Grateful"
+  },
+  "newEntry": {
+    "title": "Untitled entry",
+    "preview": "Start writing…",
+    "dateLabel": "Friday, July 31",
+    "timeLabel": "Now",
+    "updatedAt": "New entry"
+  }
+}

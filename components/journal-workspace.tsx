@@ -1,10 +1,10 @@
 "use client";
 
-import type { JournalEntry } from "@/api/journal/journal.type";
-import { messages } from "@/messages";
-import { currentSessionUser } from "@/mocks/current-session.mock";
 import { Box, Flex, Separator } from "@radix-ui/themes";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import type { JournalEntry } from "@/api/journal/journal.type";
+import { currentSessionUser } from "@/mocks/current-session.mock";
 import { journalEntries as initialEntries } from "../mocks/journal-entries.mock";
 import { AppSidebar, type SidebarSection } from "./app-sidebar";
 import { EntryList } from "./entry-list";
@@ -12,6 +12,7 @@ import { JournalEditor } from "./journal-editor";
 import { PrivacySettingsDialog } from "./privacy-settings-dialog";
 
 export function JournalWorkspace() {
+  const t = useTranslations("journal");
   const [entries, setEntries] = useState(initialEntries);
   const [selectedId, setSelectedId] = useState(initialEntries[0]?.id ?? "");
   const [activeSection, setActiveSection] = useState<SidebarSection>("journal");
@@ -29,15 +30,14 @@ export function JournalWorkspace() {
   }
 
   function createEntry() {
-    const copy = messages.journal.newEntry;
     const nextEntry: JournalEntry = {
       id: `entry-${Date.now()}`,
-      title: copy.title,
-      preview: copy.preview,
+      title: t("newEntry.title"),
+      preview: t("newEntry.preview"),
       body: "",
-      dateLabel: copy.dateLabel,
-      timeLabel: copy.timeLabel,
-      updatedAt: copy.updatedAt,
+      dateLabel: t("newEntry.dateLabel"),
+      timeLabel: t("newEntry.timeLabel"),
+      updatedAt: t("newEntry.updatedAt"),
       favorite: false,
       mood: "reflective",
       tags: [],
@@ -74,10 +74,7 @@ export function JournalWorkspace() {
           <JournalEditor entry={selectedEntry} onChange={updateSelectedEntry} />
         ) : null}
       </Flex>
-      <PrivacySettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-      />
+      <PrivacySettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }

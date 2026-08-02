@@ -1,0 +1,25 @@
+{
+  "encryptedOnDevice": "Encrypted on this device",
+  "privateEntry": "Only you can read this entry",
+  "encryptionDetails": "Encryption details",
+  "removeFromFavorites": "Remove from favorites",
+  "addToFavorites": "Add to favorites",
+  "sharePrivately": "Share privately",
+  "entryActions": "Entry actions",
+  "exportEncryptedCopy": "Export encrypted copy",
+  "manageTags": "Manage tags",
+  "moveToTrash": "Move to trash",
+  "addTag": "Add tag",
+  "entryTitleLabel": "Entry title",
+  "entryBodyLabel": "Journal entry",
+  "startWriting": "Start writing…",
+  "savedJustNow": "Saved just now",
+  "wordsCount": "{count, plural, one {# word} other {# words}}",
+  "formatting": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "bulletedList": "Bulleted list",
+    "numberedList": "Numbered list",
+    "quote": "Quote"
+  }
+}

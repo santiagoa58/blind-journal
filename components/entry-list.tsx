@@ -20,9 +20,8 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
+import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
-
-import { formatMessage, messages } from "@/messages";
 import type { JournalEntry } from "@/api/journal/journal.type";
 
 type EntryListProps = {
@@ -31,20 +30,20 @@ type EntryListProps = {
   onSelect: (entryId: string) => void;
 };
 
-const moodLabels: Record<JournalEntry["mood"], string> = {
-  calm: messages.journal.moods.calm,
-  hopeful: messages.journal.moods.hopeful,
-  reflective: messages.journal.moods.reflective,
-  tired: messages.journal.moods.tired,
-  grateful: messages.journal.moods.grateful,
-};
-
 function truncatePreview(preview: string) {
   return preview.length > 104 ? `${preview.slice(0, 104).trimEnd()}…` : preview;
 }
 
 export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
-  const copy = messages.journal.list;
+  const t = useTranslations("entry-list");
+  const tJournal = useTranslations("journal");
+  const moodLabels: Record<JournalEntry["mood"], string> = {
+    calm: tJournal("moods.calm"),
+    hopeful: tJournal("moods.hopeful"),
+    reflective: tJournal("moods.reflective"),
+    tired: tJournal("moods.tired"),
+    grateful: tJournal("moods.grateful"),
+  };
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "favorites">("all");
   const [showMood, setShowMood] = useState(true);
@@ -73,35 +72,35 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
       flexShrink="0"
       display={{ initial: "none", md: "flex" }}
     >
-      <section aria-label={copy.sectionLabel}>
+      <section aria-label={t("sectionLabel")}>
         <Box p="4">
           <Flex align="start" justify="between" gap="4">
             <Box>
               <Text as="div" size="1" weight="medium" color="iris">
-                {copy.eyebrow}
+                {t("eyebrow")}
               </Text>
               <Heading as="h1" size="6" mt="1">
-                {copy.title}
+                {t("title")}
               </Heading>
             </Box>
 
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <IconButton variant="ghost" color="gray" aria-label={copy.filtersLabel}>
+                <IconButton variant="ghost" color="gray" aria-label={t("filtersLabel")}>
                   <MixerHorizontalIcon aria-hidden width={16} height={16} />
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="end">
-                <DropdownMenu.Label>{copy.displayLabel}</DropdownMenu.Label>
+                <DropdownMenu.Label>{t("displayLabel")}</DropdownMenu.Label>
                 <DropdownMenu.CheckboxItem
                   checked={showMood}
                   onCheckedChange={(value) => setShowMood(Boolean(value))}
                 >
-                  {copy.showMood}
+                  {t("showMood")}
                 </DropdownMenu.CheckboxItem>
                 <DropdownMenu.Separator />
                 <DropdownMenu.CheckboxItem checked>
-                  <CaretSortIcon aria-hidden width={15} height={15} /> {copy.newestFirst}
+                  <CaretSortIcon aria-hidden width={15} height={15} /> {t("newestFirst")}
                 </DropdownMenu.CheckboxItem>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -110,7 +109,7 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
           <TextField.Root
             mt="4"
             size="3"
-            placeholder={copy.searchPlaceholder}
+            placeholder={t("searchPlaceholder")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           >
@@ -125,14 +124,11 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
               value={filter}
               onValueChange={(value) => setFilter(value as "all" | "favorites")}
             >
-              <SegmentedControl.Item value="all">{copy.all}</SegmentedControl.Item>
-              <SegmentedControl.Item value="favorites">{copy.favorites}</SegmentedControl.Item>
+              <SegmentedControl.Item value="all">{t("all")}</SegmentedControl.Item>
+              <SegmentedControl.Item value="favorites">{t("favorites")}</SegmentedControl.Item>
             </SegmentedControl.Root>
             <Text size="1" color="gray">
-              {formatMessage(
-                visibleEntries.length === 1 ? copy.entriesCountOne : copy.entriesCountOther,
-                { count: visibleEntries.length },
-              )}
+              {t("entriesCount", { count: visibleEntries.length })}
             </Text>
           </Flex>
         </Box>
@@ -155,7 +151,7 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
                           </Box>
                           {entry.favorite ? (
                             <HeartFilledIcon
-                              aria-label={copy.favoriteLabel}
+                              aria-label={t("favoriteLabel")}
                               width={15}
                               height={15}
                             />
@@ -176,7 +172,7 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
                           <Text size="1" color="gray">
                             {entry.timeLabel}
                           </Text>
-                          <LockClosedIcon aria-label={copy.encryptedLabel} width={13} height={13} />
+                          <LockClosedIcon aria-label={t("encryptedLabel")} width={13} height={13} />
                         </Flex>
 
                         {showMood ? (
@@ -194,10 +190,10 @@ export function EntryList({ entries, selectedId, onSelect }: EntryListProps) {
                 <Flex direction="column" align="center" justify="center" py="9" px="5">
                   <MagnifyingGlassIcon aria-hidden width={20} height={20} />
                   <Text as="p" size="2" weight="medium" mt="3">
-                    {copy.emptyTitle}
+                    {t("emptyTitle")}
                   </Text>
                   <Text as="p" size="1" color="gray" mt="1" align="center">
-                    {copy.emptyDescription}
+                    {t("emptyDescription")}
                   </Text>
                 </Flex>
               ) : null}

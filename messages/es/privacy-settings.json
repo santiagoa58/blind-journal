@@ -1,0 +1,27 @@
+{
+  "title": "Privacidad y seguridad",
+  "description": "Configuración visual de cómo Blind Journal protege y desbloquea tus escritos privados.",
+  "settings": {
+    "biometricUnlock": {
+      "title": "Desbloqueo biométrico",
+      "description": "Usa Touch ID o la biometría de tu dispositivo después del primer desbloqueo."
+    },
+    "autoLock": {
+      "title": "Bloqueo automático",
+      "description": "Bloquea el diario después de cinco minutos de inactividad."
+    },
+    "encryptedSync": {
+      "title": "Sincronización cifrada",
+      "description": "Sincroniza los datos cifrados del diario entre tus dispositivos de confianza."
+    },
+    "trustedDevices": {
+      "title": "Dispositivos de confianza",
+      "description": "Solicita aprobación antes de que un dispositivo nuevo acceda a tu diario."
+    }
+  },
+  "recovery": {
+    "title": "Clave de recuperación",
+    "description": "Blind Journal no puede leer ni recuperar tus entradas. Guarda tu clave de recuperación en un lugar seguro.",
+    "action": "Ver opciones de recuperación"
+  }
+}

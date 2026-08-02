@@ -56,7 +56,7 @@ Primary libraries:
 | Interface icons | Radix Icons (`@radix-ui/react-icons`) |
 | Workflow orchestration | XState 5 and `@xstate/react` |
 | Request and mutation state | TanStack Query 5 |
-| Runtime protocol validation | Zod 4 |
+| Simulated-server input validation | Zod 4 |
 | Simulated HTTP | MSW 2 |
 | Simulated server database | Dexie 4 and IndexedDB |
 | Password KDF | Argon2id through `libsodium-wrappers-sumo` |
@@ -96,37 +96,26 @@ Every boundary --> redacted semantic events --> synchronized visualization
 
 The journal UI may communicate with the simulated backend only through the client API and `fetch`. It must never import Dexie or simulated-server services directly.
 
-### Planned project structure
-
-Directories should be created only when their phase begins.
+### Project structure
 
 ```text
 app/                    Next.js routes, layouts, providers, and route errors
-components/
-  ui/                   App-specific compositions of Radix Themes components
-  auth/                 Authentication screens and forms
-  journal/              Journal list, editor, and vault UI
-  simulation/           Timeline, lanes, packets, and explanations
-lib/
-  api/                  Transferable browser API client
-  crypto/               Crypto types, codecs, and worker client
-  protocol/             Shared Zod contracts and envelope schemas
-  query/                TanStack Query keys and options
-  utils/                Small framework-independent utilities
-machines/               XState machines and actor logic
-mocks/                  MSW browser setup and HTTP handlers
-simulation/
-  server/               Mocked application services and authorization
-  database/             Dexie schema, records, and migrations
-  session/              Modeled cookie jar and opaque sessions
-  security/             CSRF, origin checks, and rate limiting
-  events/               Sanitized system-event publisher
-workers/                 Dedicated cryptographic Web Worker
-tests/                   Focused cross-module tests where colocation is unsuitable
+api/                    Browser HTTP client and API-facing types, grouped by endpoint area
+components/             Reusable and journal interface components
+features/               Client-only feature workflows and UI
+local-server/           Simulated server rules, request validation, and response construction
+messages/               JSON catalogs as messages/{locale}/{feature}.json
+mocks/                  MSW setup, thin transport handlers, and local fixtures
 public/                  Brand/PWA assets and the generated MSW worker
+tests/                   Shared test setup and test-only MSW server
+workers/                 Dedicated cryptographic Web Worker when that phase begins
 ```
 
-There is deliberately no `features/` directory. For this application, top-level runtime and trust boundaries are more informative than placing most of the product beneath a generic feature label. UI components are still grouped by the part of the interface they render.
+The browser boundary is intentionally simple. `api/` is the source of truth for handwritten request, response, and domain types. Client endpoint functions in that directory are the only production-facing code that knows how to make HTTP requests. They do not import MSW or the simulated server.
+
+`local-server/` is explicitly simulated-server code. It imports the API request types and uses Zod at the runtime boundary, with schemas typed as `z.ZodType<RequestType>` so schema changes remain checked against the API type. Response-only schemas are not added when they would merely duplicate a handwritten type: the simulated server constructs typed responses with `satisfies`, and the client consumes the agreed response shape.
+
+`mocks/handlers.ts` contains transport adapters only. Each MSW handler delegates the incoming `Request` to `local-server/`; it does not contain business rules. A future real backend can implement the same API types and behavior while the browser endpoint functions and client cryptography remain unchanged.
 
 ## State ownership
 
@@ -148,6 +137,7 @@ Corepack will select the PNPM version pinned by the project:
 ```bash
 corepack enable
 pnpm install --frozen-lockfile
+cp .env.example .env.local
 pnpm dev
 ```
 
@@ -169,7 +159,9 @@ The project intentionally does not register a second offline-caching Service Wor
 
 ```bash
 pnpm dev          # Start the Next.js development server
-pnpm lint         # Run ESLint
+pnpm lint         # Run Biome's linter
+pnpm quality      # Run Biome's linter and formatter checks
+pnpm i18n:check   # Find missing, unused, or inconsistent translations
 pnpm typecheck    # Run TypeScript without emitting files
 pnpm test         # Run the focused Vitest suite once
 pnpm test:watch   # Run Vitest in watch mode

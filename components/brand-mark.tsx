@@ -1,8 +1,10 @@
 import { LockClosedIcon } from "@radix-ui/react-icons";
 import { Avatar, Flex, Heading } from "@radix-ui/themes";
-import { messages } from "@/messages";
+import { useTranslations } from "next-intl";
 
 export function BrandMark({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations("brand");
+
   return (
     <Flex align="center" gap="2">
       <Avatar
@@ -13,7 +15,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       />
       {compact ? null : (
         <Heading as="h2" size="3" weight="medium">
-          {messages.brand.name}
+          {t("name")}
         </Heading>
       )}
     </Flex>

@@ -1,0 +1,14 @@
+{
+  "actions": {
+    "done": "Done"
+  },
+  "labels": {
+    "loading": "Loading…",
+    "soon": "Soon"
+  },
+  "errors": {
+    "mockServerStartup": "The local server simulation could not start.",
+    "network": "We could not reach the server. Check your connection and try again.",
+    "unexpected": "Something went wrong. Please try again."
+  }
+}
