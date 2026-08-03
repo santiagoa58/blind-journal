@@ -4,22 +4,23 @@
   "encryptionDetails": "Detalles del cifrado",
   "removeFromFavorites": "Quitar de favoritos",
   "addToFavorites": "Agregar a favoritos",
-  "sharePrivately": "Compartir de forma privada",
   "entryActions": "Acciones de la entrada",
-  "exportEncryptedCopy": "Exportar copia cifrada",
-  "manageTags": "Administrar etiquetas",
-  "moveToTrash": "Mover a la papelera",
-  "addTag": "Agregar etiqueta",
+  "deleteEntry": "Eliminar entrada",
+  "deleteDialog": {
+    "title": "¿Eliminar esta entrada?",
+    "description": "Esto elimina permanentemente la entrada del diario en memoria. Esta acción no se puede deshacer."
+  },
   "entryTitleLabel": "Título de la entrada",
   "entryBodyLabel": "Entrada del diario",
-  "startWriting": "Empieza a escribir…",
-  "savedJustNow": "Guardado ahora",
+  "lastSaved": "Último guardado {time}",
   "wordsCount": "{count, plural, one {# palabra} other {# palabras}}",
   "formatting": {
     "bold": "Negrita",
     "italic": "Cursiva",
     "bulletedList": "Lista con viñetas",
     "numberedList": "Lista numerada",
-    "quote": "Cita"
+    "quote": "Cita",
+    "undo": "Deshacer",
+    "redo": "Rehacer"
   }
 }

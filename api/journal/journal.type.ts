@@ -5,10 +5,9 @@ export type JournalMood = "calm" | "hopeful" | "reflective" | "tired" | "gratefu
 export type JournalEntry = {
   id: string;
   title: string;
+  content: string;
   preview: string;
-  body: string;
-  dateLabel: string;
-  timeLabel: string;
+  createdAt: string;
   updatedAt: string;
   favorite: boolean;
   mood: JournalMood;
@@ -16,4 +15,19 @@ export type JournalEntry = {
   wordCount: number;
 };
 
+export type CreateJournalEntryRequest = {
+  title: string;
+  content: string;
+};
+
+export type UpdateJournalEntryRequest = {
+  title?: string;
+  content?: string;
+  favorite?: boolean;
+  mood?: JournalMood;
+  tags?: string[];
+};
+
 export type JournalEntriesResponse = ApiResponse<JournalEntry[]>;
+export type JournalEntryResponse = ApiResponse<JournalEntry>;
+export type DeleteJournalEntryResponse = ApiResponse<{ id: string }>;

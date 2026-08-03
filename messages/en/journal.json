@@ -8,9 +8,24 @@
   },
   "newEntry": {
     "title": "Untitled entry",
-    "preview": "Start writing…",
-    "dateLabel": "Friday, July 31",
-    "timeLabel": "Now",
-    "updatedAt": "New entry"
+    "content": ""
+  },
+  "empty": {
+    "title": "Your journal is ready",
+    "description": "Create your first entry and give today a place to land.",
+    "action": "Create your first entry"
+  },
+  "success": {
+    "created": "New entry created.",
+    "saved": "Entry saved.",
+    "deleted": "Entry deleted."
+  },
+  "errors": {
+    "load": "Your journal could not be loaded.",
+    "create": "The entry could not be created.",
+    "save": "Your changes could not be saved.",
+    "delete": "The entry could not be deleted.",
+    "invalidEntry": "Add a title before saving this entry.",
+    "entryNotFound": "That entry is no longer available."
   }
 }

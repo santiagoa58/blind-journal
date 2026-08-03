@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll } from "vitest";
+import { resetLocalServerStore } from "@/local-server/store";
 import { mockServer } from "@/tests/mocks/server";
 
 beforeAll(() => {
@@ -7,6 +8,7 @@ beforeAll(() => {
 
 afterEach(() => {
   mockServer.resetHandlers();
+  resetLocalServerStore();
 });
 
 afterAll(() => {

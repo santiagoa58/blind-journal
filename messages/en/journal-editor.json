@@ -4,22 +4,23 @@
   "encryptionDetails": "Encryption details",
   "removeFromFavorites": "Remove from favorites",
   "addToFavorites": "Add to favorites",
-  "sharePrivately": "Share privately",
   "entryActions": "Entry actions",
-  "exportEncryptedCopy": "Export encrypted copy",
-  "manageTags": "Manage tags",
-  "moveToTrash": "Move to trash",
-  "addTag": "Add tag",
+  "deleteEntry": "Delete entry",
+  "deleteDialog": {
+    "title": "Delete this entry?",
+    "description": "This permanently removes the entry from the in-memory journal. This action cannot be undone."
+  },
   "entryTitleLabel": "Entry title",
   "entryBodyLabel": "Journal entry",
-  "startWriting": "Start writing…",
-  "savedJustNow": "Saved just now",
+  "lastSaved": "Last saved {time}",
   "wordsCount": "{count, plural, one {# word} other {# words}}",
   "formatting": {
     "bold": "Bold",
     "italic": "Italic",
     "bulletedList": "Bulleted list",
     "numberedList": "Numbered list",
-    "quote": "Quote"
+    "quote": "Quote",
+    "undo": "Undo",
+    "redo": "Redo"
   }
 }

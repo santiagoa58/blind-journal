@@ -12,6 +12,7 @@
   "entriesCount": "{count, plural, one {# entry} other {# entries}}",
   "favoriteLabel": "Favorite",
   "encryptedLabel": "Encrypted",
+  "openEntryLabel": "Open {title}",
   "emptyTitle": "No matching entries",
   "emptyDescription": "Try a title, tag, or a phrase you remember."
 }

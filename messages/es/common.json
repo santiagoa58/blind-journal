@@ -1,6 +1,10 @@
 {
   "actions": {
-    "done": "Listo"
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "done": "Listo",
+    "retry": "Intentar de nuevo",
+    "save": "Guardar cambios"
   },
   "labels": {
     "loading": "Cargando…",

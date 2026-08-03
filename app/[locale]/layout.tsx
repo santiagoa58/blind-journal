@@ -1,12 +1,13 @@
+import { routing } from "@/i18n/routing";
 import "@radix-ui/themes/styles.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { routing } from "@/i18n/routing";
+import { Inter } from "next/font/google";
+import { notFound } from "next/navigation";
+import { Providers } from "../client-providers";
+
 import "../globals.css";
-import { Providers } from "../providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,7 +44,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+export default async function LocaleLayout({
+  children,
+  params,
+}: LocaleLayoutProps) {
   const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {

@@ -1,9 +1,9 @@
 import { AuthShell } from "@/features/auth/auth-shell";
-import { LoginCard } from "@/features/auth/login-card";
+import { CreateAccountCard } from "@/features/auth/create-account-card";
 import type { Locale } from "@/i18n/routing";
 import { setRequestLocale } from "next-intl/server";
 
-export default async function Home({
+export default async function SignUpPage({
   params,
 }: {
   params: Promise<{ locale: Locale }>;
@@ -14,7 +14,7 @@ export default async function Home({
   return (
     <main>
       <AuthShell>
-        <LoginCard />
+        <CreateAccountCard />
       </AuthShell>
     </main>
   );

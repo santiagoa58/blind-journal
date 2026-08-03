@@ -8,9 +8,24 @@
   },
   "newEntry": {
     "title": "Entrada sin título",
-    "preview": "Empieza a escribir…",
-    "dateLabel": "Viernes, 31 de julio",
-    "timeLabel": "Ahora",
-    "updatedAt": "Nueva entrada"
+    "content": ""
+  },
+  "empty": {
+    "title": "Tu diario está listo",
+    "description": "Crea tu primera entrada y dale un lugar a este día.",
+    "action": "Crear tu primera entrada"
+  },
+  "success": {
+    "created": "Nueva entrada creada.",
+    "saved": "Entrada guardada.",
+    "deleted": "Entrada eliminada."
+  },
+  "errors": {
+    "load": "No se pudo cargar tu diario.",
+    "create": "No se pudo crear la entrada.",
+    "save": "No se pudieron guardar tus cambios.",
+    "delete": "No se pudo eliminar la entrada.",
+    "invalidEntry": "Agrega un título antes de guardar esta entrada.",
+    "entryNotFound": "Esa entrada ya no está disponible."
   }
 }

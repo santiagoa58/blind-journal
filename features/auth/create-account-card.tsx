@@ -1,8 +1,8 @@
 "use client";
 
-import { login } from "@/api/auth/auth";
+import { createAccount } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { LoginRequest } from "@/api/auth/auth.type";
+import type { CreateAccountRequest } from "@/api/auth/auth.type";
 import { LabeledInput } from "@/components/labeled-input";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
@@ -24,15 +24,15 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 
-export function LoginCard() {
+export function CreateAccountCard() {
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
   const router = useRouter();
   const queryClient = useQueryClient();
   const appToast = useAppToast();
-  const loginMutation = useMutation({
-    mutationKey: ["auth", "login"],
-    mutationFn: login,
+  const createAccountMutation = useMutation({
+    mutationKey: ["auth", "create-account"],
+    mutationFn: createAccount,
     onError() {
       appToast.error(tCommon("errors.network"));
     },
@@ -42,25 +42,37 @@ export function LoginCard() {
       }
 
       queryClient.setQueryData(["auth", "session"], response);
-      appToast.success(t("success.signedIn"));
+      appToast.success(t("success.accountCreated"));
       router.replace("/journal");
     },
   });
 
   let errorMessage: string | null = null;
 
-  if (loginMutation.isError) {
+  if (createAccountMutation.isError) {
     errorMessage = tCommon("errors.network");
-  } else if (loginMutation.data && !loginMutation.data.success) {
-    switch (loginMutation.data.error.code) {
+  } else if (
+    createAccountMutation.data &&
+    !createAccountMutation.data.success
+  ) {
+    switch (createAccountMutation.data.error.code) {
       case AUTH_ERROR_CODES.usernameRequired:
         errorMessage = t("errors.usernameRequired");
+        break;
+      case AUTH_ERROR_CODES.usernameInvalid:
+        errorMessage = t("errors.usernameInvalid");
+        break;
+      case AUTH_ERROR_CODES.usernameTaken:
+        errorMessage = t("errors.usernameTaken");
         break;
       case AUTH_ERROR_CODES.passwordRequired:
         errorMessage = t("errors.passwordRequired");
         break;
-      case AUTH_ERROR_CODES.invalidCredentials:
-        errorMessage = t("errors.invalidCredentials");
+      case AUTH_ERROR_CODES.passwordTooShort:
+        errorMessage = t("errors.passwordTooShort");
+        break;
+      case AUTH_ERROR_CODES.passwordsMismatch:
+        errorMessage = t("errors.passwordsMismatch");
         break;
       default:
         errorMessage = tCommon("errors.unexpected");
@@ -72,43 +84,67 @@ export function LoginCard() {
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
     const password = formData.get("password");
+    const confirmPassword = formData.get("confirmPassword");
 
-    if (typeof username !== "string" || typeof password !== "string") {
+    if (
+      typeof username !== "string" ||
+      typeof password !== "string" ||
+      typeof confirmPassword !== "string"
+    ) {
       return;
     }
-    
-    const input: LoginRequest = { username, password };
-    loginMutation.mutate(input);
+
+    const input: CreateAccountRequest = { username, password, confirmPassword };
+    createAccountMutation.mutate(input);
   }
 
   return (
     <Card size="4" variant="classic">
       <Text as="p" size="2" weight="medium" color="iris">
-        {t("signIn.eyebrow")}
+        {t("createAccount.eyebrow")}
       </Text>
       <Heading as="h2" size="7" mt="2">
-        {t("signIn.title")}
+        {t("createAccount.title")}
       </Heading>
       <Text as="p" color="gray" size="2" mt="2">
-        {t("signIn.description")}
+        {t("createAccount.description")}
       </Text>
 
       <form onSubmit={handleSubmit}>
         <Grid gap="4" mt="6">
           <LabeledInput
             autoComplete="username"
-            label={t("signIn.usernameLabel")}
+            description={t("createAccount.usernameHint")}
+            label={t("createAccount.usernameLabel")}
+            minLength={3}
+            maxLength={24}
             name="username"
-            placeholder={t("signIn.usernamePlaceholder")}
+            pattern="[a-zA-Z0-9_-]+"
+            placeholder={t("createAccount.usernamePlaceholder")}
             required
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
           <LabeledInput
-            autoComplete="current-password"
-            label={t("signIn.passwordLabel")}
+            autoComplete="new-password"
+            description={t("createAccount.passwordHint")}
+            label={t("createAccount.passwordLabel")}
+            minLength={8}
+            maxLength={128}
             name="password"
-            placeholder={t("signIn.passwordPlaceholder")}
+            placeholder={t("createAccount.passwordPlaceholder")}
+            type="password"
+            required
+          >
+            <LockClosedIcon aria-hidden />
+          </LabeledInput>
+          <LabeledInput
+            autoComplete="new-password"
+            label={t("createAccount.confirmPasswordLabel")}
+            minLength={8}
+            maxLength={128}
+            name="confirmPassword"
+            placeholder={t("createAccount.confirmPasswordPlaceholder")}
             type="password"
             required
           >
@@ -127,10 +163,10 @@ export function LoginCard() {
           <Button
             type="submit"
             size="3"
-            loading={loginMutation.isPending}
-            disabled={loginMutation.isPending}
+            loading={createAccountMutation.isPending}
+            disabled={createAccountMutation.isPending}
           >
-            {t("signIn.submit")}
+            {t("createAccount.submit")}
           </Button>
         </Grid>
       </form>
@@ -138,12 +174,10 @@ export function LoginCard() {
       <Separator size="4" my="5" />
       <Flex align="center" justify="center" gap="2" wrap="wrap">
         <Text size="2" color="gray">
-          {t("signIn.createAccountPrompt")}
+          {t("createAccount.signInPrompt")}
         </Text>
         <Button asChild variant="ghost" size="2">
-          <NavigationLink href="/sign-up">
-            {t("signIn.createAccount")}
-          </NavigationLink>
+          <NavigationLink href="/">{t("createAccount.signIn")}</NavigationLink>
         </Button>
       </Flex>
     </Card>
