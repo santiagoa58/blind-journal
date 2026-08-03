@@ -1,22 +1,12 @@
 "use client";
 
-import type { JournalEntry } from "@/api/journal/journal.type";
-import {
-  CaretSortIcon,
-  HeartFilledIcon,
-  LockClosedIcon,
-  MagnifyingGlassIcon,
-  MixerHorizontalIcon,
-} from "@radix-ui/react-icons";
+import { HeartFilledIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import {
   Avatar,
-  Badge,
   Box,
   Card,
-  DropdownMenu,
   Flex,
   Heading,
-  IconButton,
   ScrollArea,
   SegmentedControl,
   Text,
@@ -24,6 +14,7 @@ import {
 } from "@radix-ui/themes";
 import { useFormatter, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
+import type { JournalEntry } from "@/api/journal/journal.type";
 
 type EntryListProps = {
   entries: JournalEntry[];
@@ -45,17 +36,8 @@ export function EntryList({
   onSelect,
 }: EntryListProps) {
   const t = useTranslations("entry-list");
-  const tJournal = useTranslations("journal");
   const format = useFormatter();
-  const moodLabels: Record<JournalEntry["mood"], string> = {
-    calm: tJournal("moods.calm"),
-    hopeful: tJournal("moods.hopeful"),
-    reflective: tJournal("moods.reflective"),
-    tired: tJournal("moods.tired"),
-    grateful: tJournal("moods.grateful"),
-  };
   const [query, setQuery] = useState("");
-  const [showMood, setShowMood] = useState(true);
 
   const visibleEntries = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -83,42 +65,14 @@ export function EntryList({
     >
       <section aria-label={t("sectionLabel")}>
         <Box p="5" pb="3">
-          <Flex align="start" justify="between" gap="4">
-            <Box>
-              <Text as="div" size="1" weight="medium" color="iris">
-                {t("eyebrow")}
-              </Text>
-              <Heading as="h1" size="6" mt="1">
-                {t("title")}
-              </Heading>
-            </Box>
-
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <IconButton
-                  variant="ghost"
-                  color="gray"
-                  aria-label={t("filtersLabel")}
-                >
-                  <MixerHorizontalIcon aria-hidden width={16} height={16} />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end">
-                <DropdownMenu.Label>{t("displayLabel")}</DropdownMenu.Label>
-                <DropdownMenu.CheckboxItem
-                  checked={showMood}
-                  onCheckedChange={(value) => setShowMood(Boolean(value))}
-                >
-                  {t("showMood")}
-                </DropdownMenu.CheckboxItem>
-                <DropdownMenu.Separator />
-                <DropdownMenu.CheckboxItem checked disabled>
-                  <CaretSortIcon aria-hidden width={15} height={15} />
-                  {t("newestFirst")}
-                </DropdownMenu.CheckboxItem>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </Flex>
+          <Box>
+            <Text size="1" weight="medium" color="iris">
+              {t("eyebrow")}
+            </Text>
+            <Heading as="h1" size="6" mt="1">
+              {t("title")}
+            </Heading>
+          </Box>
 
           <TextField.Root
             mt="4"
@@ -136,16 +90,10 @@ export function EntryList({
             <SegmentedControl.Root
               size="1"
               value={filter}
-              onValueChange={(value) =>
-                onFilterChange(value as "all" | "favorites")
-              }
+              onValueChange={(value) => onFilterChange(value as "all" | "favorites")}
             >
-              <SegmentedControl.Item value="all">
-                {t("all")}
-              </SegmentedControl.Item>
-              <SegmentedControl.Item value="favorites">
-                {t("favorites")}
-              </SegmentedControl.Item>
+              <SegmentedControl.Item value="all">{t("all")}</SegmentedControl.Item>
+              <SegmentedControl.Item value="favorites">{t("favorites")}</SegmentedControl.Item>
             </SegmentedControl.Root>
             <Text size="1" color="gray">
               {t("entriesCount", { count: visibleEntries.length })}
@@ -161,12 +109,7 @@ export function EntryList({
                 const updatedAt = new Date(entry.updatedAt);
 
                 return (
-                  <Card
-                    asChild
-                    key={entry.id}
-                    size="2"
-                    variant={selected ? "classic" : "ghost"}
-                  >
+                  <Card asChild key={entry.id} size="2" variant={selected ? "classic" : "ghost"}>
                     <button
                       type="button"
                       onClick={() => onSelect(entry.id)}
@@ -175,13 +118,7 @@ export function EntryList({
                       <Flex direction="column" gap="2">
                         <Flex align="start" gap="2">
                           <Box flexGrow="1" minWidth="0">
-                            <Text
-                              as="div"
-                              size="2"
-                              weight="bold"
-                              truncate
-                              align="left"
-                            >
+                            <Text size="2" weight="bold" truncate align="left">
                               {entry.title}
                             </Text>
                           </Box>
@@ -194,9 +131,11 @@ export function EntryList({
                           ) : null}
                         </Flex>
 
-                        <Text as="p" size="1" color="gray" align="left">
-                          {truncatePreview(entry.preview)}
-                        </Text>
+                        {entry.preview ? (
+                          <Text as="p" size="1" color="gray" align="left">
+                            {truncatePreview(entry.preview)}
+                          </Text>
+                        ) : null}
 
                         <Flex align="center" gap="2">
                           <Text size="1" color="gray">
@@ -214,22 +153,7 @@ export function EntryList({
                               minute: "2-digit",
                             })}
                           </Text>
-                          <LockClosedIcon
-                            aria-label={t("encryptedLabel")}
-                            width={13}
-                            height={13}
-                          />
                         </Flex>
-
-                        {showMood ? (
-                          <Badge
-                            size="1"
-                            variant="soft"
-                            color={selected ? "iris" : "gray"}
-                          >
-                            {moodLabels[entry.mood]}
-                          </Badge>
-                        ) : null}
                       </Flex>
                     </button>
                   </Card>
@@ -237,13 +161,7 @@ export function EntryList({
               })}
 
               {visibleEntries.length === 0 ? (
-                <Flex
-                  direction="column"
-                  align="center"
-                  justify="center"
-                  py="9"
-                  px="5"
-                >
+                <Flex direction="column" align="center" justify="center" py="9" px="5">
                   <Avatar
                     size="3"
                     color="gray"

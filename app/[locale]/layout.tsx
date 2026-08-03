@@ -1,10 +1,10 @@
 import { routing } from "@/i18n/routing";
 import "@radix-ui/themes/styles.css";
 import type { Metadata } from "next";
-import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Inter } from "next/font/google";
 import { notFound } from "next/navigation";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Providers } from "../client-providers";
 
 import "../globals.css";
@@ -44,10 +44,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function LocaleLayout({
-  children,
-  params,
-}: LocaleLayoutProps) {
+export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
   const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {

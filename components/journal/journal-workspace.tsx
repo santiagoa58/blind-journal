@@ -1,25 +1,6 @@
 "use client";
 
-import { getSession, logout } from "@/api/auth/auth";
-import {
-  createJournalEntry,
-  deleteJournalEntry,
-  listJournalEntries,
-  updateJournalEntry,
-} from "@/api/journal/journal";
-import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
-import type {
-  JournalEntriesResponse,
-  JournalEntry,
-  UpdateJournalEntryRequest,
-} from "@/api/journal/journal.type";
-import { useAppToast } from "@/hooks/use-app-toast";
-import { useRouter } from "@/i18n/navigation";
-import {
-  ExclamationTriangleIcon,
-  Pencil2Icon,
-  PlusIcon,
-} from "@radix-ui/react-icons";
+import { ExclamationTriangleIcon, Pencil2Icon, PlusIcon } from "@radix-ui/react-icons";
 import {
   Avatar,
   Box,
@@ -36,11 +17,25 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { getSession, logout } from "@/api/auth/auth";
+import {
+  createJournalEntry,
+  deleteJournalEntry,
+  listJournalEntries,
+  updateJournalEntry,
+} from "@/api/journal/journal";
+import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
+import type {
+  JournalEntriesResponse,
+  JournalEntry,
+  UpdateJournalEntryRequest,
+} from "@/api/journal/journal.type";
+import { useAppToast } from "@/hooks/use-app-toast";
+import { useRouter } from "@/i18n/navigation";
 import { AppSidebar, type SidebarSection } from "./app-sidebar";
 import { EntryList } from "./entry-list";
 import { JournalEditor } from "./journal-editor";
 import { JournalMobileHeader } from "./journal-mobile-header";
-import { PrivacySettingsDialog } from "./privacy-settings-dialog";
 
 const sessionQueryKey = ["auth", "session"] as const;
 const entriesQueryKey = ["journal", "entries"] as const;
@@ -70,7 +65,6 @@ export function JournalWorkspace() {
   const appToast = useAppToast();
   const [selectedId, setSelectedId] = useState<string>();
   const [activeSection, setActiveSection] = useState<SidebarSection>("journal");
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const sessionQuery = useQuery({
     queryKey: sessionQueryKey,
     queryFn: getSession,
@@ -103,10 +97,7 @@ export function JournalWorkspace() {
     }
   }, [entries, selectedId]);
 
-  function getJournalErrorMessage(
-    code: string,
-    fallback: "create" | "save" | "delete",
-  ) {
+  function getJournalErrorMessage(code: string, fallback: "create" | "save" | "delete") {
     switch (code) {
       case JOURNAL_ERROR_CODES.invalidEntry:
         return t("errors.invalidEntry");
@@ -129,13 +120,10 @@ export function JournalWorkspace() {
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(
-        entriesQueryKey,
-        (current) => ({
-          success: true,
-          data: [response.data, ...(current?.success ? current.data : [])],
-        }),
-      );
+      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) => ({
+        success: true,
+        data: [response.data, ...(current?.success ? current.data : [])],
+      }));
       setSelectedId(response.data.id);
       setActiveSection("journal");
       appToast.success(t("success.created"));
@@ -143,13 +131,8 @@ export function JournalWorkspace() {
   });
   const saveMutation = useMutation({
     mutationKey: ["journal", "save"],
-    mutationFn: ({
-      entryId,
-      input,
-    }: {
-      entryId: string;
-      input: UpdateJournalEntryRequest;
-    }) => updateJournalEntry(entryId, input),
+    mutationFn: ({ entryId, input }: { entryId: string; input: UpdateJournalEntryRequest }) =>
+      updateJournalEntry(entryId, input),
     onError() {
       appToast.error(t("errors.save"));
     },
@@ -159,22 +142,16 @@ export function JournalWorkspace() {
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(
-        entriesQueryKey,
-        (current) => updateEntryCache(current, response.data),
+      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) =>
+        updateEntryCache(current, response.data),
       );
       appToast.success(t("success.saved"));
     },
   });
   const favoriteMutation = useMutation({
     mutationKey: ["journal", "favorite"],
-    mutationFn: ({
-      entryId,
-      favorite,
-    }: {
-      entryId: string;
-      favorite: boolean;
-    }) => updateJournalEntry(entryId, { favorite }),
+    mutationFn: ({ entryId, favorite }: { entryId: string; favorite: boolean }) =>
+      updateJournalEntry(entryId, { favorite }),
     onError() {
       appToast.error(t("errors.save"));
     },
@@ -184,9 +161,8 @@ export function JournalWorkspace() {
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(
-        entriesQueryKey,
-        (current) => updateEntryCache(current, response.data),
+      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) =>
+        updateEntryCache(current, response.data),
       );
     },
   });
@@ -202,19 +178,16 @@ export function JournalWorkspace() {
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(
-        entriesQueryKey,
-        (current) => {
-          if (!current?.success) {
-            return current;
-          }
+      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) => {
+        if (!current?.success) {
+          return current;
+        }
 
-          return {
-            success: true,
-            data: current.data.filter(({ id }) => id !== response.data.id),
-          };
-        },
-      );
+        return {
+          success: true,
+          data: current.data.filter(({ id }) => id !== response.data.id),
+        };
+      });
       setSelectedId(undefined);
       appToast.success(t("success.deleted"));
     },
@@ -260,10 +233,7 @@ export function JournalWorkspace() {
     return null;
   }
 
-  if (
-    entriesQuery.isError ||
-    (entriesQuery.data && !entriesQuery.data.success)
-  ) {
+  if (entriesQuery.isError || (entriesQuery.data && !entriesQuery.data.success)) {
     return (
       <Container size="1" py="9" px="4">
         <Callout.Root color="red" role="alert">
@@ -280,100 +250,85 @@ export function JournalWorkspace() {
   }
 
   return (
-    <>
-      <Flex direction="column" height="100dvh" overflow="hidden">
-        <JournalMobileHeader
+    <Flex direction="column" height="100dvh" overflow="hidden">
+      <JournalMobileHeader
+        activeSection={activeSection}
+        currentUser={sessionQuery.data.data.user}
+        entries={entries}
+        selectedId={selectedEntry?.id}
+        onNewEntry={handleCreateEntry}
+        onSectionChange={handleSectionChange}
+        onSelectEntry={setSelectedId}
+        onSignOut={() => logoutMutation.mutate()}
+      />
+
+      <Flex flexGrow="1" minHeight="0" overflow="hidden">
+        <AppSidebar
           activeSection={activeSection}
           currentUser={sessionQuery.data.data.user}
+          entryCount={entries.length}
+          favoriteCount={favoriteCount}
+          onSectionChange={handleSectionChange}
+          onNewEntry={handleCreateEntry}
+          onSignOut={() => logoutMutation.mutate()}
+          signingOut={logoutMutation.isPending}
+        />
+        <Box asChild display={{ initial: "none", lg: "block" }}>
+          <Separator orientation="vertical" size="4" />
+        </Box>
+        <EntryList
           entries={entries}
           selectedId={selectedEntry?.id}
-          onNewEntry={handleCreateEntry}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onSectionChange={handleSectionChange}
-          onSelectEntry={setSelectedId}
-          onSignOut={() => logoutMutation.mutate()}
+          filter={activeSection === "favorites" ? "favorites" : "all"}
+          onFilterChange={(filter) => handleSectionChange(filter === "all" ? "journal" : filter)}
+          onSelect={setSelectedId}
         />
+        <Box asChild display={{ initial: "none", md: "block" }}>
+          <Separator orientation="vertical" size="4" />
+        </Box>
 
-        <Flex flexGrow="1" minHeight="0" overflow="hidden">
-          <AppSidebar
-            activeSection={activeSection}
-            currentUser={sessionQuery.data.data.user}
-            entryCount={entries.length}
-            favoriteCount={favoriteCount}
-            onSectionChange={handleSectionChange}
-            onNewEntry={handleCreateEntry}
-            onOpenSettings={() => setSettingsOpen(true)}
-            onSignOut={() => logoutMutation.mutate()}
-            signingOut={logoutMutation.isPending}
-          />
-          <Box asChild display={{ initial: "none", lg: "block" }}>
-            <Separator orientation="vertical" size="4" />
-          </Box>
-          <EntryList
-            entries={entries}
-            selectedId={selectedEntry?.id}
-            filter={activeSection === "favorites" ? "favorites" : "all"}
-            onFilterChange={(filter) =>
-              handleSectionChange(filter === "all" ? "journal" : filter)
+        {selectedEntry ? (
+          <JournalEditor
+            key={selectedEntry.id}
+            entry={selectedEntry}
+            deleting={deleteMutation.isPending}
+            saving={saveMutation.isPending}
+            onDelete={() => deleteMutation.mutate(selectedEntry.id)}
+            onSave={(input) => saveMutation.mutate({ entryId: selectedEntry.id, input })}
+            onToggleFavorite={() =>
+              favoriteMutation.mutate({
+                entryId: selectedEntry.id,
+                favorite: !selectedEntry.favorite,
+              })
             }
-            onSelect={setSelectedId}
           />
-          <Box asChild display={{ initial: "none", md: "block" }}>
-            <Separator orientation="vertical" size="4" />
-          </Box>
-
-          {selectedEntry ? (
-            <JournalEditor
-              key={selectedEntry.id}
-              entry={selectedEntry}
-              deleting={deleteMutation.isPending}
-              saving={saveMutation.isPending}
-              onDelete={() => deleteMutation.mutate(selectedEntry.id)}
-              onSave={(input) =>
-                saveMutation.mutate({ entryId: selectedEntry.id, input })
-              }
-              onToggleFavorite={() =>
-                favoriteMutation.mutate({
-                  entryId: selectedEntry.id,
-                  favorite: !selectedEntry.favorite,
-                })
-              }
-            />
-          ) : (
-            <Flex align="center" justify="center" flexGrow="1" p="5">
-              <Card size="4" variant="surface">
-                <Flex direction="column" align="center" gap="3">
-                  <Avatar
-                    size="4"
-                    variant="soft"
-                    color="iris"
-                    fallback={<Pencil2Icon aria-hidden />}
-                  />
-                  <Heading as="h1" size="6" align="center">
-                    {t("empty.title")}
-                  </Heading>
-                  <Container size="1">
-                    <Text as="p" color="gray" align="center">
-                      {t("empty.description")}
-                    </Text>
-                  </Container>
-                  <Button
-                    onClick={handleCreateEntry}
-                    loading={createMutation.isPending}
-                  >
-                    <PlusIcon aria-hidden />
-                    {t("empty.action")}
-                  </Button>
-                </Flex>
-              </Card>
-            </Flex>
-          )}
-        </Flex>
+        ) : (
+          <Flex align="center" justify="center" flexGrow="1" p="5">
+            <Card size="4" variant="surface">
+              <Flex direction="column" align="center" gap="3">
+                <Avatar
+                  size="4"
+                  variant="soft"
+                  color="iris"
+                  fallback={<Pencil2Icon aria-hidden />}
+                />
+                <Heading as="h1" size="6" align="center">
+                  {t("empty.title")}
+                </Heading>
+                <Container size="1">
+                  <Text as="p" color="gray" align="center">
+                    {t("empty.description")}
+                  </Text>
+                </Container>
+                <Button onClick={handleCreateEntry} loading={createMutation.isPending}>
+                  <PlusIcon aria-hidden />
+                  {t("empty.action")}
+                </Button>
+              </Flex>
+            </Card>
+          </Flex>
+        )}
       </Flex>
-      <PrivacySettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-      />
-    </>
+    </Flex>
   );
 }

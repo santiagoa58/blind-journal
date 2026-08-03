@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   createJournalEntry,
   deleteJournalEntry,
@@ -5,7 +6,6 @@ import {
   updateJournalEntry,
 } from "@/api/journal/journal";
 import { localServerStore, type StoredUser } from "@/local-server/store";
-import { beforeEach, describe, expect, it } from "vitest";
 
 describe("journal API", () => {
   beforeEach(() => {
@@ -35,9 +35,7 @@ describe("journal API", () => {
     }
 
     const listed = await listJournalEntries();
-    expect(
-      listed.success && listed.data.some(({ id }) => id === created.data.id),
-    ).toBe(true);
+    expect(listed.success && listed.data.some(({ id }) => id === created.data.id)).toBe(true);
 
     const updated = await updateJournalEntry(created.data.id, {
       title: "An updated test entry",
@@ -58,9 +56,8 @@ describe("journal API", () => {
     });
 
     const afterDelete = await listJournalEntries();
-    expect(
-      afterDelete.success &&
-        afterDelete.data.some(({ id }) => id === created.data.id),
-    ).toBe(false);
+    expect(afterDelete.success && afterDelete.data.some(({ id }) => id === created.data.id)).toBe(
+      false,
+    );
   });
 });

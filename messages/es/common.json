@@ -2,16 +2,13 @@
   "actions": {
     "cancel": "Cancelar",
     "delete": "Eliminar",
-    "done": "Listo",
     "retry": "Intentar de nuevo",
     "save": "Guardar cambios"
   },
   "labels": {
-    "loading": "Cargando…",
-    "soon": "Próximamente"
+    "loading": "Cargando…"
   },
   "errors": {
-    "mockServerStartup": "No se pudo iniciar la simulación del servidor local.",
     "network": "No pudimos comunicarnos con el servidor. Revisa tu conexión e inténtalo de nuevo.",
     "unexpected": "Algo salió mal. Inténtalo de nuevo."
   }

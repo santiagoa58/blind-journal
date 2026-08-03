@@ -6,16 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "biome lint .",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
+    "check": "biome check . && eloqnt lint --strict && tsc --noEmit && vitest run",
+    "check:fix": "biome check --write .",
     "i18n:check": "eloqnt lint --strict",
-    "quality": "biome check .",
-    "quality:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "check": "pnpm quality && pnpm i18n:check && pnpm typecheck && pnpm test"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",

@@ -1,11 +1,6 @@
 import type { ApiResponse } from "@/api/response.type";
 
-export type JournalMood =
-  | "calm"
-  | "hopeful"
-  | "reflective"
-  | "tired"
-  | "grateful";
+export type JournalMood = "calm" | "hopeful" | "reflective" | "tired" | "grateful";
 
 export type JournalEntry = {
   id: string;

@@ -11,8 +11,6 @@
     "description": "Your journal is encrypted before it leaves this device."
   },
   "account": {
-    "privacySettings": "Privacy settings",
-    "settings": "Settings",
     "signOut": "Sign out"
   }
 }

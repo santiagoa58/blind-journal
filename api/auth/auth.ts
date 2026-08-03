@@ -24,9 +24,7 @@ export function getLoginSalt(input: SaltRequest): Promise<SaltResponse> {
 }
 
 export async function login(input: LoginRequest): Promise<LoginResponse> {
-  const salt = Uint8Array.from(atob(input.salt), (character) =>
-    character.charCodeAt(0),
-  );
+  const salt = Uint8Array.from(atob(input.salt), (character) => character.charCodeAt(0));
   const masterKey = await deriveMasterKey(input.password, salt);
   const { authKey } = await deriveUserKeys(masterKey);
   const request = {
@@ -51,9 +49,7 @@ function requestAccountSalt(input: SaltRequest): Promise<SaltResponse> {
     .json<SaltResponse>();
 }
 
-export async function createAccount(
-  input: CreateAccountInput,
-): Promise<CreateAccountResponse> {
+export async function createAccount(input: CreateAccountInput): Promise<CreateAccountResponse> {
   if (input.password.length === 0) {
     return {
       success: false,

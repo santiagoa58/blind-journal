@@ -1,27 +1,14 @@
 "use client";
 
+import { ExclamationTriangleIcon, LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
+import { Button, Callout, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { createAccount } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { CreateAccountInput } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
-import {
-  ExclamationTriangleIcon,
-  LockClosedIcon,
-  PersonIcon,
-} from "@radix-ui/react-icons";
-import {
-  Button,
-  Callout,
-  Card,
-  Flex,
-  Grid,
-  Heading,
-  Separator,
-  Text,
-} from "@radix-ui/themes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
 import { LabeledInput } from "./labeled-input";
 
 export function CreateAccountCard() {
@@ -51,10 +38,7 @@ export function CreateAccountCard() {
 
   if (createAccountMutation.isError) {
     errorMessage = tCommon("errors.network");
-  } else if (
-    createAccountMutation.data &&
-    !createAccountMutation.data.success
-  ) {
+  } else if (createAccountMutation.data && !createAccountMutation.data.success) {
     switch (createAccountMutation.data.error.code) {
       case AUTH_ERROR_CODES.usernameRequired:
         errorMessage = t("errors.usernameRequired");

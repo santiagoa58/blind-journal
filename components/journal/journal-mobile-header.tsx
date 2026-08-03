@@ -1,11 +1,7 @@
 "use client";
 
-import type { User } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
-import { BrandMark } from "@/components/brand-mark";
 import {
   ExitIcon,
-  GearIcon,
   HamburgerMenuIcon,
   HeartIcon,
   PlusIcon,
@@ -24,6 +20,9 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { User } from "@/api/auth/user.type";
+import type { JournalEntry } from "@/api/journal/journal.type";
+import { BrandMark } from "@/components/brand-mark";
 import type { SidebarSection } from "./app-sidebar";
 
 type JournalMobileHeaderProps = {
@@ -32,7 +31,6 @@ type JournalMobileHeaderProps = {
   entries: JournalEntry[];
   selectedId: string | undefined;
   onNewEntry: () => void;
-  onOpenSettings: () => void;
   onSectionChange: (section: SidebarSection) => void;
   onSelectEntry: (entryId: string) => void;
   onSignOut: () => void;
@@ -44,7 +42,6 @@ export function JournalMobileHeader({
   entries,
   selectedId,
   onNewEntry,
-  onOpenSettings,
   onSectionChange,
   onSelectEntry,
   onSignOut,
@@ -58,11 +55,7 @@ export function JournalMobileHeader({
         <Flex align="center" gap="3" px="4" py="3">
           <Dialog.Root>
             <Dialog.Trigger>
-              <IconButton
-                variant="ghost"
-                color="gray"
-                aria-label={t("journalNavigationLabel")}
-              >
+              <IconButton variant="ghost" color="gray" aria-label={t("journalNavigationLabel")}>
                 <HamburgerMenuIcon aria-hidden />
               </IconButton>
             </Dialog.Trigger>
@@ -80,12 +73,7 @@ export function JournalMobileHeader({
                       variant={activeSection === "journal" ? "soft" : "ghost"}
                       onClick={() => onSectionChange("journal")}
                     >
-                      <Grid
-                        columns="auto 1fr"
-                        align="center"
-                        gap="2"
-                        width="100%"
-                      >
+                      <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                         <ReaderIcon aria-hidden />
                         <Text align="left">{t("sections.journal")}</Text>
                       </Grid>
@@ -96,12 +84,7 @@ export function JournalMobileHeader({
                       variant={activeSection === "favorites" ? "soft" : "ghost"}
                       onClick={() => onSectionChange("favorites")}
                     >
-                      <Grid
-                        columns="auto 1fr"
-                        align="center"
-                        gap="2"
-                        width="100%"
-                      >
+                      <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                         <HeartIcon aria-hidden />
                         <Text align="left">{t("sections.favorites")}</Text>
                       </Grid>
@@ -114,26 +97,8 @@ export function JournalMobileHeader({
 
               <Flex direction="column" gap="2">
                 <Dialog.Close>
-                  <Button variant="ghost" color="gray" onClick={onOpenSettings}>
-                    <Grid
-                      columns="auto 1fr"
-                      align="center"
-                      gap="2"
-                      width="100%"
-                    >
-                      <GearIcon aria-hidden />
-                      <Text align="left">{t("account.privacySettings")}</Text>
-                    </Grid>
-                  </Button>
-                </Dialog.Close>
-                <Dialog.Close>
                   <Button variant="ghost" color="red" onClick={onSignOut}>
-                    <Grid
-                      columns="auto 1fr"
-                      align="center"
-                      gap="2"
-                      width="100%"
-                    >
+                    <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                       <ExitIcon aria-hidden />
                       <Text align="left">{t("account.signOut")}</Text>
                     </Grid>
@@ -142,10 +107,6 @@ export function JournalMobileHeader({
               </Flex>
             </Dialog.Content>
           </Dialog.Root>
-
-          <Flex display={{ initial: "none", sm: "flex" }}>
-            <BrandMark compact />
-          </Flex>
 
           <Select.Root value={selectedId ?? ""} onValueChange={onSelectEntry}>
             <Box asChild flexGrow="1" minWidth="0">

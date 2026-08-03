@@ -1,28 +1,15 @@
 "use client";
 
+import { ExclamationTriangleIcon, LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
+import { Button, Callout, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { getLoginSalt, login } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { LoginRequest, SaltRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
-import {
-  ExclamationTriangleIcon,
-  LockClosedIcon,
-  PersonIcon,
-} from "@radix-ui/react-icons";
-import {
-  Button,
-  Callout,
-  Card,
-  Flex,
-  Grid,
-  Heading,
-  Separator,
-  Text,
-} from "@radix-ui/themes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { LabeledInput } from "./labeled-input";
 
 type LoginSalt = {
@@ -156,13 +143,11 @@ export function LoginCard() {
 
           {loginSalt ? (
             <>
-              <Button
-                type="button"
-                variant="soft"
-                onClick={handleChangeUsername}
-              >
-                {t("signIn.changeUsername")}
-              </Button>
+              <Flex justify="end">
+                <Button type="button" variant="ghost" size="1" onClick={handleChangeUsername}>
+                  {t("signIn.changeUsername")}
+                </Button>
+              </Flex>
               <LabeledInput
                 autoComplete="current-password"
                 autoFocus
@@ -186,12 +171,7 @@ export function LoginCard() {
             </Callout.Root>
           ) : null}
 
-          <Button
-            type="submit"
-            size="3"
-            loading={isPending}
-            disabled={isPending}
-          >
+          <Button type="submit" size="3" loading={isPending} disabled={isPending}>
             {loginSalt ? t("signIn.submit") : t("signIn.continue")}
           </Button>
         </Grid>
@@ -203,9 +183,7 @@ export function LoginCard() {
           {t("signIn.createAccountPrompt")}
         </Text>
         <Button asChild variant="ghost" size="2">
-          <NavigationLink href="/sign-up">
-            {t("signIn.createAccount")}
-          </NavigationLink>
+          <NavigationLink href="/sign-up">{t("signIn.createAccount")}</NavigationLink>
         </Button>
       </Flex>
     </Card>

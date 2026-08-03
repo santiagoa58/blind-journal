@@ -11,8 +11,6 @@
     "description": "Tu diario se cifra antes de salir de este dispositivo."
   },
   "account": {
-    "privacySettings": "Configuración de privacidad",
-    "settings": "Configuración",
     "signOut": "Cerrar sesión"
   }
 }

@@ -1,19 +1,10 @@
-import {
-  createAccount,
-  getLoginSalt,
-  getSession,
-  login,
-  logout,
-} from "@/api/auth/auth";
+import { describe, expect, it, vi } from "vitest";
+import { createAccount, getLoginSalt, getSession, login, logout } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { localServerStore, type StoredUser } from "@/local-server/store";
 import { deriveMasterKey, deriveUserKeys } from "@/tests/mocks/auth-crypto";
-import { describe, expect, it, vi } from "vitest";
 
-vi.mock(
-  "@/api/auth/auth.crypto",
-  async () => import("@/tests/mocks/auth-crypto"),
-);
+vi.mock("@/api/auth/auth.crypto", async () => import("@/tests/mocks/auth-crypto"));
 
 const account = {
   username: "journal_writer",
@@ -24,10 +15,7 @@ const account = {
 async function seedUser(): Promise<StoredUser> {
   const masterKey = await deriveMasterKey(account.password);
   const { authKey } = await deriveUserKeys(masterKey);
-  const authKeyHash = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(authKey),
-  );
+  const authKeyHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(authKey));
   const id = crypto.randomUUID();
   const user = {
     id,
@@ -45,12 +33,12 @@ async function seedUser(): Promise<StoredUser> {
 
 describe("auth API", () => {
   it("creates an account after validation errors and rejects a duplicate registration", async () => {
-    await expect(
-      createAccount({ ...account, password: "", confirmPassword: "" }),
-    ).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.passwordRequired },
-    });
+    await expect(createAccount({ ...account, password: "", confirmPassword: "" })).resolves.toEqual(
+      {
+        success: false,
+        error: { code: AUTH_ERROR_CODES.passwordRequired },
+      },
+    );
     await expect(
       createAccount({
         ...account,
@@ -108,12 +96,10 @@ describe("auth API", () => {
   it("logs in an existing user after credential errors and supports retrying", async () => {
     const user = await seedUser();
 
-    await expect(getLoginSalt({ username: "unknown_writer" })).resolves.toEqual(
-      {
-        success: false,
-        error: { code: AUTH_ERROR_CODES.invalidCredentials },
-      },
-    );
+    await expect(getLoginSalt({ username: "unknown_writer" })).resolves.toEqual({
+      success: false,
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+    });
 
     const saltResponse = await getLoginSalt({ username: account.username });
 

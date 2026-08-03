@@ -1,11 +1,8 @@
 "use client";
 
-import type { User } from "@/api/auth/user.type";
-import { BrandMark } from "@/components/brand-mark";
 import {
   ChevronDownIcon,
   ExitIcon,
-  GearIcon,
   HeartIcon,
   LockClosedIcon,
   PlusIcon,
@@ -19,12 +16,12 @@ import {
   DropdownMenu,
   Flex,
   Grid,
-  IconButton,
   Separator,
   Text,
-  Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { User } from "@/api/auth/user.type";
+import { BrandMark } from "@/components/brand-mark";
 
 export type SidebarSection = "journal" | "favorites";
 
@@ -35,7 +32,6 @@ type AppSidebarProps = {
   favoriteCount: number;
   onSectionChange: (section: SidebarSection) => void;
   onNewEntry: () => void;
-  onOpenSettings: () => void;
   onSignOut: () => void;
   signingOut: boolean;
 };
@@ -57,7 +53,6 @@ export function AppSidebar({
   favoriteCount,
   onSectionChange,
   onNewEntry,
-  onOpenSettings,
   onSignOut,
   signingOut,
 }: AppSidebarProps) {
@@ -109,12 +104,7 @@ export function AppSidebar({
                   onClick={() => onSectionChange(value)}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Grid
-                    columns="auto 1fr auto"
-                    align="center"
-                    gap="2"
-                    width="100%"
-                  >
+                  <Grid columns="auto 1fr auto" align="center" gap="2" width="100%">
                     <Icon aria-hidden width={16} height={16} />
                     <Text align="left" weight={active ? "medium" : "regular"}>
                       {label}
@@ -145,15 +135,11 @@ export function AppSidebar({
 
             <Separator size="4" />
 
-            <Flex align="center" gap="1">
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Grid asChild width="100%">
                   <Button variant="ghost" color="gray" size="2">
-                    <Grid
-                      columns="auto minmax(0, 1fr) auto"
-                      align="center"
-                      gap="2"
-                    >
+                    <Grid columns="auto minmax(0, 1fr) auto" align="center" gap="2" width="100%">
                       <Avatar
                         size="1"
                         fallback={getInitials(currentUser.displayName)}
@@ -163,39 +149,16 @@ export function AppSidebar({
                       <ChevronDownIcon aria-hidden width={14} height={14} />
                     </Grid>
                   </Button>
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="start" side="top">
-                  <DropdownMenu.Label>
-                    {currentUser.username}
-                  </DropdownMenu.Label>
-                  <DropdownMenu.Item onSelect={onOpenSettings}>
-                    <GearIcon aria-hidden width={15} height={15} />
-                    {t("account.privacySettings")}
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                  <DropdownMenu.Item
-                    color="red"
-                    onSelect={onSignOut}
-                    disabled={signingOut}
-                  >
-                    <ExitIcon aria-hidden width={15} height={15} />
-                    {t("account.signOut")}
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
-
-              <Tooltip content={t("account.settings")}>
-                <IconButton
-                  ml="auto"
-                  variant="ghost"
-                  color="gray"
-                  onClick={onOpenSettings}
-                  aria-label={t("account.settings")}
-                >
-                  <GearIcon aria-hidden width={16} height={16} />
-                </IconButton>
-              </Tooltip>
-            </Flex>
+                </Grid>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="start" side="top">
+                <DropdownMenu.Label>{currentUser.username}</DropdownMenu.Label>
+                <DropdownMenu.Item color="red" onSelect={onSignOut} disabled={signingOut}>
+                  <ExitIcon aria-hidden width={15} height={15} />
+                  {t("account.signOut")}
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           </footer>
         </Flex>
       </aside>

@@ -1,38 +1,19 @@
+import sodium from "libsodium-wrappers-sumo";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import {
+  createAccountRequestSchema,
+  saltRequestSchema,
+  verifyCredentialsRequestSchema,
+} from "@/api/auth/auth.schema";
 import type {
-  CreateAccountRequest,
   CreateAccountResponse,
   LoginResponse,
   LogoutResponse,
-  SaltRequest,
   SaltResponse,
   SessionResponse,
-  VerifyCredentialsRequest,
 } from "@/api/auth/auth.type";
 import type { User } from "@/api/auth/user.type";
 import { localServerStore, type StoredUser } from "@/local-server/store";
-import sodium from "libsodium-wrappers-sumo";
-import { z } from "zod";
-
-const usernameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .regex(/^[a-zA-Z0-9_-]{3,24}$/);
-const authKeySchema = z.string().regex(/^[0-9a-f]{64}$/i);
-
-const saltRequestSchema: z.ZodType<SaltRequest> = z.strictObject({
-  username: usernameSchema,
-});
-
-const verifyCredentialsRequestSchema: z.ZodType<VerifyCredentialsRequest> =
-  z.strictObject({
-    username: usernameSchema,
-    authKey: authKeySchema,
-  });
-
-const createAccountRequestSchema: z.ZodType<CreateAccountRequest> =
-  verifyCredentialsRequestSchema;
 
 function toPublicUser(user: StoredUser): User {
   return {
@@ -59,9 +40,7 @@ function getUsernameErrorCode(input: unknown) {
 function findUser(username: string) {
   const normalizedUsername = username.toLowerCase();
 
-  return localServerStore.users.find(
-    (user) => user.username.toLowerCase() === normalizedUsername,
-  );
+  return localServerStore.users.find((user) => user.username.toLowerCase() === normalizedUsername);
 }
 
 async function generateSalt() {
@@ -74,10 +53,7 @@ async function generateSalt() {
 }
 
 async function hashAuthKey(authKey: string) {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(authKey),
-  );
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(authKey));
 
   return new Uint8Array(digest);
 }
@@ -85,20 +61,12 @@ async function hashAuthKey(authKey: string) {
 async function authKeyMatches(authKey: string, storedHash: string) {
   const candidateHash = await hashAuthKey(authKey);
   await sodium.ready;
-  const expectedHash = sodium.from_base64(
-    storedHash,
-    sodium.base64_variants.ORIGINAL,
-  );
+  const expectedHash = sodium.from_base64(storedHash, sodium.base64_variants.ORIGINAL);
 
-  return (
-    candidateHash.length === expectedHash.length &&
-    sodium.memcmp(candidateHash, expectedHash)
-  );
+  return candidateHash.length === expectedHash.length && sodium.memcmp(candidateHash, expectedHash);
 }
 
-export async function handleLoginSaltRequest(
-  request: Request,
-): Promise<Response> {
+export async function handleLoginSaltRequest(request: Request): Promise<Response> {
   const body: unknown = await request.json().catch(() => null);
   const result = saltRequestSchema.safeParse(body);
 
@@ -167,9 +135,7 @@ export async function handleLoginRequest(request: Request): Promise<Response> {
   return Response.json(response);
 }
 
-export async function handleCreateAccountSaltRequest(
-  request: Request,
-): Promise<Response> {
+export async function handleCreateAccountSaltRequest(request: Request): Promise<Response> {
   const body: unknown = await request.json().catch(() => null);
   const result = saltRequestSchema.safeParse(body);
 
@@ -204,9 +170,7 @@ export async function handleCreateAccountSaltRequest(
   return Response.json(response, { status: 201 });
 }
 
-export async function handleCreateAccountRequest(
-  request: Request,
-): Promise<Response> {
+export async function handleCreateAccountRequest(request: Request): Promise<Response> {
   const body: unknown = await request.json().catch(() => null);
   const result = createAccountRequestSchema.safeParse(body);
 
@@ -266,9 +230,7 @@ export async function handleCreateAccountRequest(
 }
 
 export function handleSessionRequest(): Response {
-  const user = localServerStore.users.find(
-    ({ id }) => id === localServerStore.activeUserId,
-  );
+  const user = localServerStore.users.find(({ id }) => id === localServerStore.activeUserId);
 
   if (!user) {
     const response = {

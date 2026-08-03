@@ -2,17 +2,12 @@
   "sectionLabel": "Entradas del diario",
   "eyebrow": "DIARIO PERSONAL",
   "title": "Tus entradas",
-  "filtersLabel": "Filtros de entradas",
-  "displayLabel": "Visualización",
-  "showMood": "Mostrar estado de ánimo",
-  "newestFirst": "Más recientes primero",
   "searchPlaceholder": "Buscar en tu diario",
   "all": "Todas",
   "favorites": "Favoritas",
   "entriesCount": "{count, plural, one {# entrada} other {# entradas}}",
   "favoriteLabel": "Favorita",
-  "encryptedLabel": "Cifrada",
   "openEntryLabel": "Abrir {title}",
   "emptyTitle": "No hay entradas coincidentes",
-  "emptyDescription": "Prueba con un título, una etiqueta o una frase que recuerdes."
+  "emptyDescription": "Prueba con un título o una frase que recuerdes."
 }

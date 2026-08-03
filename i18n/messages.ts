@@ -6,7 +6,6 @@ import enEntryList from "@/messages/en/entry-list.json";
 import enJournal from "@/messages/en/journal.json";
 import enJournalEditor from "@/messages/en/journal-editor.json";
 import enMetadata from "@/messages/en/metadata.json";
-import enPrivacySettings from "@/messages/en/privacy-settings.json";
 import enSidebar from "@/messages/en/sidebar.json";
 import esAuth from "@/messages/es/auth.json";
 import esBrand from "@/messages/es/brand.json";
@@ -15,7 +14,6 @@ import esEntryList from "@/messages/es/entry-list.json";
 import esJournal from "@/messages/es/journal.json";
 import esJournalEditor from "@/messages/es/journal-editor.json";
 import esMetadata from "@/messages/es/metadata.json";
-import esPrivacySettings from "@/messages/es/privacy-settings.json";
 import esSidebar from "@/messages/es/sidebar.json";
 
 export const englishMessages = {
@@ -26,7 +24,6 @@ export const englishMessages = {
   journal: enJournal,
   "journal-editor": enJournalEditor,
   metadata: enMetadata,
-  "privacy-settings": enPrivacySettings,
   sidebar: enSidebar,
 };
 
@@ -40,7 +37,6 @@ const spanishMessages = {
   journal: esJournal,
   "journal-editor": esJournalEditor,
   metadata: esMetadata,
-  "privacy-settings": esPrivacySettings,
   sidebar: esSidebar,
 } satisfies AppMessages;
 

@@ -1,13 +1,9 @@
+import { setRequestLocale } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { CreateAccountCard } from "@/components/auth/create-account-card";
 import type { Locale } from "@/i18n/routing";
-import { setRequestLocale } from "next-intl/server";
 
-export default async function SignUpPage({
-  params,
-}: {
-  params: Promise<{ locale: Locale }>;
-}) {
+export default async function SignUpPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 

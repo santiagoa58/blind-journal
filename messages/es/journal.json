@@ -1,11 +1,4 @@
 {
-  "moods": {
-    "calm": "En calma",
-    "hopeful": "Con esperanza",
-    "reflective": "Reflexivo",
-    "tired": "Cansado",
-    "grateful": "Agradecido"
-  },
   "newEntry": {
     "title": "Entrada sin título",
     "content": ""
