@@ -3,7 +3,6 @@
 import { createAccount } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { CreateAccountInput } from "@/api/auth/auth.type";
-import { LabeledInput } from "@/components/labeled-input";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import {
@@ -23,6 +22,7 @@ import {
 } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { LabeledInput } from "./labeled-input";
 
 export function CreateAccountCard() {
   const t = useTranslations("auth");

@@ -1,138 +1,321 @@
 # Blind Journal
 
-Blind Journal is an interactive, frontend-only simulation of a production-style zero-knowledge encrypted journal.
+Blind Journal is an educational, frontend-only simulation of a production-grade,
+zero-knowledge, end-to-end encrypted personal journal.
 
-The application lets someone create an account, unlock a vault, and manage dated plain-text journal entries while a synchronized system view explains what would happen across the client, cryptographic worker, HTTPS connection, server, and database in a real deployment.
+Users can create an account, sign in, and manage private journal entries through the same
+client-side API and cryptographic boundaries that a real deployment would use. Alongside the
+journal, a synchronized visualization explains how credentials, keys, HTTPS requests, sessions,
+ciphertext, and server-side authorization move through the system.
 
-Everything physically runs in one browser. The client/server separation and its security controls are therefore modeled boundaries, not real isolation. Within that model, the simulated server receives only authentication material, session metadata, and encrypted records; journal dates and journal text remain encrypted outside the unlocked client.
+> [!IMPORTANT]
+> Everything physically executes in one browser. The client, network, server, and database are
+> intentionally modeled as separate trust boundaries, but they are not genuinely isolated in the
+> simulation. The application must clearly distinguish simulated guarantees from guarantees that
+> require a separately deployed HTTPS backend.
 
-## Project status
+## Why this project exists
 
-The project foundation is complete:
+End-to-end encryption is often explained as a collection of isolated primitives. Blind Journal
+demonstrates the complete application protocol instead:
 
-- Next.js and React are configured.
-- TypeScript strict mode and additional indexed-access checks are enabled.
-- Radix Themes and Radix Icons are installed and provide the UI system.
-- XState, TanStack Query, Zod, MSW, Dexie, libsodium, Motion, and Vitest are installed.
-- The MSW browser worker has been generated.
-- The Blind Journal vector identity, browser icons, Apple touch icon, maskable PWA icons, and web app manifest are configured.
+- How registration and username-first login work without sending the master password to the
+  server.
+- How password-derived material is separated into independent keys.
+- How a server authenticates a client without gaining the journal decryption key.
+- How journal data is encrypted before crossing the client boundary.
+- How opaque sessions, authorization, validation, and browser security controls fit around the
+  cryptography.
+- How the same browser client can later target a real backend without rewriting its UI or crypto
+  workflow.
 
-Application behavior has not been implemented yet. Work is intentionally divided into reviewable phases in the [build guide](docs/BUILD_GUIDE.md).
+This is the product-security meaning of “zero knowledge”: the server cannot decrypt journal
+contents or obtain the client’s secret keys. It is not a mathematical zero-knowledge-proof system
+and does not use zk-SNARKs or similar proof protocols.
 
-## Goals
+## Product behavior
 
-- Demonstrate a credible zero-knowledge client architecture without operating a backend.
-- Keep journal dates and content encrypted in the simulated database.
-- Keep password derivation and unlocked key material away from React state.
-- Validate every simulated request, response, and persisted envelope at runtime.
-- Model opaque sessions, CSRF protection, authorization, rate limiting, HTTPS, and security headers.
-- Drive the visualization from real application events rather than canned animation.
-- Preserve a client API boundary that can later target a real server without rewriting the UI or client cryptography.
+Blind Journal is designed to provide:
 
-## Non-goals
+- Explicit create-account and sign-in flows; an unknown login never silently creates an account.
+- A username-first login that retrieves the account’s password KDF salt before accepting the
+  password.
+- A responsive journal workspace with multiple dated entries, search, favorites, moods, tags,
+  and a Tiptap rich-text editor.
+- Create, read, update, and delete operations through an ordinary HTTP client boundary.
+- English and Spanish interfaces with locale-aware routing, metadata, plurals, dates, and times.
+- Installable PWA branding and a theme-aware interface.
+- A replayable visualization driven by the application’s real protocol events rather than a
+  prerecorded animation.
 
-- Claiming that browser modules create genuine client/server isolation.
-- Protecting data from malicious browser extensions, a compromised browser, or arbitrary script execution while the vault is unlocked.
-- Hiding all metadata. The simulated server can still observe account identifiers, encrypted-record counts and sizes, revisions, request timing, and access patterns.
-- Building a real database or production authentication service.
-- Supporting rich text, attachments, sharing, or multi-user collaboration.
-- Pursuing broad end-to-end or snapshot-test coverage.
+There are no built-in accounts or credentials. Every account begins with the create-account flow.
 
-## Technology
+## Trust model
 
-The repository currently pins the following runtime and package-manager baseline:
+The intended deployment model has four logical boundaries:
 
-- Node.js 24 or newer
-- PNPM 11.18.0 through Corepack
-- Next.js 16.2.12
-- React 19.2.4
-- TypeScript 5 in strict mode
+1. **Client UI** — collects credentials, displays decrypted journal data while unlocked, and owns
+   all user-facing text.
+2. **Client crypto boundary** — derives and owns keys, encrypts outgoing journal payloads, and
+   decrypts incoming ciphertext.
+3. **HTTPS API** — transports agreed request and response contracts and authenticates requests
+   through an opaque session.
+4. **Server and database** — validate requests, authenticate and authorize users, and persist
+   authentication verifiers, sessions, wrapped keys, and encrypted journal records.
 
-Primary libraries:
+MSW and the local server reproduce the last two boundaries in the browser. They must remain behind
+real `fetch` requests so replacing them with a remote API only changes configuration and backend
+deployment—not React components, TanStack Query hooks, endpoint functions, or client cryptography.
 
-| Responsibility | Library |
-| --- | --- |
-| UI system and styling | Radix Themes (`@radix-ui/themes`) |
-| Interface icons | Radix Icons (`@radix-ui/react-icons`) |
-| Workflow orchestration | XState 5 and `@xstate/react` |
-| Request and mutation state | TanStack Query 5 |
-| Simulated-server input validation | Zod 4 |
-| Simulated HTTP | MSW 2 |
-| Simulated server database | Dexie 4 and IndexedDB |
-| Password KDF | Argon2id through `libsodium-wrappers-sumo` |
-| Symmetric cryptography | Native Web Crypto API |
-| Motion | Motion for React |
-| System visualization | Radix Themes layout with Motion for React |
-| Focused unit tests | Vitest 4 |
+### What the server may know
 
-The exact installed versions are recorded in `package.json` and `pnpm-lock.yaml`.
+A practical encrypted service still observes some metadata, including:
+
+- The pseudonymous username and opaque user identifier.
+- Account KDF salt and versioned KDF parameters.
+- Authentication verifier material.
+- Opaque session records.
+- Ciphertext sizes, record counts, revisions, request timing, and access patterns.
+
+The journal payload—including its human-readable title, body, date, mood, and tags—must be encrypted
+before it crosses the client boundary.
+
+### What the server must never receive
+
+- The master password.
+- The password-derived master key.
+- The key-encryption key.
+- An unwrapped vault key or entry key.
+- Decrypted journal content.
+
+## Authentication and key hierarchy
+
+Blind Journal uses established cryptographic primitives and a custom, versioned application
+protocol. The application defines how keys and envelopes are organized; audited libraries perform
+the cryptographic operations.
+
+### Create account
+
+1. The client submits a normalized username to the account-salt endpoint.
+2. The server rejects an existing username or generates a cryptographically random per-account
+   salt.
+3. The client derives a 256-bit master key from the password and salt using Argon2id.
+4. HKDF-SHA-256 derives independent, domain-separated material for authentication and key
+   encryption.
+5. The client generates a random vault key and wraps it with the key-encryption key.
+6. Over an assumed HTTPS connection, the client sends the username, derived authentication key,
+   wrapped vault key, and versioned protocol metadata—not the password or decryption keys.
+7. The server hashes the received authentication key before storing its verifier and completes
+   registration with an opaque session.
+
+### Sign in
+
+1. The client submits the username.
+2. The server retrieves the account’s salt and versioned KDF parameters.
+3. The client accepts the password and derives the same master, authentication, and key-encryption
+   material locally.
+4. The client sends the derived authentication key over the assumed HTTPS connection.
+5. The server hashes the candidate and compares it with the stored verifier using a constant-time
+   byte comparison.
+6. On success, the server creates an opaque, expiring, revocable session. A real backend delivers
+   its identifier in a `Secure`, `HttpOnly`, appropriately `SameSite` cookie.
+7. The client receives the wrapped vault key and unwraps it locally before decrypting journal
+   entries.
+
+Blind Journal deliberately does not use JWTs for browser sessions. A random opaque session ID keeps
+authorization state revocable and avoids putting unnecessary claims in a client-held token.
+
+### Journal encryption
+
+- Journal payloads use authenticated encryption with AES-256-GCM.
+- Every encryption uses a fresh, unpredictable 96-bit IV.
+- Authenticated additional data binds the ciphertext to versioned context such as the account,
+  entry, and revision.
+- Ciphertext envelopes include only the fields required to select the protocol version and perform
+  authenticated decryption.
+- Password changes rederive key-encryption material and rewrap the vault key instead of requiring
+  every journal entry to be encrypted again.
+- Passwords, raw keys, plaintext payloads, and session identifiers never enter logs, URLs, query
+  keys, state-machine inspection data, analytics, or visualization events.
 
 ## Architecture
 
-```text
-Journal UI
-    |
-    +--> XState workflow actors
-    |
-    +--> TanStack Query --> client API --> fetch('/api/...')
-                                              |
-                                              v
-                                      MSW request handlers
-                                              |
-                                              v
-                                  simulated server services
-                                              |
-                                              v
-                                       Dexie / IndexedDB
+```mermaid
+flowchart LR
+    UI["React and Radix UI"] --> State["Feature logic and TanStack Query"]
+    State --> API["Typed API modules and Ky"]
+    API --> Fetch["Browser fetch"]
+    Fetch --> MSW["MSW transport handlers"]
+    MSW --> Server["Local server application logic"]
+    Server --> Repository["Server-owned repository"]
+    Repository --> Database["Dexie and IndexedDB"]
 
-Journal UI --> crypto worker client --> dedicated Web Worker
-                                          |
-                                          +--> Argon2id
-                                          +--> HKDF
-                                          +--> AES-256-GCM
+    State --> Crypto["Client crypto boundary"]
+    Crypto --> Sodium["Argon2id via libsodium"]
+    Crypto --> WebCrypto["HKDF and AES-GCM via Web Crypto"]
 
-Every boundary --> redacted semantic events --> synchronized visualization
+    State -. redacted events .-> Visualization["Synchronized protocol visualization"]
+    MSW -. redacted events .-> Visualization
+    Server -. redacted events .-> Visualization
 ```
 
-The journal UI may communicate with the simulated backend only through the client API and `fetch`. It must never import Dexie or simulated-server services directly.
+### Boundary rules
 
-### Project structure
+- UI and feature code call endpoint functions under `api/`; they never call MSW handlers, local
+  server functions, or the database directly.
+- `api/` owns browser endpoint functions and the shared request, response, error-code, and domain
+  types for each API area.
+- The Ky client is intentionally thin: base URL, credentials, stable headers, and transport
+  defaults. It does not hide requests behind a generic abstraction or normalize a contract the
+  project controls.
+- `local-server/` is unmistakably server-side application code. It consumes shared API types,
+  validates untrusted requests with Zod, owns business and authorization decisions, and constructs
+  typed responses.
+- MSW handlers are transport adapters only. They match HTTP requests and delegate them to the local
+  server without containing business logic.
+- The persistence implementation belongs behind the local-server boundary. Client code must not
+  import Dexie.
 
-```text
-app/                    Next.js routes, layouts, providers, and route errors
-api/                    Browser HTTP client and API-facing types, grouped by endpoint area
-components/             Reusable and journal interface components
-features/               Client-only feature workflows and UI
-local-server/           Simulated server rules, request validation, and response construction
-messages/               JSON catalogs as messages/{locale}/{feature}.json
-mocks/                  MSW setup, thin transport handlers, and local fixtures
-public/                  Brand/PWA assets and the generated MSW worker
-tests/                   Shared test setup and test-only MSW server
-workers/                 Dedicated cryptographic Web Worker when that phase begins
+### API response contract
+
+Endpoints return one consistent discriminated response:
+
+```ts
+type ApiResponse<T> =
+  | { success: true; data: T }
+  | {
+      success: false;
+      error: {
+        code: string;
+        message?: string;
+      };
+    };
 ```
 
-The browser boundary is intentionally simple. `api/` is the source of truth for handwritten request, response, and domain types. Client endpoint functions in that directory are the only production-facing code that knows how to make HTTP requests. They do not import MSW or the simulated server.
+The server owns stable machine-readable error codes. The optional message is diagnostic, not final
+interface copy. The client maps codes to localized user-facing messages. Raw transport responses do
+not leak beyond the endpoint boundary.
 
-`local-server/` is explicitly simulated-server code. It imports the API request types and uses Zod at the runtime boundary, with schemas typed as `z.ZodType<RequestType>` so schema changes remain checked against the API type. Response-only schemas are not added when they would merely duplicate a handwritten type: the simulated server constructs typed responses with `satisfies`, and the client consumes the agreed response shape.
+### State ownership
 
-`mocks/handlers.ts` contains transport adapters only. Each MSW handler delegates the incoming `Request` to `local-server/`; it does not contain business rules. A future real backend can implement the same API types and behavior while the browser endpoint functions and client cryptography remain unchanged.
+| State                                                              | Owner                   |
+| ------------------------------------------------------------------ | ----------------------- |
+| Requests, mutations, session view, and unlocked journal query data | TanStack Query          |
+| Form fields, editor drafts, and local display controls             | React component state   |
+| Multi-step authentication, locking, saving, and playback workflows | XState actors           |
+| Password-derived and unwrapped key material                        | Client crypto boundary  |
+| Accounts, verifiers, sessions, wrapped keys, and ciphertext        | Server-owned repository |
+| Sanitized protocol timeline and playback position                  | Simulation workflow     |
 
-## State ownership
+TanStack Query is used directly rather than hidden behind a generic `useApi` abstraction. Local
+React state remains local. XState is reserved for workflows that genuinely benefit from explicit
+states and transitions; it is not a replacement for every boolean or form field.
 
-| State | Owner |
-| --- | --- |
-| Authentication, unlock, lock, save, and playback workflows | XState actors |
-| API requests, mutations, and unlocked journal query data | TanStack Query |
-| Form fields, editor drafts, and local display controls | React component state |
-| Unwrapped vault key and derived cryptographic keys | Crypto Worker |
-| Accounts, ciphertext, sessions, and rate-limit records | Dexie behind the simulated server |
-| Sanitized timeline and playback position | Simulation actor |
+## Technology choices
 
-Passwords and raw keys must never enter XState events, query keys, browser logs, or visualization records. Decrypted query data is memory-only and is cleared whenever the vault locks or the session ends.
+| Responsibility                            | Technology                   | Reason                                                                             |
+| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| Application framework                     | Next.js App Router and React | Server/Client Component composition, routing, metadata, and production builds      |
+| Language                                  | TypeScript in strict mode    | Compile-time contracts and aggressive detection of unsafe or unused code           |
+| UI system                                 | Radix Themes and Radix Icons | Accessible primitives, coherent tokens, and responsive component APIs              |
+| Rich-text editor                          | Tiptap                       | A maintained editor framework instead of a custom `contenteditable` implementation |
+| HTTP client                               | Ky                           | A small standards-based client over `fetch`                                        |
+| Async state                               | TanStack Query               | Explicit request, mutation, caching, and invalidation behavior                     |
+| Workflow state                            | XState                       | Inspectable deterministic flows for authentication and simulation playback         |
+| Runtime validation                        | Zod                          | Validation of data entering server and persistence boundaries                      |
+| HTTP simulation                           | MSW                          | Real browser requests with a replaceable server transport boundary                 |
+| Simulated persistence                     | Dexie and IndexedDB          | Structured, versioned browser persistence behind the server boundary               |
+| Password KDF and constant-time operations | libsodium                    | Audited Argon2id, secure randomness, encodings, and byte comparison                |
+| Key derivation and encryption             | Web Crypto API               | Native HKDF-SHA-256 and AES-256-GCM                                                |
+| Localization                              | next-intl and Eloqnt         | Next.js-native routing and formatting with typed, synchronized message catalogs    |
+| Motion                                    | Motion for React             | Coordinated protocol visualization without hand-built animation infrastructure     |
+| Unit tests                                | Vitest                       | Fast focused tests for protocol and API behavior                                   |
+| Formatting and linting                    | Biome                        | One deterministic code-quality and formatting tool                                 |
+
+Exact installed versions and the package-manager version are pinned in `package.json` and
+`pnpm-lock.yaml`.
+
+## Project structure
+
+```text
+api/                    Client endpoint functions and shared API/domain types
+app/                    Next.js routes, locale layout, metadata, and providers
+components/             React UI grouped by owning domain
+  auth/                 Authentication screens and auth-only form composition
+  journal/              Journal workspace and its editor, navigation, and dialogs
+  brand-mark.tsx        The small cross-domain brand component
+crypto/                 Cryptographic helpers and client/server protocol boundaries
+hooks/                  Small reusable React hooks
+i18n/                   Locale routing, navigation, message loading, and type integration
+local-server/           Simulated server validation, business rules, auth, and persistence access
+messages/               Translation catalogs as messages/{locale}/{feature}.json
+mocks/                  MSW browser setup and thin HTTP transport handlers
+public/                 Brand assets, install icons, and the generated MSW worker
+tests/                  Shared Vitest setup and test-only boundary fixtures
+```
+
+Directories express concrete ownership. Avoid generic dumping grounds, duplicate contract folders,
+and multiple unrelated locations for the same API area.
+
+## Internationalization
+
+All user-facing interface text—including labels, placeholders, errors, success messages, metadata,
+tooltips, and accessibility labels—belongs in the message catalogs. User content, protocol values,
+error codes, identifiers, and developer diagnostics are not translations.
+
+```text
+messages/
+  en/
+    auth.json
+    common.json
+    journal.json
+    ...
+  es/
+    auth.json
+    common.json
+    journal.json
+    ...
+```
+
+Each component requests the smallest useful namespace directly through `useTranslations`. Async
+Server Components and metadata use `getTranslations`. Locale-aware navigation comes from the
+wrappers in `i18n/navigation.ts`, and ICU messages handle interpolation and plurals without string
+concatenation.
+
+English defines the TypeScript message shape. Spanish mirrors it. `pnpm i18n:check` runs Eloqnt in
+strict mode so missing, unused, malformed, or inconsistent messages fail validation.
+
+## UI and styling policy
+
+Radix Themes is the application design system.
+
+- Prefer the semantic Radix Themes component that matches the job.
+- Use component variants, responsive props, spacing props, layout primitives, and theme tokens.
+- Compose Radix primitives according to their documented semantics and accessibility behavior.
+- Use Radix Icons for interface iconography.
+- Do not add Tailwind, a second design system, custom UI primitives, or application-specific CSS
+  classes to reproduce behavior Radix already provides.
+- Global CSS is limited to documented library setup and true document-level integration that
+  cannot be expressed through the Radix Themes API.
+
+## PWA behavior
+
+Blind Journal is designed as an installable, theme-aware web application with vector branding,
+browser icons, Apple touch artwork, and maskable install icons.
+
+Installation does not imply offline support. MSW controls the root Service Worker scope in the
+simulation; any future offline caching must use a deliberate merged-worker strategy rather than
+registering a competing root Service Worker.
 
 ## Getting started
 
-Corepack will select the PNPM version pinned by the project:
+### Requirements
+
+- Node.js 24 or newer
+- Corepack
+- A modern browser with Web Crypto, Web Workers, IndexedDB, and Service Worker support
+
+Corepack selects the PNPM version pinned by the repository.
 
 ```bash
 corepack enable
@@ -141,63 +324,104 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). The locale router directs the browser to the
+appropriate English or Spanish route.
 
-MSW uses a Service Worker. `localhost` is treated as a secure development context by browsers; deployed builds must use HTTPS.
+`localhost` is treated as a secure development context by browsers. Any deployed version must use
+HTTPS.
 
-### Styling policy
+### Environment
 
-Use Radix Themes components, responsive props, variants, and design tokens for application UI. Do not recreate Radix components or introduce a parallel utility-CSS system. Global CSS is limited to Radix’s documented setup and document-level integration that its component API cannot express; any such CSS should consume Radix theme tokens.
+| Variable                   | Purpose                                        | Example   |
+| -------------------------- | ---------------------------------------------- | --------- |
+| `NEXT_PUBLIC_API_BASE_URL` | Client-visible base URL used by the API client | `/api/v1` |
 
-### Branding and PWA assets
-
-The transparent vector source of truth is `public/brand/blind-journal-mark.svg`. The repository also includes a 1024px transparent PNG, an opaque maskable source, 192px and 512px install icons, `app/favicon.ico`, `app/icon.svg`, and `app/apple-icon.png`. `app/manifest.ts` publishes them through Next.js’s App Router metadata conventions.
-
-The project intentionally does not register a second offline-caching Service Worker: MSW owns the root Service Worker scope for the simulation. The current Next.js PWA guidance does not require offline support for installation, so the manifest and install assets remain valid without introducing a competing worker.
+The application validates required environment variables at startup and fails fast when they are
+missing or malformed. `NEXT_PUBLIC_` values are always visible in the browser and must never contain
+secrets.
 
 ## Commands
 
+| Command             | Purpose                                                     |
+| ------------------- | ----------------------------------------------------------- |
+| `pnpm dev`          | Start the Next.js development server                        |
+| `pnpm build`        | Compile and validate a production build                     |
+| `pnpm start`        | Serve a completed production build                          |
+| `pnpm lint`         | Run Biome lint rules                                        |
+| `pnpm format`       | Format supported files with Biome                           |
+| `pnpm format:check` | Check formatting without changing files                     |
+| `pnpm quality`      | Run Biome formatting, linting, and import checks            |
+| `pnpm quality:fix`  | Apply safe Biome formatting and lint fixes                  |
+| `pnpm i18n:check`   | Strictly validate translation usage and catalog consistency |
+| `pnpm typecheck`    | Run TypeScript without emitting files                       |
+| `pnpm test`         | Run the focused Vitest suite once                           |
+| `pnpm test:watch`   | Run Vitest in watch mode                                    |
+| `pnpm check`        | Run quality, localization, TypeScript, and unit-test checks |
+
+Before handing off a change, run:
+
 ```bash
-pnpm dev          # Start the Next.js development server
-pnpm lint         # Run Biome's linter
-pnpm quality      # Run Biome's linter and formatter checks
-pnpm i18n:check   # Find missing, unused, or inconsistent translations
-pnpm typecheck    # Run TypeScript without emitting files
-pnpm test         # Run the focused Vitest suite once
-pnpm test:watch   # Run Vitest in watch mode
-pnpm check        # Run lint, typecheck, and tests
-pnpm build        # Create a production Next.js build
-pnpm start        # Serve a completed production build
+pnpm check
+pnpm build
 ```
 
-## Security model
+## Testing strategy
 
-Blind Journal treats the following as real implementation requirements even though the server is simulated:
+Tests concentrate on boundaries where a regression would undermine the protocol:
 
-- Per-account, versioned Argon2id parameters and a random salt
-- HKDF domain separation for independent key purposes
-- A random vault key wrapped by password-derived key material
-- AES-256-GCM with a fresh 96-bit IV for every encryption
-- Authenticated additional data binding account, entry, revision, and schema version
-- Runtime validation at every transport and persistence boundary
-- Opaque, expiring, revocable sessions
-- Authorization on every simulated server operation
-- CSRF token and origin validation for cookie-authenticated mutations
-- Generic login failures and decoy parameters for unknown usernames
-- No plaintext journal records or reusable session tokens in persistent browser storage
-- No raw HTML rendering of journal content
-- A restrictive production Content Security Policy and other browser security headers
+- Account creation exercises validation failures, retries, server-issued salts, successful
+  registration, session behavior, and duplicate usernames as one coherent scenario.
+- Login begins with a server-side user fixture and exercises unknown usernames, incorrect
+  credentials, unauthorized sessions, and a successful retry.
+- Journal API coverage exercises create, read, update, and delete through the MSW HTTP boundary.
+- Cryptographic envelope, encoding, and key-schedule tests should use deterministic fixtures and
+  published primitive behavior without weakening production parameters.
 
-Some properties can only be represented visually in this frontend-only build. In particular, JavaScript cannot create a genuine `HttpOnly` cookie, and no server secret stored in downloaded browser code is actually secret. Those limitations must always be labeled in the UI and documentation.
+Broad browser automation and snapshot-heavy testing are intentionally out of scope. Focused unit
+tests, production builds, and manual browser verification provide proportionate confidence for an
+educational simulation.
 
-## Documentation
+## Security requirements
 
-- [Build guide and implementation phases](docs/BUILD_GUIDE.md)
+The implementation must preserve these rules:
+
+- Use cryptographically secure randomness for salts, IVs, keys, session identifiers, and CSRF
+  material.
+- Version KDF parameters, HKDF context labels, encrypted envelopes, and authenticated metadata.
+- Keep passwords and unlocked keys short-lived and outside persistent React, Query, and XState
+  state.
+- Clear private query data and key material on lock or logout.
+- Validate untrusted request and persisted data at the server boundary.
+- Authorize every journal operation against the authenticated user.
+- Use generic credential failures, rate limiting, and decoy KDF parameters where appropriate to
+  reduce account enumeration.
+- Use opaque, expiring, revocable sessions with origin and CSRF protection for authenticated
+  mutations.
+- Enforce HTTPS, a restrictive Content Security Policy, and appropriate browser security headers in
+  a real deployment.
+- Never treat browser-delivered code, simulated cookies, or simulated server secrets as genuine
+  isolation.
+
+No browser application can protect unlocked plaintext from arbitrary code already executing in the
+same origin. Preventing XSS and limiting third-party script execution are therefore part of the
+cryptographic security boundary, not merely UI concerns.
+
+## Scope
+
+Blind Journal focuses on a personal journal and its security protocol. Sharing, multi-user
+collaboration, attachments, a real hosted authentication service, and claims of hiding all traffic
+metadata are outside the project’s scope.
+
+Development proceeds in explicitly approved, reviewable changes. The architecture describes the
+intended destination, not authorization to implement unrelated phases automatically.
+
+## References
+
 - [Next.js documentation](https://nextjs.org/docs)
-- [MSW browser integration](https://mswjs.io/docs/integrations/browser/)
+- [next-intl documentation](https://next-intl.dev/docs/getting-started/app-router)
+- [Radix Themes documentation](https://www.radix-ui.com/themes/docs/overview/getting-started)
+- [MSW browser integration](https://mswjs.io/docs/integrations/browser)
+- [TanStack Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview)
 - [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
 - [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
-
-## Working agreement
-
-Implementation proceeds one explicitly approved phase or task at a time. The build guide describes the intended result, but it does not authorize implementing later phases automatically.
+- [OWASP Cryptographic Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html)

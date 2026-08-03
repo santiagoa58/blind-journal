@@ -13,11 +13,6 @@ import type {
   JournalEntry,
   UpdateJournalEntryRequest,
 } from "@/api/journal/journal.type";
-import { AppSidebar, type SidebarSection } from "@/components/app-sidebar";
-import { EntryList } from "@/components/entry-list";
-import { JournalEditor } from "@/components/journal-editor";
-import { JournalMobileHeader } from "@/components/journal-mobile-header";
-import { PrivacySettingsDialog } from "@/components/privacy-settings-dialog";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { useRouter } from "@/i18n/navigation";
 import {
@@ -41,6 +36,11 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { AppSidebar, type SidebarSection } from "./app-sidebar";
+import { EntryList } from "./entry-list";
+import { JournalEditor } from "./journal-editor";
+import { JournalMobileHeader } from "./journal-mobile-header";
+import { PrivacySettingsDialog } from "./privacy-settings-dialog";
 
 const sessionQueryKey = ["auth", "session"] as const;
 const entriesQueryKey = ["journal", "entries"] as const;

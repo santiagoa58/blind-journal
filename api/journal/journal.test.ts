@@ -1,30 +1,25 @@
-import { getLoginSalt, login } from "@/api/auth/auth";
 import {
   createJournalEntry,
   deleteJournalEntry,
   listJournalEntries,
   updateJournalEntry,
 } from "@/api/journal/journal";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock(
-  "@/api/auth/auth.crypto",
-  async () => import("@/tests/mocks/auth-crypto"),
-);
+import { localServerStore, type StoredUser } from "@/local-server/store";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("journal API", () => {
-  beforeEach(async () => {
-    const saltResponse = await getLoginSalt({ username: "summertime" });
+  beforeEach(() => {
+    const user = {
+      id: "journal-user",
+      username: "journal_writer",
+      displayName: "Journal Writer",
+      authKeyHash: "unused-by-journal-tests",
+      salt: "unused-by-journal-tests",
+    } satisfies StoredUser;
 
-    if (!saltResponse.success) {
-      throw new Error("The seeded account salt should be available.");
-    }
-
-    await login({
-      username: "summertime",
-      password: "journal123",
-      salt: saltResponse.data.salt,
-    });
+    localServerStore.users.push(user);
+    localServerStore.entriesByUserId[user.id] = [];
+    localServerStore.activeUserId = user.id;
   });
 
   it("supports create, read, update, and delete through the mock HTTP boundary", async () => {

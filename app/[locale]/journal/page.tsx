@@ -1,10 +1,5 @@
-import { setRequestLocale } from "next-intl/server";
-import { JournalWorkspace } from "@/components/journal-workspace";
-import type { Locale } from "@/i18n/routing";
+import { JournalWorkspace } from "@/components/journal/journal-workspace";
 
-export default async function JournalPage({ params }: { params: Promise<{ locale: Locale }> }) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-
+export default function JournalPage() {
   return <JournalWorkspace />;
 }

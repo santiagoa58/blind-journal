@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import type {
@@ -10,18 +9,22 @@ import type {
   UpdateJournalEntryRequest,
 } from "@/api/journal/journal.type";
 import { localServerStore } from "@/local-server/store";
+import { z } from "zod";
 
-const createEntryRequestSchema: z.ZodType<CreateJournalEntryRequest> = z.strictObject({
-  title: z.string().trim().min(1).max(120),
-  content: z.string().max(100_000),
-});
+const createEntryRequestSchema: z.ZodType<CreateJournalEntryRequest> =
+  z.strictObject({
+    title: z.string().trim().min(1).max(120),
+    content: z.string().max(100_000),
+  });
 
 const updateEntryRequestSchema = z
   .strictObject({
     title: z.string().trim().min(1).max(120).optional(),
     content: z.string().max(100_000).optional(),
     favorite: z.boolean().optional(),
-    mood: z.enum(["calm", "hopeful", "reflective", "tired", "grateful"]).optional(),
+    mood: z
+      .enum(["calm", "hopeful", "reflective", "tired", "grateful"])
+      .optional(),
     tags: z.array(z.string().trim().min(1).max(32)).max(12).optional(),
   })
   .refine((input) => Object.keys(input).length > 0);
@@ -80,7 +83,6 @@ function getContentSummary(content: string) {
 
   return {
     preview: plainText.slice(0, 140),
-    wordCount: plainText.length === 0 ? 0 : plainText.split(/\s+/).length,
   };
 }
 
@@ -93,13 +95,17 @@ export function handleJournalEntriesRequest(): Response {
 
   const response = {
     success: true,
-    data: [...entries].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+    data: [...entries].sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt),
+    ),
   } satisfies JournalEntriesResponse;
 
   return Response.json(response);
 }
 
-export async function handleCreateJournalEntryRequest(request: Request): Promise<Response> {
+export async function handleCreateJournalEntryRequest(
+  request: Request,
+): Promise<Response> {
   const entries = getActiveEntries();
 
   if (!entries) {
@@ -129,7 +135,10 @@ export async function handleCreateJournalEntryRequest(request: Request): Promise
 
   entries.unshift(entry);
 
-  const response = { success: true, data: entry } satisfies JournalEntryResponse;
+  const response = {
+    success: true,
+    data: entry,
+  } satisfies JournalEntryResponse;
   return Response.json(response, { status: 201 });
 }
 
@@ -189,7 +198,10 @@ export async function handleUpdateJournalEntryRequest(
 
   entries[entryIndex] = updatedEntry;
 
-  const response = { success: true, data: updatedEntry } satisfies JournalEntryResponse;
+  const response = {
+    success: true,
+    data: updatedEntry,
+  } satisfies JournalEntryResponse;
   return Response.json(response);
 }
 

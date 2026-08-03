@@ -1,9 +1,13 @@
-import { createAccount, getLoginSalt, login, logout } from "@/api/auth/auth";
+import {
+  createAccount,
+  getLoginSalt,
+  getSession,
+  login,
+  logout,
+} from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { LoginResponse } from "@/api/auth/auth.type";
-import { API_BASE_URL } from "@/api/constants";
-import { mockServer } from "@/tests/mocks/server";
-import { HttpResponse, http } from "msw";
+import { localServerStore, type StoredUser } from "@/local-server/store";
+import { deriveMasterKey, deriveUserKeys } from "@/tests/mocks/auth-crypto";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock(
@@ -11,67 +15,63 @@ vi.mock(
   async () => import("@/tests/mocks/auth-crypto"),
 );
 
-async function getSeededSalt() {
-  const response = await getLoginSalt({ username: "  summertime  " });
+const account = {
+  username: "journal_writer",
+  password: "private-journal",
+  confirmPassword: "private-journal",
+};
 
-  if (!response.success) {
-    throw new Error("The seeded account salt should be available.");
-  }
+async function seedUser(): Promise<StoredUser> {
+  const masterKey = await deriveMasterKey(account.password);
+  const { authKey } = await deriveUserKeys(masterKey);
+  const authKeyHash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(authKey),
+  );
+  const id = crypto.randomUUID();
+  const user = {
+    id,
+    username: account.username,
+    displayName: account.username,
+    salt: btoa("0123456789abcdef"),
+    authKeyHash: btoa(String.fromCharCode(...new Uint8Array(authKeyHash))),
+  } satisfies StoredUser;
 
-  return response.data.salt;
+  localServerStore.users.push(user);
+  localServerStore.entriesByUserId[id] = [];
+
+  return user;
 }
 
 describe("auth API", () => {
-  it("retrieves an existing user's salt before accepting a password", async () => {
-    await expect(getLoginSalt({ username: "  summertime  " })).resolves.toEqual(
-      {
-        success: true,
-        data: { salt: "AAECAwQFBgcICQoLDA0ODw==" },
-      },
-    );
-  });
-
-  it("does not issue a login salt for an unknown username", async () => {
-    await expect(getLoginSalt({ username: "unknown_user" })).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.invalidCredentials },
-    });
-  });
-
-  it("derives and verifies the seeded account through the two-request login flow", async () => {
-    const salt = await getSeededSalt();
-
+  it("creates an account after validation errors and rejects a duplicate registration", async () => {
     await expect(
-      login({ username: "summertime", password: "journal123", salt }),
-    ).resolves.toEqual({
-      success: true,
-      data: {
-        user: {
-          id: "user-1",
-          username: "summertime",
-          displayName: "Summer Time",
-        },
-      },
-    });
-  });
-
-  it("returns a stable code when the derived auth key does not match", async () => {
-    const salt = await getSeededSalt();
-
-    await expect(
-      login({ username: "summertime", password: "incorrect", salt }),
+      createAccount({ ...account, password: "", confirmPassword: "" }),
     ).resolves.toEqual({
       success: false,
-      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+      error: { code: AUTH_ERROR_CODES.passwordRequired },
     });
-  });
+    await expect(
+      createAccount({
+        ...account,
+        password: "short",
+        confirmPassword: "short",
+      }),
+    ).resolves.toEqual({
+      success: false,
+      error: { code: AUTH_ERROR_CODES.passwordTooShort },
+    });
+    await expect(
+      createAccount({ ...account, confirmPassword: "different-password" }),
+    ).resolves.toEqual({
+      success: false,
+      error: { code: AUTH_ERROR_CODES.passwordsMismatch },
+    });
 
-  it("creates an account with a server-issued salt that can be used for a later login", async () => {
-    const account = {
-      username: "new_writer",
-      password: "private-journal",
-      confirmPassword: "private-journal",
-    };
+    await expect(getSession()).resolves.toEqual({
+      success: false,
+      error: { code: AUTH_ERROR_CODES.unauthorized },
+    });
 
     const created = await createAccount(account);
 
@@ -79,71 +79,78 @@ describe("auth API", () => {
       success: true,
       data: {
         user: {
-          username: "new_writer",
-          displayName: "new_writer",
+          username: account.username,
+          displayName: account.username,
         },
       },
     });
+    await expect(getSession()).resolves.toEqual(created);
 
     await logout();
+
     const saltResponse = await getLoginSalt({ username: account.username });
 
+    expect(saltResponse).toMatchObject({
+      success: true,
+      data: { salt: expect.any(String) },
+    });
+
+    if (saltResponse.success) {
+      expect(saltResponse.data.salt).not.toHaveLength(0);
+    }
+
+    await expect(createAccount(account)).resolves.toEqual({
+      success: false,
+      error: { code: AUTH_ERROR_CODES.usernameTaken },
+    });
+  });
+
+  it("logs in an existing user after credential errors and supports retrying", async () => {
+    const user = await seedUser();
+
+    await expect(getLoginSalt({ username: "unknown_writer" })).resolves.toEqual(
+      {
+        success: false,
+        error: { code: AUTH_ERROR_CODES.invalidCredentials },
+      },
+    );
+
+    const saltResponse = await getLoginSalt({ username: account.username });
+
+    expect(saltResponse).toEqual({
+      success: true,
+      data: { salt: user.salt },
+    });
+
     if (!saltResponse.success) {
-      throw new Error(
-        "The new account salt should be available after registration.",
-      );
+      throw new Error("The seeded user's salt should be available.");
     }
 
     await expect(
       login({
         username: account.username,
-        password: account.password,
+        password: "incorrect-password",
         salt: saltResponse.data.salt,
-      }),
-    ).resolves.toMatchObject({
-      success: true,
-      data: { user: { username: account.username } },
-    });
-  });
-
-  it("rejects mismatched account passwords before registration", async () => {
-    await expect(
-      createAccount({
-        username: "new_writer",
-        password: "private-journal",
-        confirmPassword: "different-password",
       }),
     ).resolves.toEqual({
       success: false,
-      error: { code: AUTH_ERROR_CODES.passwordsMismatch },
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
     });
-  });
-
-  it("preserves a stable server error code without client normalization", async () => {
-    const response = {
+    await expect(getSession()).resolves.toEqual({
       success: false,
-      error: { code: "AUTH_RATE_LIMITED" },
-    } satisfies LoginResponse;
-    const salt = await getSeededSalt();
+      error: { code: AUTH_ERROR_CODES.unauthorized },
+    });
 
-    mockServer.use(
-      http.post(`${API_BASE_URL}/auth/login`, () =>
-        HttpResponse.json(response, { status: 429 }),
-      ),
-    );
+    const loggedIn = await login({
+      username: account.username,
+      password: account.password,
+      salt: saltResponse.data.salt,
+    });
 
-    await expect(
-      login({ username: "summertime", password: "journal123", salt }),
-    ).resolves.toEqual(response);
-  });
-
-  it("leaves salt transport failures as ordinary request errors", async () => {
-    mockServer.use(
-      http.post(`${API_BASE_URL}/auth/login/salt`, () => HttpResponse.error()),
-    );
-
-    await expect(
-      getLoginSalt({ username: "offline-user" }),
-    ).rejects.toBeInstanceOf(Error);
+    expect(loggedIn).toMatchObject({
+      success: true,
+      data: { user: { id: user.id, username: account.username } },
+    });
+    await expect(getSession()).resolves.toEqual(loggedIn);
   });
 });

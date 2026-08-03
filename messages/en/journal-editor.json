@@ -13,14 +13,11 @@
   "entryTitleLabel": "Entry title",
   "entryBodyLabel": "Journal entry",
   "lastSaved": "Last saved {time}",
-  "wordsCount": "{count, plural, one {# word} other {# words}}",
   "formatting": {
     "bold": "Bold",
     "italic": "Italic",
     "bulletedList": "Bulleted list",
     "numberedList": "Numbered list",
-    "quote": "Quote",
-    "undo": "Undo",
-    "redo": "Redo"
+    "quote": "Quote"
   }
 }

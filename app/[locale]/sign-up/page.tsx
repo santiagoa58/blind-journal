@@ -1,5 +1,5 @@
-import { AuthShell } from "@/features/auth/auth-shell";
-import { CreateAccountCard } from "@/features/auth/create-account-card";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { CreateAccountCard } from "@/components/auth/create-account-card";
 import type { Locale } from "@/i18n/routing";
 import { setRequestLocale } from "next-intl/server";
 

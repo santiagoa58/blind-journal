@@ -3,7 +3,6 @@
 import { getLoginSalt, login } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { LoginRequest, SaltRequest } from "@/api/auth/auth.type";
-import { LabeledInput } from "@/components/labeled-input";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import {
@@ -24,6 +23,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { LabeledInput } from "./labeled-input";
 
 type LoginSalt = {
   username: string;

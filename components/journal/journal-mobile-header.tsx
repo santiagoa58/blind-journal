@@ -2,7 +2,6 @@
 
 import type { User } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
-import type { SidebarSection } from "@/components/app-sidebar";
 import { BrandMark } from "@/components/brand-mark";
 import {
   ExitIcon,
@@ -25,6 +24,7 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { SidebarSection } from "./app-sidebar";
 
 type JournalMobileHeaderProps = {
   activeSection: SidebarSection;

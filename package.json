@@ -9,7 +9,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "i18n:check": "eloqnt lint",
+    "i18n:check": "eloqnt lint --strict",
     "quality": "biome check .",
     "quality:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",

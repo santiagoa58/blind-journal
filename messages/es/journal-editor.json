@@ -13,14 +13,11 @@
   "entryTitleLabel": "Título de la entrada",
   "entryBodyLabel": "Entrada del diario",
   "lastSaved": "Último guardado {time}",
-  "wordsCount": "{count, plural, one {# palabra} other {# palabras}}",
   "formatting": {
     "bold": "Negrita",
     "italic": "Cursiva",
     "bulletedList": "Lista con viñetas",
     "numberedList": "Lista numerada",
-    "quote": "Cita",
-    "undo": "Deshacer",
-    "redo": "Rehacer"
+    "quote": "Cita"
   }
 }

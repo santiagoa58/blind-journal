@@ -14,10 +14,8 @@ import {
   ListBulletIcon,
   LockClosedIcon,
   QuoteIcon,
-  ResetIcon,
   RowsIcon,
   TrashIcon,
-  UpdateIcon,
 } from "@radix-ui/react-icons";
 import {
   AlertDialog,
@@ -63,25 +61,29 @@ export function JournalEditor({
   const format = useFormatter();
   const now = useNow({ updateInterval: 60_000 });
   const [title, setTitle] = useState(entry.title);
-  const [content, setContent] = useState(entry.content);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [2, 3] },
+        code: false,
+        codeBlock: false,
+        heading: false,
+        horizontalRule: false,
+        link: false,
+        strike: false,
+        underline: false,
+        undoRedo: false,
       }),
     ],
     content: entry.content,
     immediatelyRender: false,
+    shouldRerenderOnTransaction: false,
     editorProps: {
       attributes: {
         "aria-label": t("entryBodyLabel"),
         "aria-multiline": "true",
         role: "textbox",
       },
-    },
-    onUpdate({ editor: activeEditor }) {
-      setContent(activeEditor.getHTML());
     },
   });
   const editorState = useEditorState({
@@ -92,8 +94,6 @@ export function JournalEditor({
       bulletList: activeEditor?.isActive("bulletList") ?? false,
       orderedList: activeEditor?.isActive("orderedList") ?? false,
       blockquote: activeEditor?.isActive("blockquote") ?? false,
-      canUndo: activeEditor?.can().undo() ?? false,
-      canRedo: activeEditor?.can().redo() ?? false,
     }),
   });
   const toolbarState = editorState ?? {
@@ -102,8 +102,6 @@ export function JournalEditor({
     bulletList: false,
     orderedList: false,
     blockquote: false,
-    canUndo: false,
-    canRedo: false,
   };
   const favoriteLabel = entry.favorite
     ? t("removeFromFavorites")
@@ -146,20 +144,6 @@ export function JournalEditor({
       active: toolbarState.blockquote,
       disabled: !editor,
       run: () => editor?.chain().focus().toggleBlockquote().run(),
-    },
-    {
-      label: t("formatting.undo"),
-      icon: ResetIcon,
-      active: false,
-      disabled: !toolbarState.canUndo,
-      run: () => editor?.chain().focus().undo().run(),
-    },
-    {
-      label: t("formatting.redo"),
-      icon: UpdateIcon,
-      active: false,
-      disabled: !toolbarState.canRedo,
-      run: () => editor?.chain().focus().redo().run(),
     },
   ];
 
@@ -210,9 +194,11 @@ export function JournalEditor({
               </Tooltip>
 
               <Button
-                onClick={() => onSave({ title, content })}
+                onClick={() =>
+                  onSave({ title, content: editor?.getHTML() ?? entry.content })
+                }
                 loading={saving}
-                disabled={saving || title.trim().length === 0}
+                disabled={!editor || saving || title.trim().length === 0}
               >
                 {tCommon("actions.save")}
               </Button>
@@ -333,19 +319,11 @@ export function JournalEditor({
           </Flex>
 
           <Separator size="4" />
-          <Flex
-            align="center"
-            justify="between"
-            px={{ initial: "4", sm: "5" }}
-            py="2"
-          >
+          <Flex align="center" px={{ initial: "4", sm: "5" }} py="2">
             <Text size="1" color="gray">
               {t("lastSaved", {
                 time: format.relativeTime(updatedAt, { now }),
               })}
-            </Text>
-            <Text size="1" color="gray">
-              {t("wordsCount", { count: entry.wordCount })}
             </Text>
           </Flex>
 

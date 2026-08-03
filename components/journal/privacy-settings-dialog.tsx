@@ -61,7 +61,11 @@ function SettingRow({
           {description}
         </Text>
       </Box>
-      <Switch defaultChecked={defaultChecked} disabled={disabled} aria-label={title} />
+      <Switch
+        defaultChecked={defaultChecked}
+        disabled={disabled}
+        aria-label={title}
+      />
     </Flex>
   );
 }
