@@ -17,11 +17,13 @@ export async function deriveMasterKey(userPassword: string, salt: Uint8Array) {
   );
 }
 
-export async function deriveUserKeys(rawMasterKey: Uint8Array<ArrayBuffer>) {
+export async function deriveUserKeys(
+  rawMasterKey: Uint8Array<ArrayBufferLike>,
+) {
   // 2. Import Master Key into Web Crypto for HKDF
-  const masterKey = await window.crypto.subtle.importKey(
+  const masterKey = await crypto.subtle.importKey(
     "raw",
-    rawMasterKey,
+    new Uint8Array(rawMasterKey),
     { name: "HKDF" },
     false,
     ["deriveBits", "deriveKey"],

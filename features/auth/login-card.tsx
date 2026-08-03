@@ -1,8 +1,8 @@
 "use client";
 
-import { login } from "@/api/auth/auth";
+import { getLoginSalt, login } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { LoginRequest } from "@/api/auth/auth.type";
+import type { LoginRequest, SaltRequest } from "@/api/auth/auth.type";
 import { LabeledInput } from "@/components/labeled-input";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
@@ -23,6 +23,12 @@ import {
 } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
+
+type LoginSalt = {
+  username: string;
+  salt: string;
+};
 
 export function LoginCard() {
   const t = useTranslations("auth");
@@ -30,6 +36,22 @@ export function LoginCard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const appToast = useAppToast();
+  const [loginSalt, setLoginSalt] = useState<LoginSalt | null>(null);
+  const saltMutation = useMutation({
+    mutationKey: ["auth", "login", "salt"],
+    mutationFn: getLoginSalt,
+    onError() {
+      appToast.error(tCommon("errors.network"));
+    },
+    onSuccess(response, request) {
+      if (response.success) {
+        setLoginSalt({
+          username: request.username.trim(),
+          salt: response.data.salt,
+        });
+      }
+    },
+  });
   const loginMutation = useMutation({
     mutationKey: ["auth", "login"],
     mutationFn: login,
@@ -49,10 +71,12 @@ export function LoginCard() {
 
   let errorMessage: string | null = null;
 
-  if (loginMutation.isError) {
+  const response = loginMutation.data ?? saltMutation.data;
+
+  if (loginMutation.isError || saltMutation.isError) {
     errorMessage = tCommon("errors.network");
-  } else if (loginMutation.data && !loginMutation.data.success) {
-    switch (loginMutation.data.error.code) {
+  } else if (response && !response.success) {
+    switch (response.error.code) {
       case AUTH_ERROR_CODES.usernameRequired:
         errorMessage = t("errors.usernameRequired");
         break;
@@ -71,15 +95,38 @@ export function LoginCard() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
-    const password = formData.get("password");
 
-    if (typeof username !== "string" || typeof password !== "string") {
+    if (typeof username !== "string") {
       return;
     }
-    
-    const input: LoginRequest = { username, password };
+
+    if (!loginSalt) {
+      const input: SaltRequest = { username };
+      saltMutation.mutate(input);
+      return;
+    }
+
+    const password = formData.get("password");
+
+    if (typeof password !== "string") {
+      return;
+    }
+
+    const input: LoginRequest = {
+      username: loginSalt.username,
+      password,
+      salt: loginSalt.salt,
+    };
     loginMutation.mutate(input);
   }
+
+  function handleChangeUsername() {
+    setLoginSalt(null);
+    saltMutation.reset();
+    loginMutation.reset();
+  }
+
+  const isPending = saltMutation.isPending || loginMutation.isPending;
 
   return (
     <Card size="4" variant="classic">
@@ -100,20 +147,35 @@ export function LoginCard() {
             label={t("signIn.usernameLabel")}
             name="username"
             placeholder={t("signIn.usernamePlaceholder")}
+            defaultValue={loginSalt?.username ?? ""}
+            readOnly={loginSalt !== null}
             required
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
-          <LabeledInput
-            autoComplete="current-password"
-            label={t("signIn.passwordLabel")}
-            name="password"
-            placeholder={t("signIn.passwordPlaceholder")}
-            type="password"
-            required
-          >
-            <LockClosedIcon aria-hidden />
-          </LabeledInput>
+
+          {loginSalt ? (
+            <>
+              <Button
+                type="button"
+                variant="soft"
+                onClick={handleChangeUsername}
+              >
+                {t("signIn.changeUsername")}
+              </Button>
+              <LabeledInput
+                autoComplete="current-password"
+                autoFocus
+                label={t("signIn.passwordLabel")}
+                name="password"
+                placeholder={t("signIn.passwordPlaceholder")}
+                type="password"
+                required
+              >
+                <LockClosedIcon aria-hidden />
+              </LabeledInput>
+            </>
+          ) : null}
 
           {errorMessage ? (
             <Callout.Root color="red" role="alert" size="1">
@@ -127,10 +189,10 @@ export function LoginCard() {
           <Button
             type="submit"
             size="3"
-            loading={loginMutation.isPending}
-            disabled={loginMutation.isPending}
+            loading={isPending}
+            disabled={isPending}
           >
-            {t("signIn.submit")}
+            {loginSalt ? t("signIn.submit") : t("signIn.continue")}
           </Button>
         </Grid>
       </form>

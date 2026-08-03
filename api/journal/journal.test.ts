@@ -1,15 +1,30 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { login } from "@/api/auth/auth";
+import { getLoginSalt, login } from "@/api/auth/auth";
 import {
   createJournalEntry,
   deleteJournalEntry,
   listJournalEntries,
   updateJournalEntry,
 } from "@/api/journal/journal";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock(
+  "@/api/auth/auth.crypto",
+  async () => import("@/tests/mocks/auth-crypto"),
+);
 
 describe("journal API", () => {
   beforeEach(async () => {
-    await login({ username: "summertime", password: "journal123" });
+    const saltResponse = await getLoginSalt({ username: "summertime" });
+
+    if (!saltResponse.success) {
+      throw new Error("The seeded account salt should be available.");
+    }
+
+    await login({
+      username: "summertime",
+      password: "journal123",
+      salt: saltResponse.data.salt,
+    });
   });
 
   it("supports create, read, update, and delete through the mock HTTP boundary", async () => {
@@ -25,7 +40,9 @@ describe("journal API", () => {
     }
 
     const listed = await listJournalEntries();
-    expect(listed.success && listed.data.some(({ id }) => id === created.data.id)).toBe(true);
+    expect(
+      listed.success && listed.data.some(({ id }) => id === created.data.id),
+    ).toBe(true);
 
     const updated = await updateJournalEntry(created.data.id, {
       title: "An updated test entry",
@@ -46,8 +63,9 @@ describe("journal API", () => {
     });
 
     const afterDelete = await listJournalEntries();
-    expect(afterDelete.success && afterDelete.data.some(({ id }) => id === created.data.id)).toBe(
-      false,
-    );
+    expect(
+      afterDelete.success &&
+        afterDelete.data.some(({ id }) => id === created.data.id),
+    ).toBe(false);
   });
 });

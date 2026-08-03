@@ -2,7 +2,7 @@
 
 import { createAccount } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { CreateAccountRequest } from "@/api/auth/auth.type";
+import type { CreateAccountInput } from "@/api/auth/auth.type";
 import { LabeledInput } from "@/components/labeled-input";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
@@ -94,7 +94,7 @@ export function CreateAccountCard() {
       return;
     }
 
-    const input: CreateAccountRequest = { username, password, confirmPassword };
+    const input: CreateAccountInput = { username, password, confirmPassword };
     createAccountMutation.mutate(input);
   }
 

@@ -1,37 +1,38 @@
-import { z } from "zod";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type {
   CreateAccountRequest,
   CreateAccountResponse,
-  LoginRequest,
   LoginResponse,
   LogoutResponse,
+  SaltRequest,
+  SaltResponse,
   SessionResponse,
+  VerifyCredentialsRequest,
 } from "@/api/auth/auth.type";
 import type { User } from "@/api/auth/user.type";
 import { localServerStore, type StoredUser } from "@/local-server/store";
+import sodium from "libsodium-wrappers-sumo";
+import { z } from "zod";
 
 const usernameSchema = z
   .string()
   .trim()
   .min(1)
   .regex(/^[a-zA-Z0-9_-]{3,24}$/);
-const passwordSchema = z.string().min(1).min(8).max(128);
+const authKeySchema = z.string().regex(/^[0-9a-f]{64}$/i);
 
-const loginRequestSchema: z.ZodType<LoginRequest> = z.strictObject({
-  username: z.string().trim().min(1),
-  password: z.string().min(1),
+const saltRequestSchema: z.ZodType<SaltRequest> = z.strictObject({
+  username: usernameSchema,
 });
 
-const createAccountRequestSchema = z
-  .strictObject({
+const verifyCredentialsRequestSchema: z.ZodType<VerifyCredentialsRequest> =
+  z.strictObject({
     username: usernameSchema,
-    password: passwordSchema,
-    confirmPassword: z.string(),
-  })
-  .refine(({ confirmPassword, password }) => confirmPassword === password, {
-    path: ["confirmPassword"],
-  }) satisfies z.ZodType<CreateAccountRequest>;
+    authKey: authKeySchema,
+  });
+
+const createAccountRequestSchema: z.ZodType<CreateAccountRequest> =
+  verifyCredentialsRequestSchema;
 
 function toPublicUser(user: StoredUser): User {
   return {
@@ -41,58 +42,113 @@ function toPublicUser(user: StoredUser): User {
   };
 }
 
-function getValidationErrorCode(input: unknown) {
+function getUsernameErrorCode(input: unknown) {
   if (typeof input !== "object" || input === null) {
     return AUTH_ERROR_CODES.usernameRequired;
   }
 
-  const candidate = input as Record<string, unknown>;
-  const username = candidate["username"];
-  const password = candidate["password"];
-  const confirmPassword = candidate["confirmPassword"];
+  const username = (input as Record<string, unknown>)["username"];
 
   if (typeof username !== "string" || username.trim().length === 0) {
     return AUTH_ERROR_CODES.usernameRequired;
   }
 
-  if (!/^[a-zA-Z0-9_-]{3,24}$/.test(username.trim())) {
-    return AUTH_ERROR_CODES.usernameInvalid;
-  }
-
-  if (typeof password !== "string" || password.length === 0) {
-    return AUTH_ERROR_CODES.passwordRequired;
-  }
-
-  if (password.length < 8) {
-    return AUTH_ERROR_CODES.passwordTooShort;
-  }
-
-  if (typeof confirmPassword === "string" && confirmPassword !== password) {
-    return AUTH_ERROR_CODES.passwordsMismatch;
-  }
-
-  return AUTH_ERROR_CODES.invalidCredentials;
+  return AUTH_ERROR_CODES.usernameInvalid;
 }
 
-export async function handleLoginRequest(request: Request): Promise<Response> {
+function findUser(username: string) {
+  const normalizedUsername = username.toLowerCase();
+
+  return localServerStore.users.find(
+    (user) => user.username.toLowerCase() === normalizedUsername,
+  );
+}
+
+async function generateSalt() {
+  await sodium.ready;
+
+  return sodium.to_base64(
+    sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES),
+    sodium.base64_variants.ORIGINAL,
+  );
+}
+
+async function hashAuthKey(authKey: string) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(authKey),
+  );
+
+  return new Uint8Array(digest);
+}
+
+async function authKeyMatches(authKey: string, storedHash: string) {
+  const candidateHash = await hashAuthKey(authKey);
+  await sodium.ready;
+  const expectedHash = sodium.from_base64(
+    storedHash,
+    sodium.base64_variants.ORIGINAL,
+  );
+
+  return (
+    candidateHash.length === expectedHash.length &&
+    sodium.memcmp(candidateHash, expectedHash)
+  );
+}
+
+export async function handleLoginSaltRequest(
+  request: Request,
+): Promise<Response> {
   const body: unknown = await request.json().catch(() => null);
-  const result = loginRequestSchema.safeParse(body);
+  const result = saltRequestSchema.safeParse(body);
 
   if (!result.success) {
     const response = {
       success: false,
-      error: { code: getValidationErrorCode(body) },
+      error: { code: getUsernameErrorCode(body) },
+    } satisfies SaltResponse;
+
+    return Response.json(response, { status: 400 });
+  }
+
+  const user = findUser(result.data.username);
+
+  if (!user) {
+    const response = {
+      success: false,
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+    } satisfies SaltResponse;
+
+    return Response.json(response, { status: 401 });
+  }
+
+  const response = {
+    success: true,
+    data: { salt: user.salt },
+  } satisfies SaltResponse;
+
+  return Response.json(response);
+}
+
+export async function handleLoginRequest(request: Request): Promise<Response> {
+  const body: unknown = await request.json().catch(() => null);
+  const result = verifyCredentialsRequestSchema.safeParse(body);
+
+  if (!result.success) {
+    const response = {
+      success: false,
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
     } satisfies LoginResponse;
 
     return Response.json(response, { status: 400 });
   }
 
-  const normalizedUsername = result.data.username.toLowerCase();
-  const user = localServerStore.users.find(
-    ({ username }) => username.toLowerCase() === normalizedUsername,
-  );
+  const user = findUser(result.data.username);
+  const credentialsMatch = user
+    ? await authKeyMatches(result.data.authKey, user.authKeyHash)
+    : false;
 
-  if (!user || user.password !== result.data.password) {
+  if (!user || !credentialsMatch) {
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
@@ -111,25 +167,61 @@ export async function handleLoginRequest(request: Request): Promise<Response> {
   return Response.json(response);
 }
 
-export async function handleCreateAccountRequest(request: Request): Promise<Response> {
+export async function handleCreateAccountSaltRequest(
+  request: Request,
+): Promise<Response> {
+  const body: unknown = await request.json().catch(() => null);
+  const result = saltRequestSchema.safeParse(body);
+
+  if (!result.success) {
+    const response = {
+      success: false,
+      error: { code: getUsernameErrorCode(body) },
+    } satisfies SaltResponse;
+
+    return Response.json(response, { status: 400 });
+  }
+
+  const normalizedUsername = result.data.username.toLowerCase();
+
+  if (findUser(normalizedUsername)) {
+    const response = {
+      success: false,
+      error: { code: AUTH_ERROR_CODES.usernameTaken },
+    } satisfies SaltResponse;
+
+    return Response.json(response, { status: 409 });
+  }
+
+  const salt = await generateSalt();
+  localServerStore.pendingAccountSalts[normalizedUsername] = salt;
+
+  const response = {
+    success: true,
+    data: { salt },
+  } satisfies SaltResponse;
+
+  return Response.json(response, { status: 201 });
+}
+
+export async function handleCreateAccountRequest(
+  request: Request,
+): Promise<Response> {
   const body: unknown = await request.json().catch(() => null);
   const result = createAccountRequestSchema.safeParse(body);
 
   if (!result.success) {
     const response = {
       success: false,
-      error: { code: getValidationErrorCode(body) },
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
     } satisfies CreateAccountResponse;
 
     return Response.json(response, { status: 400 });
   }
 
   const normalizedUsername = result.data.username.toLowerCase();
-  const usernameTaken = localServerStore.users.some(
-    ({ username }) => username.toLowerCase() === normalizedUsername,
-  );
 
-  if (usernameTaken) {
+  if (findUser(normalizedUsername)) {
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.usernameTaken },
@@ -138,17 +230,32 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
     return Response.json(response, { status: 409 });
   }
 
+  const salt = localServerStore.pendingAccountSalts[normalizedUsername];
+
+  if (!salt) {
+    const response = {
+      success: false,
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+    } satisfies CreateAccountResponse;
+
+    return Response.json(response, { status: 400 });
+  }
+
+  const authKeyHash = await hashAuthKey(result.data.authKey);
+  await sodium.ready;
+
   const user: StoredUser = {
     id: crypto.randomUUID(),
     username: normalizedUsername,
     displayName: result.data.username,
-    password: result.data.password,
-    salt: crypto.randomUUID(),
+    authKeyHash: sodium.to_base64(authKeyHash, sodium.base64_variants.ORIGINAL),
+    salt,
   };
 
   localServerStore.users.push(user);
   localServerStore.entriesByUserId[user.id] = [];
   localServerStore.activeUserId = user.id;
+  delete localServerStore.pendingAccountSalts[normalizedUsername];
 
   const response = {
     success: true,
@@ -159,7 +266,9 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
 }
 
 export function handleSessionRequest(): Response {
-  const user = localServerStore.users.find(({ id }) => id === localServerStore.activeUserId);
+  const user = localServerStore.users.find(
+    ({ id }) => id === localServerStore.activeUserId,
+  );
 
   if (!user) {
     const response = {

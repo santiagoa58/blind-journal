@@ -4,13 +4,29 @@ import type { ApiResponse } from "@/api/response.type";
 export type LoginRequest = {
   username: string;
   password: string;
+  salt: string;
 };
 
-export type CreateAccountRequest = {
+export type CreateAccountInput = {
   username: string;
   password: string;
   confirmPassword: string;
 };
+
+export type SaltRequest = {
+  username: string;
+};
+
+export type SaltResponse = ApiResponse<{
+  salt: string;
+}>;
+
+export type VerifyCredentialsRequest = {
+  username: string;
+  authKey: string;
+};
+
+export type CreateAccountRequest = VerifyCredentialsRequest;
 
 export type AuthSession = {
   user: User;

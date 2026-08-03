@@ -2,13 +2,14 @@ import type { User } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 
 type StoredUser = User & {
-  password: string;
+  authKeyHash: string;
   salt: string;
 };
 
 type LocalServerState = {
   activeUserId: string | null;
   entriesByUserId: Record<string, JournalEntry[]>;
+  pendingAccountSalts: Record<string, string>;
   users: StoredUser[];
 };
 
@@ -65,10 +66,11 @@ function createInitialState(): LocalServerState {
         id: "user-1",
         username: "summertime",
         displayName: "Summer Time",
-        password: "journal123",
-        salt: "A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6",
+        authKeyHash: "u5sDSir7cELxmx4UKWowbaD8mb/8MckbcvyRK1KBWiM=",
+        salt: "AAECAwQFBgcICQoLDA0ODw==",
       },
     ],
+    pendingAccountSalts: {},
     entriesByUserId: {
       "user-1": structuredClone(initialEntries),
     },
@@ -82,6 +84,7 @@ export function resetLocalServerStore() {
 
   localServerStore.activeUserId = initialState.activeUserId;
   localServerStore.entriesByUserId = initialState.entriesByUserId;
+  localServerStore.pendingAccountSalts = initialState.pendingAccountSalts;
   localServerStore.users = initialState.users;
 }
 
