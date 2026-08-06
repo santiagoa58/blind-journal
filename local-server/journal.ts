@@ -50,23 +50,6 @@ function entryNotFoundResponse(): Response {
   );
 }
 
-function toPlainText(content: string): string {
-  return content
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getContentSummary(content: string) {
-  const plainText = toPlainText(content);
-
-  return {
-    preview: plainText.slice(0, 140),
-  };
-}
-
 export function handleJournalEntriesRequest(): Response {
   const entries = getActiveEntries();
 
@@ -97,7 +80,6 @@ export async function handleCreateJournalEntryRequest(request: Request): Promise
   }
 
   const now = new Date().toISOString();
-  const summary = getContentSummary(result.data.content);
   const entry: JournalEntry = {
     id: crypto.randomUUID(),
     title: result.data.title,
@@ -105,9 +87,7 @@ export async function handleCreateJournalEntryRequest(request: Request): Promise
     createdAt: now,
     updatedAt: now,
     favorite: false,
-    mood: "reflective",
     tags: [],
-    ...summary,
   };
 
   entries.unshift(entry);
@@ -157,19 +137,13 @@ export async function handleUpdateJournalEntryRequest(
     updates.favorite = result.data.favorite;
   }
 
-  if (result.data.mood !== undefined) {
-    updates.mood = result.data.mood;
-  }
-
   if (result.data.tags !== undefined) {
     updates.tags = result.data.tags;
   }
 
-  const content = updates.content ?? currentEntry.content;
   const updatedEntry: JournalEntry = {
     ...currentEntry,
     ...updates,
-    ...getContentSummary(content),
     updatedAt: new Date().toISOString(),
   };
 

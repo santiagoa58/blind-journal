@@ -24,10 +24,6 @@ type EntryListProps = {
   onSelect: (entryId: string) => void;
 };
 
-function truncatePreview(preview: string) {
-  return preview.length > 104 ? `${preview.slice(0, 104).trimEnd()}…` : preview;
-}
-
 export function EntryList({
   entries,
   selectedId,
@@ -47,7 +43,6 @@ export function EntryList({
       const matchesQuery =
         normalizedQuery.length === 0 ||
         entry.title.toLowerCase().includes(normalizedQuery) ||
-        entry.preview.toLowerCase().includes(normalizedQuery) ||
         entry.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
 
       return matchesFilter && matchesQuery;
@@ -130,12 +125,6 @@ export function EntryList({
                             />
                           ) : null}
                         </Flex>
-
-                        {entry.preview ? (
-                          <Text as="p" size="1" color="gray" align="left">
-                            {truncatePreview(entry.preview)}
-                          </Text>
-                        ) : null}
 
                         <Flex align="center" gap="2">
                           <Text size="1" color="gray">

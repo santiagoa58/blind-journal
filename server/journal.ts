@@ -29,16 +29,6 @@ function entryNotFoundResponse(): JournalEntryResponse {
   };
 }
 
-function getContentPreview(content: string): string {
-  return content
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 140);
-}
-
 export function listEntries(userId: string): JournalEntriesResponse {
   const entries = getEntries(userId) ?? [];
 
@@ -60,11 +50,9 @@ export function createEntry(userId: string, input: unknown): JournalEntryRespons
     id: crypto.randomUUID(),
     title: result.data.title,
     content: result.data.content,
-    preview: getContentPreview(result.data.content),
     createdAt: now,
     updatedAt: now,
     favorite: false,
-    mood: "reflective",
     tags: [],
   };
 
@@ -107,19 +95,13 @@ export function updateEntry(userId: string, entryId: string, input: unknown): Jo
     updates.favorite = result.data.favorite;
   }
 
-  if (result.data.mood !== undefined) {
-    updates.mood = result.data.mood;
-  }
-
   if (result.data.tags !== undefined) {
     updates.tags = result.data.tags;
   }
 
-  const content = updates.content ?? currentEntry.content;
   const updatedEntry: JournalEntry = {
     ...currentEntry,
     ...updates,
-    preview: getContentPreview(content),
     updatedAt: new Date().toISOString(),
   };
 
