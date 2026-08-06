@@ -1,11 +1,19 @@
+/// <reference lib="webworker" />
+
 import sodium from "libsodium-wrappers-sumo";
+import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
 const HASH_KEY_LENGTH_BITS = 256; // Desired output length in bits (32 bytes * 8 bits/byte)
 const HASH_KEY_LENGTH_BYTES = 32; // Desired output length in bytes (32 bytes is standard for keys)
 
-export async function deriveMasterKey(userPassword: string, salt: Uint8Array) {
-  await sodium.ready;
+function base64ToUint8Array(str: string): Uint8Array {
+  return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
+}
 
+function deriveMasterKey(userPassword: string, salt: Uint8Array) {
+  if (salt.byteLength !== sodium.crypto_pwhash_SALTBYTES) {
+    throw new Error("Invalid salt length");
+  }
   // Hash the password with Argon2id and 'sensitive' parameters for better security
   return sodium.crypto_pwhash(
     HASH_KEY_LENGTH_BYTES,
@@ -17,7 +25,7 @@ export async function deriveMasterKey(userPassword: string, salt: Uint8Array) {
   );
 }
 
-export async function deriveUserKeys(rawMasterKey: Uint8Array<ArrayBufferLike>) {
+async function deriveUserKeys(rawMasterKey: Uint8Array): Promise<AuthUserKeys> {
   // 2. Import Master Key into Web Crypto for HKDF
   const masterKey = await crypto.subtle.importKey(
     "raw",
@@ -51,10 +59,35 @@ export async function deriveUserKeys(rawMasterKey: Uint8Array<ArrayBufferLike>) 
     ["wrapKey", "unwrapKey"],
   );
 
-  const authKeyHex = sodium.to_hex(new Uint8Array(authKey));
-
   return {
-    authKey: authKeyHex,
+    authKeyBase64: new Uint8Array(authKey).toBase64(),
     keyEncryptKey: encryptKey,
   };
 }
+
+self.addEventListener("message", async (e: MessageEvent<AuthWorkerPayload>) => {
+  await sodium.ready;
+  let salt: Uint8Array;
+  let masterKey: Uint8Array | undefined;
+  try {
+    salt = base64ToUint8Array(e.data.saltBase64);
+    masterKey = deriveMasterKey(e.data.password, salt);
+    const userKeys = await deriveUserKeys(masterKey);
+    const response = {
+      reqId: e.data.reqId,
+      success: true,
+      data: userKeys,
+    } satisfies AuthWorkerResponse;
+    self.postMessage(response);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const response = {
+      reqId: e.data.reqId,
+      success: false,
+      error: msg,
+    } satisfies AuthWorkerResponse;
+    self.postMessage(response);
+  } finally {
+    masterKey && sodium.memzero(masterKey);
+  }
+});

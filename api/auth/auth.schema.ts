@@ -1,26 +1,23 @@
 import { z } from "zod";
 import type {
-  CreateAccountRequest,
-  SaltRequest,
-  VerifyCredentialsRequest,
+  ApiCreateAccountRequest,
+  ApiSaltRequest,
+  ApiVerifyCredentialsRequest,
 } from "@/api/auth/auth.type";
 
-export const usernameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .regex(/^[a-zA-Z0-9_-]{3,24}$/);
+export const usernameSchema = z.string().trim().min(3).max(24);
 
-const authKeySchema = z.string().regex(/^[0-9a-f]{64}$/i);
+const authKeySchema = z.base64();
 
-export const saltRequestSchema: z.ZodType<SaltRequest> = z.strictObject({
+export const saltRequestSchema: z.ZodType<ApiSaltRequest> = z.strictObject({
   username: usernameSchema,
 });
 
-export const verifyCredentialsRequestSchema: z.ZodType<VerifyCredentialsRequest> = z.strictObject({
-  username: usernameSchema,
-  authKey: authKeySchema,
-});
+export const verifyCredentialsRequestSchema: z.ZodType<ApiVerifyCredentialsRequest> =
+  z.strictObject({
+    username: usernameSchema,
+    authKeyBase64: authKeySchema,
+  });
 
-export const createAccountRequestSchema: z.ZodType<CreateAccountRequest> =
+export const createAccountRequestSchema: z.ZodType<ApiCreateAccountRequest> =
   verifyCredentialsRequestSchema;

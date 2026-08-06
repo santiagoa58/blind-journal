@@ -4,6 +4,10 @@ import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { localServerStore, type StoredUser } from "@/local-server/store";
 import { deriveMasterKey, deriveUserKeys } from "@/tests/mocks/auth-crypto";
 
+// TODO(auth-worker): Add a real-browser regression test that exercises the production worker/KDF
+// and proves the pending UI and event loop remain responsive while derivation runs. This fast mock
+// validates auth contracts but deliberately cannot detect main-thread blocking or worker failures.
+// Learn more: https://playwright.dev/docs/api/class-worker
 vi.mock("@/api/auth/auth.crypto", async () => import("@/tests/mocks/auth-crypto"));
 
 const account = {

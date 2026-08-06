@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, error: { code: REQUEST_ERROR_CODES.forbidden } }, 403);
   }
 
-  const result = verifyCredentials(await readJsonBody(request, 1_024));
+  const result = await verifyCredentials(await readJsonBody(request, 1_024));
   const response = jsonResponse(result, result.success ? 200 : 401);
 
   if (result.success) {

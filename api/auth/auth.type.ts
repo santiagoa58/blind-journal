@@ -1,38 +1,72 @@
 import type { User } from "@/api/auth/user.type";
 import type { ApiResponse } from "@/api/response.type";
 
-export type LoginRequest = {
+/************************
+ * CLIENT SIDE REQUESTS *
+ ************************/
+
+export interface AuthWorkerPayload {
+  reqId: string;
+  password: string;
+  saltBase64: string;
+}
+
+export interface AuthUserKeys {
+  authKeyBase64: string;
+  keyEncryptKey: CryptoKey;
+}
+export type AuthWorkerResponse =
+  | {
+      reqId: string;
+      success: true;
+      data: AuthUserKeys;
+    }
+  | {
+      reqId: string;
+      success: false;
+      error: string;
+    };
+
+export interface ClientLoginRequest {
   username: string;
   password: string;
-  salt: string;
-};
+  saltBase64: string;
+}
 
-export type CreateAccountInput = {
+export interface ClientCreateAccountRequest {
   username: string;
   password: string;
-  confirmPassword: string;
-};
+  saltBase64: string;
+}
 
-export type SaltRequest = {
+/****************************
+ * API REQUESTS & RESPONSES *
+ ****************************/
+
+export interface ApiAuthSession {
+  user: User;
+}
+
+export interface ApiSaltRequest {
   username: string;
-};
-
-export type SaltResponse = ApiResponse<{
-  salt: string;
+}
+export type ApiSaltResponse = ApiResponse<{
+  saltBase64: string;
 }>;
 
-export type VerifyCredentialsRequest = {
+export interface ApiVerifyCredentialsRequest {
   username: string;
-  authKey: string;
+  authKeyBase64: string;
+}
+
+export type ApiVerifyCredentialsResponse = ApiResponse<ApiAuthSession>;
+
+export type ApiCreateAccountRequest = {
+  username: string;
+  authKeyBase64: string;
 };
 
-export type CreateAccountRequest = VerifyCredentialsRequest;
+export type ApiCreateAccountResponse = ApiResponse<ApiAuthSession>;
 
-export type AuthSession = {
-  user: User;
-};
-
-export type LoginResponse = ApiResponse<AuthSession>;
-export type CreateAccountResponse = ApiResponse<AuthSession>;
-export type SessionResponse = ApiResponse<AuthSession>;
-export type LogoutResponse = ApiResponse<null>;
+export type ApiSessionResponse = ApiResponse<ApiAuthSession>;
+export type ApiLogoutResponse = ApiResponse<null>;

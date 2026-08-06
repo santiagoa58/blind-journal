@@ -6,14 +6,21 @@ import {
   verifyCredentialsRequestSchema,
 } from "@/api/auth/auth.schema";
 import type {
-  CreateAccountResponse,
-  LoginResponse,
-  LogoutResponse,
-  SaltResponse,
-  SessionResponse,
+  ApiCreateAccountResponse,
+  ApiLogoutResponse,
+  ApiSaltResponse,
+  ApiSessionResponse,
+  ApiVerifyCredentialsResponse,
 } from "@/api/auth/auth.type";
 import type { User } from "@/api/auth/user.type";
 import { localServerStore, type StoredUser } from "@/local-server/store";
+
+async function generateSalt(): Promise<[string, Uint8Array]> {
+  await sodium.ready;
+  const rawSalt = sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES);
+  const saltBase64 = sodium.to_base64(rawSalt);
+  return [saltBase64, rawSalt];
+}
 
 function toPublicUser(user: StoredUser): User {
   return {
@@ -43,15 +50,6 @@ function findUser(username: string) {
   return localServerStore.users.find((user) => user.username.toLowerCase() === normalizedUsername);
 }
 
-async function generateSalt() {
-  await sodium.ready;
-
-  return sodium.to_base64(
-    sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES),
-    sodium.base64_variants.ORIGINAL,
-  );
-}
-
 async function hashAuthKey(authKey: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(authKey));
 
@@ -63,7 +61,8 @@ async function authKeyMatches(authKey: string, storedHash: string) {
   await sodium.ready;
   const expectedHash = sodium.from_base64(storedHash, sodium.base64_variants.ORIGINAL);
 
-  return candidateHash.length === expectedHash.length && sodium.memcmp(candidateHash, expectedHash);
+  // time safe equality check
+  return sodium.memcmp(candidateHash, expectedHash);
 }
 
 export async function handleLoginSaltRequest(request: Request): Promise<Response> {
@@ -74,7 +73,7 @@ export async function handleLoginSaltRequest(request: Request): Promise<Response
     const response = {
       success: false,
       error: { code: getUsernameErrorCode(body) },
-    } satisfies SaltResponse;
+    } satisfies ApiSaltResponse;
 
     return Response.json(response, { status: 400 });
   }
@@ -85,15 +84,15 @@ export async function handleLoginSaltRequest(request: Request): Promise<Response
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
-    } satisfies SaltResponse;
+    } satisfies ApiSaltResponse;
 
     return Response.json(response, { status: 401 });
   }
 
   const response = {
     success: true,
-    data: { salt: user.salt },
-  } satisfies SaltResponse;
+    data: { saltBase64: user.salt },
+  } satisfies ApiSaltResponse;
 
   return Response.json(response);
 }
@@ -106,21 +105,21 @@ export async function handleLoginRequest(request: Request): Promise<Response> {
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
-    } satisfies LoginResponse;
+    } satisfies ApiVerifyCredentialsResponse;
 
     return Response.json(response, { status: 400 });
   }
 
   const user = findUser(result.data.username);
   const credentialsMatch = user
-    ? await authKeyMatches(result.data.authKey, user.authKeyHash)
+    ? await authKeyMatches(result.data.authKeyBase64, user.authKeyHash)
     : false;
 
   if (!user || !credentialsMatch) {
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
-    } satisfies LoginResponse;
+    } satisfies ApiVerifyCredentialsResponse;
 
     return Response.json(response, { status: 401 });
   }
@@ -130,7 +129,7 @@ export async function handleLoginRequest(request: Request): Promise<Response> {
   const response = {
     success: true,
     data: { user: toPublicUser(user) },
-  } satisfies LoginResponse;
+  } satisfies ApiVerifyCredentialsResponse;
 
   return Response.json(response);
 }
@@ -143,7 +142,7 @@ export async function handleCreateAccountSaltRequest(request: Request): Promise<
     const response = {
       success: false,
       error: { code: getUsernameErrorCode(body) },
-    } satisfies SaltResponse;
+    } satisfies ApiSaltResponse;
 
     return Response.json(response, { status: 400 });
   }
@@ -154,18 +153,18 @@ export async function handleCreateAccountSaltRequest(request: Request): Promise<
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.usernameTaken },
-    } satisfies SaltResponse;
+    } satisfies ApiSaltResponse;
 
     return Response.json(response, { status: 409 });
   }
 
-  const salt = await generateSalt();
-  localServerStore.pendingAccountSalts[normalizedUsername] = salt;
+  const [saltBase64] = await generateSalt();
+  localServerStore.pendingAccountSalts[normalizedUsername] = saltBase64;
 
   const response = {
     success: true,
-    data: { salt },
-  } satisfies SaltResponse;
+    data: { saltBase64 },
+  } satisfies ApiSaltResponse;
 
   return Response.json(response, { status: 201 });
 }
@@ -178,7 +177,7 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
-    } satisfies CreateAccountResponse;
+    } satisfies ApiCreateAccountResponse;
 
     return Response.json(response, { status: 400 });
   }
@@ -189,7 +188,7 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.usernameTaken },
-    } satisfies CreateAccountResponse;
+    } satisfies ApiCreateAccountResponse;
 
     return Response.json(response, { status: 409 });
   }
@@ -200,12 +199,12 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
-    } satisfies CreateAccountResponse;
+    } satisfies ApiCreateAccountResponse;
 
     return Response.json(response, { status: 400 });
   }
 
-  const authKeyHash = await hashAuthKey(result.data.authKey);
+  const authKeyHash = await hashAuthKey(result.data.authKeyBase64);
   await sodium.ready;
 
   const user: StoredUser = {
@@ -224,7 +223,7 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
   const response = {
     success: true,
     data: { user: toPublicUser(user) },
-  } satisfies CreateAccountResponse;
+  } satisfies ApiCreateAccountResponse;
 
   return Response.json(response, { status: 201 });
 }
@@ -236,7 +235,7 @@ export function handleSessionRequest(): Response {
     const response = {
       success: false,
       error: { code: AUTH_ERROR_CODES.unauthorized },
-    } satisfies SessionResponse;
+    } satisfies ApiSessionResponse;
 
     return Response.json(response, { status: 401 });
   }
@@ -244,7 +243,7 @@ export function handleSessionRequest(): Response {
   const response = {
     success: true,
     data: { user: toPublicUser(user) },
-  } satisfies SessionResponse;
+  } satisfies ApiSessionResponse;
 
   return Response.json(response);
 }
@@ -255,7 +254,7 @@ export function handleLogoutRequest(): Response {
   const response = {
     success: true,
     data: null,
-  } satisfies LogoutResponse;
+  } satisfies ApiLogoutResponse;
 
   return Response.json(response);
 }

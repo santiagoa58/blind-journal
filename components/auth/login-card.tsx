@@ -7,14 +7,14 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { getLoginSalt, login } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { LoginRequest, SaltRequest } from "@/api/auth/auth.type";
+import type { ApiSaltRequest, ClientLoginRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { LabeledInput } from "./labeled-input";
 
 type LoginSalt = {
   username: string;
-  salt: string;
+  saltBase64: string;
 };
 
 export function LoginCard() {
@@ -32,9 +32,13 @@ export function LoginCard() {
     },
     onSuccess(response, request) {
       if (response.success) {
+        // TODO(auth-worker): Prewarm one reusable KDF worker after salt lookup so libsodium can
+        // initialize before password submission. Define ownership explicitly and terminate it on
+        // lock/logout; do not create a new worker during every render or mutation attempt.
+        // Learn more: https://developer.mozilla.org/en-US/docs/Web/API/Worker/terminate
         setLoginSalt({
           username: request.username.trim(),
-          salt: response.data.salt,
+          saltBase64: response.data.saltBase64,
         });
       }
     },
@@ -88,7 +92,7 @@ export function LoginCard() {
     }
 
     if (!loginSalt) {
-      const input: SaltRequest = { username };
+      const input: ApiSaltRequest = { username };
       saltMutation.mutate(input);
       return;
     }
@@ -99,10 +103,10 @@ export function LoginCard() {
       return;
     }
 
-    const input: LoginRequest = {
+    const input: ClientLoginRequest = {
       username: loginSalt.username,
       password,
-      salt: loginSalt.salt,
+      saltBase64: loginSalt.saltBase64,
     };
     loginMutation.mutate(input);
   }

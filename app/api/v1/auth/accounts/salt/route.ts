@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, error: { code: REQUEST_ERROR_CODES.forbidden } }, 403);
   }
 
-  const response = createAccountSalt(await readJsonBody(request, 1_024));
+  const response = await createAccountSalt(await readJsonBody(request, 1_024));
   const status = response.success
     ? 201
     : response.error.code === AUTH_ERROR_CODES.usernameTaken

@@ -1,104 +1,75 @@
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type {
-  CreateAccountInput,
-  CreateAccountRequest,
-  CreateAccountResponse,
-  LoginRequest,
-  LoginResponse,
-  LogoutResponse,
-  SaltRequest,
-  SaltResponse,
-  SessionResponse,
-  VerifyCredentialsRequest,
+  ApiCreateAccountRequest,
+  ApiCreateAccountResponse,
+  ApiLogoutResponse,
+  ApiSaltRequest,
+  ApiSaltResponse,
+  ApiSessionResponse,
+  ApiVerifyCredentialsRequest,
+  ApiVerifyCredentialsResponse,
+  ClientCreateAccountRequest,
+  ClientLoginRequest,
 } from "@/api/auth/auth.type";
 import { api } from "@/api/client";
-import { deriveMasterKey, deriveUserKeys } from "./auth.crypto";
+import { getAuthWorkerClient } from "./authWorkerClient";
 
-export function getLoginSalt(input: SaltRequest): Promise<SaltResponse> {
+export function getLoginSalt(input: ApiSaltRequest): Promise<ApiSaltResponse> {
   return api
     .post("auth/login/salt", {
       cache: "no-store",
       json: input,
     })
-    .json<SaltResponse>();
+    .json<ApiSaltResponse>();
 }
 
-export async function login(input: LoginRequest): Promise<LoginResponse> {
-  const salt = Uint8Array.from(atob(input.salt), (character) => character.charCodeAt(0));
-  const masterKey = await deriveMasterKey(input.password, salt);
-  const { authKey } = await deriveUserKeys(masterKey);
+export function getCreateAccountSalt(input: ApiSaltRequest): Promise<ApiSaltResponse> {
+  return api
+    .post("auth/accounts/salt", {
+      cache: "no-store",
+      json: input,
+    })
+    .json<ApiSaltResponse>();
+}
+
+export async function login(input: ClientLoginRequest): Promise<ApiVerifyCredentialsResponse> {
+  const worker = getAuthWorkerClient();
+  const res = await worker.getUserKeys(input.password, input.saltBase64);
   const request = {
     username: input.username,
-    authKey,
-  } satisfies VerifyCredentialsRequest;
+    authKeyBase64: res.authKeyBase64,
+  } satisfies ApiVerifyCredentialsRequest;
 
   return api
     .post("auth/login", {
       cache: "no-store",
       json: request,
     })
-    .json<LoginResponse>();
+    .json<ApiVerifyCredentialsResponse>();
 }
 
-function requestAccountSalt(input: SaltRequest): Promise<SaltResponse> {
-  return api
-    .post("auth/accounts/salt", {
-      cache: "no-store",
-      json: input,
-    })
-    .json<SaltResponse>();
-}
+export async function createAccount(
+  input: ClientCreateAccountRequest,
+): Promise<ApiCreateAccountResponse> {
+  const worker = getAuthWorkerClient();
+  const res = await worker.getUserKeys(input.password, input.saltBase64);
 
-export async function createAccount(input: CreateAccountInput): Promise<CreateAccountResponse> {
-  if (input.password.length === 0) {
-    return {
-      success: false,
-      error: { code: AUTH_ERROR_CODES.passwordRequired },
-    };
-  }
-
-  if (input.password.length < 8) {
-    return {
-      success: false,
-      error: { code: AUTH_ERROR_CODES.passwordTooShort },
-    };
-  }
-
-  if (input.password !== input.confirmPassword) {
-    return {
-      success: false,
-      error: { code: AUTH_ERROR_CODES.passwordsMismatch },
-    };
-  }
-
-  const saltResponse = await requestAccountSalt({ username: input.username });
-
-  if (!saltResponse.success) {
-    return saltResponse;
-  }
-
-  const salt = Uint8Array.from(atob(saltResponse.data.salt), (character) =>
-    character.charCodeAt(0),
-  );
-  const masterKey = await deriveMasterKey(input.password, salt);
-  const { authKey } = await deriveUserKeys(masterKey);
   const request = {
     username: input.username,
-    authKey,
-  } satisfies CreateAccountRequest;
+    authKeyBase64: res.authKeyBase64,
+  } satisfies ApiCreateAccountRequest;
 
   return api
     .post("auth/accounts", {
       cache: "no-store",
       json: request,
     })
-    .json<CreateAccountResponse>();
+    .json<ApiCreateAccountResponse>();
 }
 
-export function getSession(): Promise<SessionResponse> {
-  return api.get("auth/session", { cache: "no-store" }).json<SessionResponse>();
+export function getSession(): Promise<ApiSessionResponse> {
+  return api.get("auth/session", { cache: "no-store" }).json<ApiSessionResponse>();
 }
 
-export function logout(): Promise<LogoutResponse> {
-  return api.post("auth/logout", { cache: "no-store" }).json<LogoutResponse>();
+export function logout(): Promise<ApiLogoutResponse> {
+  return api.post("auth/logout", { cache: "no-store" }).json<ApiLogoutResponse>();
 }

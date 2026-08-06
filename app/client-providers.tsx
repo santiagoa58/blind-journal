@@ -7,20 +7,7 @@ import { type PropsWithChildren, useState } from "react";
 import { Toaster } from "sonner";
 
 export function Providers(props: PropsWithChildren) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          mutations: {
-            retry: false,
-          },
-          queries: {
-            retry: 1,
-            staleTime: 30_000,
-          },
-        },
-      }),
-  );
+  const [queryClient] = useState(() => new QueryClient());
 
   return (
     <ThemeProvider attribute="class">

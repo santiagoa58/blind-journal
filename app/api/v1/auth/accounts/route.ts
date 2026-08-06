@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: false, error: { code: REQUEST_ERROR_CODES.forbidden } }, 403);
   }
 
-  const result = createAccount(await readJsonBody(request, 1_024));
+  const result = await createAccount(await readJsonBody(request, 1_024));
   const status = result.success
     ? 201
     : result.error.code === AUTH_ERROR_CODES.usernameTaken
