@@ -12,13 +12,13 @@ export function NumberedListIcon({ width, height, ...props }: NumberedListIconPr
         width={width}
         height={height}
         viewBox="0 0 24 24"
+        aria-hidden="true"
         fill="none"
         stroke="currentColor"
-        stroke-width="1"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        <title>Numbered List Icon</title>
         <path d="M11 5h10" />
         <path d="M11 12h10" />
         <path d="M11 19h10" />

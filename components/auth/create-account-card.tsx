@@ -116,10 +116,7 @@ export function CreateAccountCard() {
             autoComplete="username"
             description={t("createAccount.usernameHint")}
             label={t("createAccount.usernameLabel")}
-            minLength={3}
-            maxLength={24}
             name="username"
-            pattern="[a-zA-Z0-9_-]+"
             placeholder={t("createAccount.usernamePlaceholder")}
             required
           >
@@ -129,8 +126,6 @@ export function CreateAccountCard() {
             autoComplete="new-password"
             description={t("createAccount.passwordHint")}
             label={t("createAccount.passwordLabel")}
-            minLength={8}
-            maxLength={128}
             name="password"
             placeholder={t("createAccount.passwordPlaceholder")}
             type="password"
@@ -141,8 +136,6 @@ export function CreateAccountCard() {
           <LabeledInput
             autoComplete="new-password"
             label={t("createAccount.confirmPasswordLabel")}
-            minLength={8}
-            maxLength={128}
             name="confirmPassword"
             placeholder={t("createAccount.confirmPasswordPlaceholder")}
             type="password"
