@@ -1,14 +1,11 @@
 /// <reference lib="webworker" />
 
 import sodium from "libsodium-wrappers-sumo";
+import { base64ToUint8Array, uint8ArrayToBase64 } from "@/crypto/base64";
 import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
 const HASH_KEY_LENGTH_BITS = 256; // Desired output length in bits (32 bytes * 8 bits/byte)
 const HASH_KEY_LENGTH_BYTES = 32; // Desired output length in bytes (32 bytes is standard for keys)
-
-function base64ToUint8Array(str: string): Uint8Array {
-  return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
-}
 
 function deriveMasterKey(userPassword: string, salt: Uint8Array) {
   if (salt.byteLength !== sodium.crypto_pwhash_SALTBYTES) {
@@ -60,7 +57,7 @@ async function deriveUserKeys(rawMasterKey: Uint8Array): Promise<AuthUserKeys> {
   );
 
   return {
-    authKeyBase64: new Uint8Array(authKey).toBase64(),
+    authKey: uint8ArrayToBase64(new Uint8Array(authKey)),
     keyEncryptKey: encryptKey,
   };
 }
@@ -70,7 +67,7 @@ self.addEventListener("message", async (e: MessageEvent<AuthWorkerPayload>) => {
   let salt: Uint8Array;
   let masterKey: Uint8Array | undefined;
   try {
-    salt = base64ToUint8Array(e.data.saltBase64);
+    salt = base64ToUint8Array(e.data.salt);
     masterKey = deriveMasterKey(e.data.password, salt);
     const userKeys = await deriveUserKeys(masterKey);
     const response = {

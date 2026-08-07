@@ -13,12 +13,13 @@ import type {
   ApiSessionResponse,
   ApiVerifyCredentialsResponse,
 } from "@/api/auth/auth.type";
-import type { User } from "@/api/auth/user.type";
+import type { ApiUser as User } from "@/api/auth/user.type";
+import type { Base64 } from "@/api/general.type";
 import { type StoredUser, serverStore } from "@/server/store";
 
 const ACCOUNT_SALT_LIFETIME_MS = 10 * 60 * 1_000;
 
-async function generateSalt(): Promise<[string, Uint8Array]> {
+async function generateSalt(): Promise<[Base64, Uint8Array]> {
   await sodium.ready;
   const rawSalt = sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES);
   const saltBase64 = sodium.to_base64(rawSalt);
@@ -53,13 +54,13 @@ function findUser(username: string): StoredUser | undefined {
   return serverStore.users.find((user) => user.username.toLowerCase() === normalizedUsername);
 }
 
-async function hashAuthKey(authKey: string) {
+async function hashAuthKey(authKey: Base64) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(authKey));
 
   return new Uint8Array(digest);
 }
 
-async function authKeyMatches(authKey: string, storedHash: string): Promise<boolean> {
+async function authKeyMatches(authKey: Base64, storedHash: Base64): Promise<boolean> {
   const candidateHash = await hashAuthKey(authKey);
   await sodium.ready;
   const expectedHash = sodium.from_base64(storedHash, sodium.base64_variants.ORIGINAL);
@@ -88,7 +89,7 @@ export function getLoginSalt(input: unknown): ApiSaltResponse {
 
   return {
     success: true,
-    data: { saltBase64: user.salt },
+    data: { salt: user.salt },
   } satisfies ApiSaltResponse;
 }
 
@@ -119,7 +120,7 @@ export async function createAccountSalt(input: unknown): Promise<ApiSaltResponse
 
   return {
     success: true,
-    data: { saltBase64 },
+    data: { salt: saltBase64 },
   } satisfies ApiSaltResponse;
 }
 
@@ -152,7 +153,7 @@ export async function createAccount(input: unknown): Promise<ApiCreateAccountRes
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
     } satisfies ApiCreateAccountResponse;
   }
-  const authKeyHash = await hashAuthKey(result.data.authKeyBase64);
+  const authKeyHash = await hashAuthKey(result.data.authKey);
 
   const user: StoredUser = {
     id: crypto.randomUUID(),
@@ -184,7 +185,7 @@ export async function verifyCredentials(input: unknown): Promise<ApiVerifyCreden
 
   const user = findUser(result.data.username);
   const credentialsMatch = user
-    ? await authKeyMatches(result.data.authKeyBase64, user.authKeyHash)
+    ? await authKeyMatches(result.data.authKey, user.authKeyHash)
     : false;
 
   if (!user || !credentialsMatch) {

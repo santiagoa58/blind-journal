@@ -12,10 +12,11 @@ import type {
   ApiSessionResponse,
   ApiVerifyCredentialsResponse,
 } from "@/api/auth/auth.type";
-import type { User } from "@/api/auth/user.type";
+import type { ApiUser as User } from "@/api/auth/user.type";
+import type { Base64 } from "@/api/general.type";
 import { localServerStore, type StoredUser } from "@/local-server/store";
 
-async function generateSalt(): Promise<[string, Uint8Array]> {
+async function generateSalt(): Promise<[Base64, Uint8Array]> {
   await sodium.ready;
   const rawSalt = sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES);
   const saltBase64 = sodium.to_base64(rawSalt);
@@ -50,13 +51,13 @@ function findUser(username: string) {
   return localServerStore.users.find((user) => user.username.toLowerCase() === normalizedUsername);
 }
 
-async function hashAuthKey(authKey: string) {
+async function hashAuthKey(authKey: Base64) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(authKey));
 
   return new Uint8Array(digest);
 }
 
-async function authKeyMatches(authKey: string, storedHash: string) {
+async function authKeyMatches(authKey: Base64, storedHash: Base64) {
   const candidateHash = await hashAuthKey(authKey);
   await sodium.ready;
   const expectedHash = sodium.from_base64(storedHash, sodium.base64_variants.ORIGINAL);
@@ -91,7 +92,7 @@ export async function handleLoginSaltRequest(request: Request): Promise<Response
 
   const response = {
     success: true,
-    data: { saltBase64: user.salt },
+    data: { salt: user.salt },
   } satisfies ApiSaltResponse;
 
   return Response.json(response);
@@ -112,7 +113,7 @@ export async function handleLoginRequest(request: Request): Promise<Response> {
 
   const user = findUser(result.data.username);
   const credentialsMatch = user
-    ? await authKeyMatches(result.data.authKeyBase64, user.authKeyHash)
+    ? await authKeyMatches(result.data.authKey, user.authKeyHash)
     : false;
 
   if (!user || !credentialsMatch) {
@@ -163,7 +164,7 @@ export async function handleCreateAccountSaltRequest(request: Request): Promise<
 
   const response = {
     success: true,
-    data: { saltBase64 },
+    data: { salt: saltBase64 },
   } satisfies ApiSaltResponse;
 
   return Response.json(response, { status: 201 });
@@ -204,7 +205,7 @@ export async function handleCreateAccountRequest(request: Request): Promise<Resp
     return Response.json(response, { status: 400 });
   }
 
-  const authKeyHash = await hashAuthKey(result.data.authKeyBase64);
+  const authKeyHash = await hashAuthKey(result.data.authKey);
   await sodium.ready;
 
   const user: StoredUser = {

@@ -1,9 +1,9 @@
 import { z } from "zod";
-import type { CreateJournalEntryRequest } from "@/api/journal/journal.type";
+import type { ClientCreateJournalEntryRequest } from "@/api/journal/journal.type";
 
 export const journalEntryIdSchema = z.uuid();
 
-export const createEntryRequestSchema: z.ZodType<CreateJournalEntryRequest> = z.strictObject({
+export const createEntryRequestSchema: z.ZodType<ClientCreateJournalEntryRequest> = z.strictObject({
   title: z.string().trim().min(1).max(255),
   content: z.string(),
 });

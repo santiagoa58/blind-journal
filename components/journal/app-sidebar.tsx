@@ -20,14 +20,14 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { User } from "@/api/auth/user.type";
+import type { ApiUser } from "@/api/auth/user.type";
 import { BrandMark } from "@/components/brand-mark";
 
 export type SidebarSection = "journal" | "favorites";
 
 type AppSidebarProps = {
   activeSection: SidebarSection;
-  currentUser: User;
+  currentUser: ApiUser;
   entryCount: number;
   favoriteCount: number;
   onSectionChange: (section: SidebarSection) => void;

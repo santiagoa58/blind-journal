@@ -11,7 +11,7 @@ import type {
   ClientLoginRequest,
 } from "@/api/auth/auth.type";
 import { api } from "@/api/client";
-import { getAuthWorkerClient } from "./authWorkerClient";
+import { getAuthWorkerClient, terminateAuthWorkerClient } from "./authWorkerClient";
 
 export function getLoginSalt(input: ApiSaltRequest): Promise<ApiSaltResponse> {
   return api
@@ -31,12 +31,12 @@ export function getCreateAccountSalt(input: ApiSaltRequest): Promise<ApiSaltResp
     .json<ApiSaltResponse>();
 }
 
-export async function login(input: ClientLoginRequest): Promise<ApiVerifyCredentialsResponse> {
+export async function login(input: ClientLoginRequest) {
   const worker = getAuthWorkerClient();
-  const res = await worker.getUserKeys(input.password, input.saltBase64);
+  const userKeys = await worker.getUserKeys(input.password, input.salt);
   const request = {
     username: input.username,
-    authKeyBase64: res.authKeyBase64,
+    authKey: userKeys.authKey,
   } satisfies ApiVerifyCredentialsRequest;
 
   return api
@@ -44,18 +44,24 @@ export async function login(input: ClientLoginRequest): Promise<ApiVerifyCredent
       cache: "no-store",
       json: request,
     })
-    .json<ApiVerifyCredentialsResponse>();
+    .json<ApiVerifyCredentialsResponse>()
+    .then((resp) => {
+      if (resp.success) {
+        // cleanup auth worker after successful login
+        terminateAuthWorkerClient();
+        return { ...resp, data: { ...resp.data, masterKey: userKeys.keyEncryptKey } };
+      }
+      return resp;
+    });
 }
 
-export async function createAccount(
-  input: ClientCreateAccountRequest,
-): Promise<ApiCreateAccountResponse> {
+export async function createAccount(input: ClientCreateAccountRequest) {
   const worker = getAuthWorkerClient();
-  const res = await worker.getUserKeys(input.password, input.saltBase64);
+  const userKeys = await worker.getUserKeys(input.password, input.salt);
 
   const request = {
     username: input.username,
-    authKeyBase64: res.authKeyBase64,
+    authKey: userKeys.authKey,
   } satisfies ApiCreateAccountRequest;
 
   return api
@@ -63,7 +69,14 @@ export async function createAccount(
       cache: "no-store",
       json: request,
     })
-    .json<ApiCreateAccountResponse>();
+    .json<ApiCreateAccountResponse>()
+    .then((resp) => {
+      if (resp.success) {
+        terminateAuthWorkerClient();
+        return { ...resp, data: { ...resp.data, masterKey: userKeys.keyEncryptKey } };
+      }
+      return resp;
+    });
 }
 
 export function getSession(): Promise<ApiSessionResponse> {

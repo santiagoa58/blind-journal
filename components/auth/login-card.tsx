@@ -2,26 +2,28 @@
 
 import { ExclamationTriangleIcon, LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import { Button, Callout, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { getLoginSalt, login } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { ApiSaltRequest, ClientLoginRequest } from "@/api/auth/auth.type";
+import type { Base64 } from "@/api/general.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
+import { useUser } from "@/state/user.state";
 import { LabeledInput } from "./labeled-input";
 
 type LoginSalt = {
   username: string;
-  saltBase64: string;
+  saltBase64: Base64;
 };
 
 export function LoginCard() {
+  const setUser = useUser((state) => state.setUser);
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const queryClient = useQueryClient();
   const appToast = useAppToast();
   const [loginSalt, setLoginSalt] = useState<LoginSalt | null>(null);
   const saltMutation = useMutation({
@@ -38,7 +40,7 @@ export function LoginCard() {
         // Learn more: https://developer.mozilla.org/en-US/docs/Web/API/Worker/terminate
         setLoginSalt({
           username: request.username.trim(),
-          saltBase64: response.data.saltBase64,
+          saltBase64: response.data.salt,
         });
       }
     },
@@ -53,8 +55,7 @@ export function LoginCard() {
       if (!response.success) {
         return;
       }
-
-      queryClient.setQueryData(["auth", "session"], response);
+      setUser({ ...response.data.user, masterKey: response.data.masterKey });
       appToast.success(t("success.signedIn"));
       router.replace("/journal");
     },
@@ -106,7 +107,7 @@ export function LoginCard() {
     const input: ClientLoginRequest = {
       username: loginSalt.username,
       password,
-      saltBase64: loginSalt.saltBase64,
+      salt: loginSalt.saltBase64,
     };
     loginMutation.mutate(input);
   }

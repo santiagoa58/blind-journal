@@ -14,7 +14,7 @@ import {
   Spinner,
   Text,
 } from "@radix-ui/themes";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import { getSession, logout } from "@/api/auth/auth";
@@ -26,12 +26,14 @@ import {
 } from "@/api/journal/journal";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import type {
-  JournalEntriesResponse,
+  ApiJournalEntriesResponse,
+  ClientCreateJournalEntryRequest,
+  ClientUpdateJournalEntryRequest,
   JournalEntry,
-  UpdateJournalEntryRequest,
 } from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { useRouter } from "@/i18n/navigation";
+import { useUser } from "@/state/user.state";
 import { AppSidebar, type SidebarSection } from "./app-sidebar";
 import { EntryList } from "./entry-list";
 import { JournalEditor } from "./journal-editor";
@@ -41,9 +43,9 @@ const sessionQueryKey = ["auth", "session"] as const;
 const entriesQueryKey = ["journal", "entries"] as const;
 
 function updateEntryCache(
-  current: JournalEntriesResponse | undefined,
+  current: ApiJournalEntriesResponse | undefined,
   entry: JournalEntry,
-): JournalEntriesResponse | undefined {
+): ApiJournalEntriesResponse | undefined {
   if (!current?.success) {
     return current;
   }
@@ -57,13 +59,13 @@ function updateEntryCache(
 }
 
 export function JournalWorkspace() {
+  const user = useUser((state) => state.user);
   const t = useTranslations("journal");
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const queryClient = useQueryClient();
   const appToast = useAppToast();
-  const [selectedId, setSelectedId] = useState<string>();
+  const [localSelectedId, setLocalSelectedId] = useState<string>();
   const [activeSection, setActiveSection] = useState<SidebarSection>("journal");
   const sessionQuery = useQuery({
     queryKey: sessionQueryKey,
@@ -79,6 +81,7 @@ export function JournalWorkspace() {
   });
   const entries = entriesQuery.data?.success ? entriesQuery.data.data : [];
   const favoriteCount = entries.filter(({ favorite }) => favorite).length;
+  const selectedId = localSelectedId ?? entries[0]?.id;
   const selectedEntry = useMemo(
     () => entries.find(({ id }) => id === selectedId) ?? entries[0],
     [entries, selectedId],
@@ -90,12 +93,6 @@ export function JournalWorkspace() {
       router.replace("/");
     }
   }, [appToast, router, sessionQuery.data, tAuth]);
-
-  useEffect(() => {
-    if (!selectedId && entries[0]) {
-      setSelectedId(entries[0].id);
-    }
-  }, [entries, selectedId]);
 
   function getJournalErrorMessage(code: string, fallback: "create" | "save" | "delete") {
     switch (code) {
@@ -110,75 +107,67 @@ export function JournalWorkspace() {
 
   const createMutation = useMutation({
     mutationKey: ["journal", "create"],
-    mutationFn: createJournalEntry,
+    mutationFn: (input: ClientCreateJournalEntryRequest) => {
+      if (!user) {
+        throw new Error("User not found");
+      }
+      return createJournalEntry(input, user);
+    },
     onError() {
       appToast.error(t("errors.create"));
     },
-    onSuccess(response) {
+    onSuccess(response, _vars, _mutationRes, ctx) {
       if (!response.success) {
         appToast.error(getJournalErrorMessage(response.error.code, "create"));
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) => ({
+      ctx.client.setQueryData<ApiJournalEntriesResponse>(entriesQueryKey, (current) => ({
         success: true,
         data: [response.data, ...(current?.success ? current.data : [])],
       }));
-      setSelectedId(response.data.id);
+      setLocalSelectedId(response.data.id);
       setActiveSection("journal");
       appToast.success(t("success.created"));
     },
   });
   const saveMutation = useMutation({
     mutationKey: ["journal", "save"],
-    mutationFn: ({ entryId, input }: { entryId: string; input: UpdateJournalEntryRequest }) =>
-      updateJournalEntry(entryId, input),
+    mutationFn: (input: ClientUpdateJournalEntryRequest) => {
+      if (!user) {
+        throw new Error("User not found");
+      }
+      return updateJournalEntry(input, user);
+    },
     onError() {
       appToast.error(t("errors.save"));
     },
-    onSuccess(response) {
+    onSuccess(response, _vars, _mutationRes, ctx) {
       if (!response.success) {
         appToast.error(getJournalErrorMessage(response.error.code, "save"));
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) =>
+      ctx.client.setQueryData<ApiJournalEntriesResponse>(entriesQueryKey, (current) =>
         updateEntryCache(current, response.data),
       );
       appToast.success(t("success.saved"));
     },
   });
-  const favoriteMutation = useMutation({
-    mutationKey: ["journal", "favorite"],
-    mutationFn: ({ entryId, favorite }: { entryId: string; favorite: boolean }) =>
-      updateJournalEntry(entryId, { favorite }),
-    onError() {
-      appToast.error(t("errors.save"));
-    },
-    onSuccess(response) {
-      if (!response.success) {
-        appToast.error(getJournalErrorMessage(response.error.code, "save"));
-        return;
-      }
 
-      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) =>
-        updateEntryCache(current, response.data),
-      );
-    },
-  });
   const deleteMutation = useMutation({
     mutationKey: ["journal", "delete"],
     mutationFn: deleteJournalEntry,
     onError() {
       appToast.error(t("errors.delete"));
     },
-    onSuccess(response) {
+    onSuccess(response, _vars, _mutationRes, ctx) {
       if (!response.success) {
         appToast.error(getJournalErrorMessage(response.error.code, "delete"));
         return;
       }
 
-      queryClient.setQueryData<JournalEntriesResponse>(entriesQueryKey, (current) => {
+      ctx.client.setQueryData<ApiJournalEntriesResponse>(entriesQueryKey, (current) => {
         if (!current?.success) {
           return current;
         }
@@ -188,7 +177,7 @@ export function JournalWorkspace() {
           data: current.data.filter(({ id }) => id !== response.data.id),
         };
       });
-      setSelectedId(undefined);
+      setLocalSelectedId(undefined);
       appToast.success(t("success.deleted"));
     },
   });
@@ -198,9 +187,9 @@ export function JournalWorkspace() {
     onError() {
       appToast.error(tCommon("errors.network"));
     },
-    onSuccess() {
-      queryClient.removeQueries({ queryKey: sessionQueryKey });
-      queryClient.removeQueries({ queryKey: entriesQueryKey });
+    onSuccess(_resp, _vars, _mutationRes, ctx) {
+      ctx.client.removeQueries({ queryKey: sessionQueryKey });
+      ctx.client.removeQueries({ queryKey: entriesQueryKey });
       router.replace("/");
     },
   });
@@ -216,7 +205,7 @@ export function JournalWorkspace() {
     setActiveSection(section);
 
     if (section === "favorites") {
-      setSelectedId(entries.find(({ favorite }) => favorite)?.id);
+      setLocalSelectedId(entries.find(({ favorite }) => favorite)?.id);
     }
   }
 
@@ -258,7 +247,7 @@ export function JournalWorkspace() {
         selectedId={selectedEntry?.id}
         onNewEntry={handleCreateEntry}
         onSectionChange={handleSectionChange}
-        onSelectEntry={setSelectedId}
+        onSelectEntry={setLocalSelectedId}
         onSignOut={() => logoutMutation.mutate()}
       />
 
@@ -281,7 +270,7 @@ export function JournalWorkspace() {
           selectedId={selectedEntry?.id}
           filter={activeSection === "favorites" ? "favorites" : "all"}
           onFilterChange={(filter) => handleSectionChange(filter === "all" ? "journal" : filter)}
-          onSelect={setSelectedId}
+          onSelect={setLocalSelectedId}
         />
         <Box asChild display={{ initial: "none", md: "block" }}>
           <Separator orientation="vertical" size="4" />
@@ -294,10 +283,10 @@ export function JournalWorkspace() {
             deleting={deleteMutation.isPending}
             saving={saveMutation.isPending}
             onDelete={() => deleteMutation.mutate(selectedEntry.id)}
-            onSave={(input) => saveMutation.mutate({ entryId: selectedEntry.id, input })}
+            onSave={(input) => saveMutation.mutate(input)}
             onToggleFavorite={() =>
-              favoriteMutation.mutate({
-                entryId: selectedEntry.id,
+              saveMutation.mutate({
+                id: selectedEntry.id,
                 favorite: !selectedEntry.favorite,
               })
             }

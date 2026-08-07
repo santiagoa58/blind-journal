@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAccount, getLoginSalt, getSession, login, logout } from "@/api/auth/auth";
+import {
+  createAccount,
+  getCreateAccountSalt,
+  getLoginSalt,
+  getSession,
+  login,
+  logout,
+} from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { localServerStore, type StoredUser } from "@/local-server/store";
 import { deriveMasterKey, deriveUserKeys } from "@/tests/mocks/auth-crypto";
@@ -8,13 +15,44 @@ import { deriveMasterKey, deriveUserKeys } from "@/tests/mocks/auth-crypto";
 // and proves the pending UI and event loop remain responsive while derivation runs. This fast mock
 // validates auth contracts but deliberately cannot detect main-thread blocking or worker failures.
 // Learn more: https://playwright.dev/docs/api/class-worker
-vi.mock("@/api/auth/auth.crypto", async () => import("@/tests/mocks/auth-crypto"));
+vi.mock("@/api/auth/authWorkerClient", async () => {
+  const { deriveMasterKey: deriveMockMasterKey, deriveUserKeys: deriveMockUserKeys } = await import(
+    "@/tests/mocks/auth-crypto"
+  );
+
+  return {
+    getAuthWorkerClient: () => ({
+      async getUserKeys(password: string) {
+        const masterKey = await deriveMockMasterKey(password);
+        const { authKey } = await deriveMockUserKeys(masterKey);
+        const keyEncryptKey = await crypto.subtle.generateKey(
+          { name: "AES-KW", length: 256 },
+          false,
+          ["wrapKey", "unwrapKey"],
+        );
+
+        return { authKey, keyEncryptKey };
+      },
+      terminate() {},
+    }),
+    terminateAuthWorkerClient() {},
+  };
+});
 
 const account = {
   username: "journal_writer",
   password: "private-journal",
-  confirmPassword: "private-journal",
 };
+
+async function registerAccount() {
+  const saltResponse = await getCreateAccountSalt({ username: account.username });
+
+  if (!saltResponse.success) {
+    throw new Error("The account salt should have been created.");
+  }
+
+  return createAccount({ ...account, salt: saltResponse.data.salt });
+}
 
 async function seedUser(): Promise<StoredUser> {
   const masterKey = await deriveMasterKey(account.password);
@@ -36,28 +74,14 @@ async function seedUser(): Promise<StoredUser> {
 }
 
 describe("auth API", () => {
-  it("creates an account after validation errors and rejects a duplicate registration", async () => {
-    await expect(createAccount({ ...account, password: "", confirmPassword: "" })).resolves.toEqual(
-      {
-        success: false,
-        error: { code: AUTH_ERROR_CODES.passwordRequired },
-      },
-    );
-    await expect(
-      createAccount({
-        ...account,
-        password: "short",
-        confirmPassword: "short",
-      }),
-    ).resolves.toEqual({
+  it("creates an account after username validation errors and rejects a duplicate", async () => {
+    await expect(getCreateAccountSalt({ username: "" })).resolves.toEqual({
       success: false,
-      error: { code: AUTH_ERROR_CODES.passwordTooShort },
+      error: { code: AUTH_ERROR_CODES.usernameRequired },
     });
-    await expect(
-      createAccount({ ...account, confirmPassword: "different-password" }),
-    ).resolves.toEqual({
+    await expect(getCreateAccountSalt({ username: "ab" })).resolves.toEqual({
       success: false,
-      error: { code: AUTH_ERROR_CODES.passwordsMismatch },
+      error: { code: AUTH_ERROR_CODES.usernameInvalid },
     });
 
     await expect(getSession()).resolves.toEqual({
@@ -65,7 +89,7 @@ describe("auth API", () => {
       error: { code: AUTH_ERROR_CODES.unauthorized },
     });
 
-    const created = await createAccount(account);
+    const created = await registerAccount();
 
     expect(created).toMatchObject({
       success: true,
@@ -76,7 +100,10 @@ describe("auth API", () => {
         },
       },
     });
-    await expect(getSession()).resolves.toEqual(created);
+    await expect(getSession()).resolves.toMatchObject({
+      success: true,
+      data: { user: { username: account.username } },
+    });
 
     await logout();
 
@@ -91,7 +118,7 @@ describe("auth API", () => {
       expect(saltResponse.data.salt).not.toHaveLength(0);
     }
 
-    await expect(createAccount(account)).resolves.toEqual({
+    await expect(getCreateAccountSalt({ username: account.username })).resolves.toEqual({
       success: false,
       error: { code: AUTH_ERROR_CODES.usernameTaken },
     });
@@ -141,6 +168,9 @@ describe("auth API", () => {
       success: true,
       data: { user: { id: user.id, username: account.username } },
     });
-    await expect(getSession()).resolves.toEqual(loggedIn);
+    await expect(getSession()).resolves.toMatchObject({
+      success: true,
+      data: { user: { id: user.id, username: account.username } },
+    });
   });
 });

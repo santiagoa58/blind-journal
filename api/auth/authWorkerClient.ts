@@ -1,3 +1,4 @@
+import type { Base64 } from "../general.type";
 import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
 type PendingRequest = {
@@ -45,14 +46,14 @@ class AuthWorkerClient {
     }
   };
 
-  getUserKeys = async (password: string, saltBase64: string) => {
+  getUserKeys = async (password: string, salt: Base64) => {
     if (this.closed) {
       return Promise.reject(new Error("Authentication worker is closed"));
     }
     return new Promise<AuthUserKeys>((resolve, reject) => {
       const payload = {
         password,
-        saltBase64,
+        salt,
         reqId: crypto.randomUUID(),
       } satisfies AuthWorkerPayload;
 

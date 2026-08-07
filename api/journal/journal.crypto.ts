@@ -1,6 +1,15 @@
+import { uint8ArrayToBase64 } from "@/crypto/base64";
 import { encrypt, generateEncryptionKey, wrapKey } from "@/crypto/encrypt.crypto";
 import "client-only";
-import type { JournalEntry } from "./journal.type";
+import type {
+  ApiCreateJournalEntryRequest,
+  ClientCreateJournalEntryRequest,
+  ClientUpdateJournalEntryRequest,
+} from "./journal.type";
+
+type JournalEntryInput =
+  | ClientCreateJournalEntryRequest
+  | Omit<ClientUpdateJournalEntryRequest, "id">;
 
 function validateSize(data: Uint8Array) {
   const sizeInMB = data.byteLength / (1024 * 1024);
@@ -9,9 +18,12 @@ function validateSize(data: Uint8Array) {
   }
 }
 
-export async function encryptJournalEntry(wrapperKey: CryptoKey, entry: JournalEntry) {
-  const encryptKey = await generateEncryptionKey()
-  const wrappedEncryptKey = await wrapKey(encryptKey, wrapperKey);
+export async function encryptJournalEntry(
+  wrapperKey: CryptoKey,
+  entry: JournalEntryInput,
+): Promise<ApiCreateJournalEntryRequest> {
+  const encryptKey = await generateEncryptionKey();
+  const wrappedEncryptKeyBase64 = await wrapKey(encryptKey, wrapperKey);
 
   const jsonContentStr = JSON.stringify(entry);
   const encoder = new TextEncoder();
@@ -20,8 +32,8 @@ export async function encryptJournalEntry(wrapperKey: CryptoKey, entry: JournalE
   const { cipherTextBase64, iv } = await encrypt(encryptKey, rawBytes);
 
   return {
-    wrappedKey: wrappedEncryptKey,
+    wrappedKeyBase64: wrappedEncryptKeyBase64,
     cipherTextBase64,
-    iv,
+    ivBase64: uint8ArrayToBase64(iv),
   };
 }

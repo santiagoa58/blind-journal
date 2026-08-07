@@ -1,5 +1,6 @@
-import type { User } from "@/api/auth/user.type";
+import type { ApiUser } from "@/api/auth/user.type";
 import type { ApiResponse } from "@/api/response.type";
+import type { Base64 } from "../general.type";
 
 /************************
  * CLIENT SIDE REQUESTS *
@@ -8,11 +9,11 @@ import type { ApiResponse } from "@/api/response.type";
 export interface AuthWorkerPayload {
   reqId: string;
   password: string;
-  saltBase64: string;
+  salt: Base64;
 }
 
 export interface AuthUserKeys {
-  authKeyBase64: string;
+  authKey: Base64;
   keyEncryptKey: CryptoKey;
 }
 export type AuthWorkerResponse =
@@ -30,13 +31,13 @@ export type AuthWorkerResponse =
 export interface ClientLoginRequest {
   username: string;
   password: string;
-  saltBase64: string;
+  salt: Base64;
 }
 
 export interface ClientCreateAccountRequest {
   username: string;
   password: string;
-  saltBase64: string;
+  salt: Base64;
 }
 
 /****************************
@@ -44,26 +45,26 @@ export interface ClientCreateAccountRequest {
  ****************************/
 
 export interface ApiAuthSession {
-  user: User;
+  user: ApiUser;
 }
 
 export interface ApiSaltRequest {
   username: string;
 }
 export type ApiSaltResponse = ApiResponse<{
-  saltBase64: string;
+  salt: Base64;
 }>;
 
 export interface ApiVerifyCredentialsRequest {
   username: string;
-  authKeyBase64: string;
+  authKey: Base64;
 }
 
 export type ApiVerifyCredentialsResponse = ApiResponse<ApiAuthSession>;
 
 export type ApiCreateAccountRequest = {
   username: string;
-  authKeyBase64: string;
+  authKey: Base64;
 };
 
 export type ApiCreateAccountResponse = ApiResponse<ApiAuthSession>;

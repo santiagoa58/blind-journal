@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { JournalEntriesResponse } from "@/api/journal/journal.type";
+import type { ApiJournalEntriesResponse } from "@/api/journal/journal.type";
 import { isSameOrigin, jsonResponse, REQUEST_ERROR_CODES, readJsonBody } from "@/server/http";
 import { createEntry, listEntries } from "@/server/journal";
 import { getSessionUserId } from "@/server/session";
@@ -12,7 +12,7 @@ function unauthorizedResponse() {
     {
       success: false,
       error: { code: AUTH_ERROR_CODES.unauthorized },
-    } satisfies JournalEntriesResponse,
+    } satisfies ApiJournalEntriesResponse,
     401,
   );
 }

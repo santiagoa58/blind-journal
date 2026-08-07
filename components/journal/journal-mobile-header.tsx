@@ -20,14 +20,14 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { User } from "@/api/auth/user.type";
+import type { ApiUser } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
 import type { SidebarSection } from "./app-sidebar";
 
 type JournalMobileHeaderProps = {
   activeSection: SidebarSection;
-  currentUser: User;
+  currentUser: ApiUser;
   entries: JournalEntry[];
   selectedId: string | undefined;
   onNewEntry: () => void;

@@ -1,16 +1,17 @@
 import "server-only";
 
-import type { User } from "@/api/auth/user.type";
+import type { ApiUser } from "@/api/auth/user.type";
+import type { Base64 } from "@/api/general.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 
-export type StoredUser = User & {
-  authKeyHash: string;
-  salt: string;
+export type StoredUser = ApiUser & {
+  authKeyHash: Base64;
+  salt: Base64;
 };
 
 type PendingAccountSalt = {
   expiresAt: number;
-  salt: string;
+  salt: Base64;
 };
 
 type StoredSession = {

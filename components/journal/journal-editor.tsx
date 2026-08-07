@@ -24,7 +24,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState } from "react";
-import type { JournalEntry, UpdateJournalEntryRequest } from "@/api/journal/journal.type";
+import type { ClientUpdateJournalEntryRequest, JournalEntry } from "@/api/journal/journal.type";
 import styles from "./journal-editor.module.css";
 import { JournalEditorToolbar } from "./journal-editor-toolbar";
 
@@ -46,7 +46,7 @@ type JournalEditorProps = {
   deleting: boolean;
   saving: boolean;
   onDelete: () => void;
-  onSave: (input: UpdateJournalEntryRequest) => void;
+  onSave: (input: ClientUpdateJournalEntryRequest) => void;
   onToggleFavorite: () => void;
 };
 
@@ -90,7 +90,7 @@ export function JournalEditor({
   const updatedAt = new Date(entry.updatedAt);
 
   function saveEntry() {
-    onSave({ title: title.trim(), content: editor?.getHTML() ?? entry.content });
+    onSave({ id: entry.id, title: title.trim(), content: editor?.getHTML() ?? entry.content });
   }
 
   return (

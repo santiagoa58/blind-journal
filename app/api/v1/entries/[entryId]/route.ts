@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { journalEntryIdSchema } from "@/api/journal/journal.schema";
-import type { JournalEntryResponse } from "@/api/journal/journal.type";
+import type { ApiJournalEntryResponse } from "@/api/journal/journal.type";
 import { isSameOrigin, jsonResponse, REQUEST_ERROR_CODES, readJsonBody } from "@/server/http";
 import { deleteEntry, updateEntry } from "@/server/journal";
 import { getSessionUserId } from "@/server/session";
@@ -18,7 +18,7 @@ function unauthorizedResponse() {
     {
       success: false,
       error: { code: AUTH_ERROR_CODES.unauthorized },
-    } satisfies JournalEntryResponse,
+    } satisfies ApiJournalEntryResponse,
     401,
   );
 }
@@ -28,7 +28,7 @@ function entryNotFoundResponse() {
     {
       success: false,
       error: { code: JOURNAL_ERROR_CODES.entryNotFound },
-    } satisfies JournalEntryResponse,
+    } satisfies ApiJournalEntryResponse,
     404,
   );
 }

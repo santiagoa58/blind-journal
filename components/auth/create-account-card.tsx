@@ -2,7 +2,7 @@
 
 import { ExclamationTriangleIcon, LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import { Button, Callout, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { createAccount, getCreateAccountSalt } from "@/api/auth/auth";
@@ -10,9 +10,10 @@ import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
+import { useUser } from "@/state/user.state";
 import { LabeledInput } from "./labeled-input";
 
-type CreateAccountCredentials = Omit<ClientCreateAccountRequest, "saltBase64">;
+type CreateAccountCredentials = Omit<ClientCreateAccountRequest, "salt">;
 
 async function submitCreateAccount(input: CreateAccountCredentials) {
   const saltResponse = await getCreateAccountSalt({ username: input.username });
@@ -23,16 +24,16 @@ async function submitCreateAccount(input: CreateAccountCredentials) {
 
   return createAccount({
     ...input,
-    saltBase64: saltResponse.data.saltBase64,
+    salt: saltResponse.data.salt,
   });
 }
 
 export function CreateAccountCard() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const setUser = useUser((state) => state.setUser);
   const t = useTranslations("auth");
   const tCommon = useTranslations("common");
   const router = useRouter();
-  const queryClient = useQueryClient();
   const appToast = useAppToast();
   const createAccountMutation = useMutation({
     mutationKey: ["auth", "create-account"],
@@ -69,7 +70,7 @@ export function CreateAccountCard() {
         }
       }
       setErrorMessage(null);
-      queryClient.setQueryData(["auth", "session"], response);
+      setUser({ ...response.data.user, masterKey: response.data.masterKey });
       appToast.success(t("success.accountCreated"));
       router.replace("/journal");
     },

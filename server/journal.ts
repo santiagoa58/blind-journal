@@ -3,11 +3,10 @@ import "server-only";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { createEntryRequestSchema, updateEntryRequestSchema } from "@/api/journal/journal.schema";
 import type {
-  DeleteJournalEntryResponse,
-  JournalEntriesResponse,
+  ApiDeleteJournalEntryResponse,
+  ApiJournalEntriesResponse,
+  ApiJournalEntryResponse,
   JournalEntry,
-  JournalEntryResponse,
-  UpdateJournalEntryRequest,
 } from "@/api/journal/journal.type";
 import { serverStore } from "@/server/store";
 
@@ -15,21 +14,21 @@ function getEntries(userId: string): JournalEntry[] | undefined {
   return serverStore.entriesByUserId.get(userId);
 }
 
-function invalidEntryResponse(): JournalEntryResponse {
+function invalidEntryResponse(): ApiJournalEntryResponse {
   return {
     success: false,
     error: { code: JOURNAL_ERROR_CODES.invalidEntry },
   };
 }
 
-function entryNotFoundResponse(): JournalEntryResponse {
+function entryNotFoundResponse(): ApiJournalEntryResponse {
   return {
     success: false,
     error: { code: JOURNAL_ERROR_CODES.entryNotFound },
   };
 }
 
-export function listEntries(userId: string): JournalEntriesResponse {
+export function listEntries(userId: string): ApiJournalEntriesResponse {
   const entries = getEntries(userId) ?? [];
 
   return {
@@ -38,7 +37,7 @@ export function listEntries(userId: string): JournalEntriesResponse {
   };
 }
 
-export function createEntry(userId: string, input: unknown): JournalEntryResponse {
+export function createEntry(userId: string, input: unknown): ApiJournalEntryResponse {
   const result = createEntryRequestSchema.safeParse(input);
 
   if (!result.success) {
@@ -66,7 +65,11 @@ export function createEntry(userId: string, input: unknown): JournalEntryRespons
   };
 }
 
-export function updateEntry(userId: string, entryId: string, input: unknown): JournalEntryResponse {
+export function updateEntry(
+  userId: string,
+  entryId: string,
+  input: unknown,
+): ApiJournalEntryResponse {
   const result = updateEntryRequestSchema.safeParse(input);
 
   if (!result.success) {
@@ -81,27 +84,9 @@ export function updateEntry(userId: string, entryId: string, input: unknown): Jo
     return entryNotFoundResponse();
   }
 
-  const updates: UpdateJournalEntryRequest = {};
-
-  if (result.data.title !== undefined) {
-    updates.title = result.data.title;
-  }
-
-  if (result.data.content !== undefined) {
-    updates.content = result.data.content;
-  }
-
-  if (result.data.favorite !== undefined) {
-    updates.favorite = result.data.favorite;
-  }
-
-  if (result.data.tags !== undefined) {
-    updates.tags = result.data.tags;
-  }
-
   const updatedEntry: JournalEntry = {
+    ...result.data,
     ...currentEntry,
-    ...updates,
     updatedAt: new Date().toISOString(),
   };
 
@@ -113,7 +98,7 @@ export function updateEntry(userId: string, entryId: string, input: unknown): Jo
   };
 }
 
-export function deleteEntry(userId: string, entryId: string): DeleteJournalEntryResponse {
+export function deleteEntry(userId: string, entryId: string): ApiDeleteJournalEntryResponse {
   const entries = getEntries(userId) ?? [];
   const entryIndex = entries.findIndex(({ id }) => id === entryId);
 

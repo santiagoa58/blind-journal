@@ -16,7 +16,7 @@ export const saltRequestSchema: z.ZodType<ApiSaltRequest> = z.strictObject({
 export const verifyCredentialsRequestSchema: z.ZodType<ApiVerifyCredentialsRequest> =
   z.strictObject({
     username: usernameSchema,
-    authKeyBase64: authKeySchema,
+    authKey: authKeySchema,
   });
 
 export const createAccountRequestSchema: z.ZodType<ApiCreateAccountRequest> =

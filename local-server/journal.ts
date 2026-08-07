@@ -2,11 +2,10 @@ import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { createEntryRequestSchema, updateEntryRequestSchema } from "@/api/journal/journal.schema";
 import type {
-  DeleteJournalEntryResponse,
-  JournalEntriesResponse,
+  ApiDeleteJournalEntryResponse,
+  ApiJournalEntriesResponse,
+  ApiJournalEntryResponse,
   JournalEntry,
-  JournalEntryResponse,
-  UpdateJournalEntryRequest,
 } from "@/api/journal/journal.type";
 import { localServerStore } from "@/local-server/store";
 
@@ -25,7 +24,7 @@ function unauthorizedResponse(): Response {
     {
       success: false,
       error: { code: AUTH_ERROR_CODES.unauthorized },
-    } satisfies JournalEntriesResponse,
+    } satisfies ApiJournalEntriesResponse,
     { status: 401 },
   );
 }
@@ -35,7 +34,7 @@ function invalidEntryResponse(): Response {
     {
       success: false,
       error: { code: JOURNAL_ERROR_CODES.invalidEntry },
-    } satisfies JournalEntryResponse,
+    } satisfies ApiJournalEntryResponse,
     { status: 400 },
   );
 }
@@ -45,7 +44,7 @@ function entryNotFoundResponse(): Response {
     {
       success: false,
       error: { code: JOURNAL_ERROR_CODES.entryNotFound },
-    } satisfies JournalEntryResponse,
+    } satisfies ApiJournalEntryResponse,
     { status: 404 },
   );
 }
@@ -60,7 +59,7 @@ export function handleJournalEntriesRequest(): Response {
   const response = {
     success: true,
     data: [...entries].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-  } satisfies JournalEntriesResponse;
+  } satisfies ApiJournalEntriesResponse;
 
   return Response.json(response);
 }
@@ -95,7 +94,7 @@ export async function handleCreateJournalEntryRequest(request: Request): Promise
   const response = {
     success: true,
     data: entry,
-  } satisfies JournalEntryResponse;
+  } satisfies ApiJournalEntryResponse;
   return Response.json(response, { status: 201 });
 }
 
@@ -123,27 +122,9 @@ export async function handleUpdateJournalEntryRequest(
     return entryNotFoundResponse();
   }
 
-  const updates: UpdateJournalEntryRequest = {};
-
-  if (result.data.title !== undefined) {
-    updates.title = result.data.title;
-  }
-
-  if (result.data.content !== undefined) {
-    updates.content = result.data.content;
-  }
-
-  if (result.data.favorite !== undefined) {
-    updates.favorite = result.data.favorite;
-  }
-
-  if (result.data.tags !== undefined) {
-    updates.tags = result.data.tags;
-  }
-
   const updatedEntry: JournalEntry = {
+    ...result.data,
     ...currentEntry,
-    ...updates,
     updatedAt: new Date().toISOString(),
   };
 
@@ -152,7 +133,7 @@ export async function handleUpdateJournalEntryRequest(
   const response = {
     success: true,
     data: updatedEntry,
-  } satisfies JournalEntryResponse;
+  } satisfies ApiJournalEntryResponse;
   return Response.json(response);
 }
 
@@ -174,7 +155,7 @@ export function handleDeleteJournalEntryRequest(entryId: string): Response {
   const response = {
     success: true,
     data: { id: entryId },
-  } satisfies DeleteJournalEntryResponse;
+  } satisfies ApiDeleteJournalEntryResponse;
 
   return Response.json(response);
 }
