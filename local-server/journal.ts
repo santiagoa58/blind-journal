@@ -1,23 +1,14 @@
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
-import { createEntryRequestSchema, updateEntryRequestSchema } from "@/api/journal/journal.schema";
+import { journalEntryIdSchema } from "@/api/journal/journal.schema";
 import type {
-  ApiDeleteJournalEntryResponse,
   ApiJournalEntriesResponse,
   ApiJournalEntryResponse,
-  JournalEntry,
 } from "@/api/journal/journal.type";
-import { localServerStore } from "@/local-server/store";
+import { localApplicationStore, localServerStore } from "@/local-server/store";
+import { createJournalService } from "@/server/journal.service";
 
-function getActiveEntries(): JournalEntry[] | null {
-  const activeUserId = localServerStore.activeUserId;
-
-  if (!activeUserId) {
-    return null;
-  }
-
-  return localServerStore.entriesByUserId[activeUserId] ?? null;
-}
+const journalService = createJournalService(localApplicationStore);
 
 function unauthorizedResponse(): Response {
   return Response.json(
@@ -26,16 +17,6 @@ function unauthorizedResponse(): Response {
       error: { code: AUTH_ERROR_CODES.unauthorized },
     } satisfies ApiJournalEntriesResponse,
     { status: 401 },
-  );
-}
-
-function invalidEntryResponse(): Response {
-  return Response.json(
-    {
-      success: false,
-      error: { code: JOURNAL_ERROR_CODES.invalidEntry },
-    } satisfies ApiJournalEntryResponse,
-    { status: 400 },
   );
 }
 
@@ -49,113 +30,46 @@ function entryNotFoundResponse(): Response {
   );
 }
 
+function getActiveUserId(): string | null {
+  return localServerStore.activeUserId;
+}
+
 export function handleJournalEntriesRequest(): Response {
-  const entries = getActiveEntries();
-
-  if (!entries) {
-    return unauthorizedResponse();
-  }
-
-  const response = {
-    success: true,
-    data: [...entries].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-  } satisfies ApiJournalEntriesResponse;
-
-  return Response.json(response);
+  const userId = getActiveUserId();
+  return userId ? Response.json(journalService.listEntries(userId)) : unauthorizedResponse();
 }
 
 export async function handleCreateJournalEntryRequest(request: Request): Promise<Response> {
-  const entries = getActiveEntries();
-
-  if (!entries) {
-    return unauthorizedResponse();
-  }
-
-  const body: unknown = await request.json().catch(() => null);
-  const result = createEntryRequestSchema.safeParse(body);
-
-  if (!result.success) {
-    return invalidEntryResponse();
-  }
-
-  const now = new Date().toISOString();
-  const entry: JournalEntry = {
-    id: crypto.randomUUID(),
-    title: result.data.title,
-    content: result.data.content,
-    createdAt: now,
-    updatedAt: now,
-    favorite: false,
-    tags: [],
-  };
-
-  entries.unshift(entry);
-
-  const response = {
-    success: true,
-    data: entry,
-  } satisfies ApiJournalEntryResponse;
-  return Response.json(response, { status: 201 });
+  const userId = getActiveUserId();
+  if (!userId) return unauthorizedResponse();
+  const result = journalService.createEntry(userId, await request.json().catch(() => null));
+  return Response.json(result, { status: result.success ? 201 : 400 });
 }
 
 export async function handleUpdateJournalEntryRequest(
   request: Request,
   entryId: string,
 ): Promise<Response> {
-  const entries = getActiveEntries();
-
-  if (!entries) {
-    return unauthorizedResponse();
-  }
-
-  const body: unknown = await request.json().catch(() => null);
-  const result = updateEntryRequestSchema.safeParse(body);
-
-  if (!result.success) {
-    return invalidEntryResponse();
-  }
-
-  const entryIndex = entries.findIndex(({ id }) => id === entryId);
-  const currentEntry = entries[entryIndex];
-
-  if (entryIndex < 0 || !currentEntry) {
-    return entryNotFoundResponse();
-  }
-
-  const updatedEntry: JournalEntry = {
-    ...result.data,
-    ...currentEntry,
-    updatedAt: new Date().toISOString(),
-  };
-
-  entries[entryIndex] = updatedEntry;
-
-  const response = {
-    success: true,
-    data: updatedEntry,
-  } satisfies ApiJournalEntryResponse;
-  return Response.json(response);
+  const userId = getActiveUserId();
+  if (!userId) return unauthorizedResponse();
+  if (!journalEntryIdSchema.safeParse(entryId).success) return entryNotFoundResponse();
+  const result = journalService.updateEntry(
+    userId,
+    entryId,
+    await request.json().catch(() => null),
+  );
+  const status = result.success
+    ? 200
+    : result.error.code === JOURNAL_ERROR_CODES.entryNotFound
+      ? 404
+      : 400;
+  return Response.json(result, { status });
 }
 
 export function handleDeleteJournalEntryRequest(entryId: string): Response {
-  const entries = getActiveEntries();
-
-  if (!entries) {
-    return unauthorizedResponse();
-  }
-
-  const entryIndex = entries.findIndex(({ id }) => id === entryId);
-
-  if (entryIndex < 0) {
-    return entryNotFoundResponse();
-  }
-
-  entries.splice(entryIndex, 1);
-
-  const response = {
-    success: true,
-    data: { id: entryId },
-  } satisfies ApiDeleteJournalEntryResponse;
-
-  return Response.json(response);
+  const userId = getActiveUserId();
+  if (!userId) return unauthorizedResponse();
+  if (!journalEntryIdSchema.safeParse(entryId).success) return entryNotFoundResponse();
+  const result = journalService.deleteEntry(userId, entryId);
+  return Response.json(result, { status: result.success ? 200 : 404 });
 }
