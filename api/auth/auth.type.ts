@@ -14,7 +14,7 @@ export interface AuthWorkerPayload {
 
 export interface AuthUserKeys {
   authKey: Base64;
-  keyEncryptKey: CryptoKey;
+  keyEncryptionKey: CryptoKey;
 }
 export type AuthWorkerResponse =
   | {

@@ -70,7 +70,7 @@ export function CreateAccountCard() {
         }
       }
       setErrorMessage(null);
-      setUser({ ...response.data.user, masterKey: response.data.masterKey });
+      setUser({ ...response.data.user, keyEncryptionKey: response.data.keyEncryptionKey });
       appToast.success(t("success.accountCreated"));
       router.replace("/journal");
     },

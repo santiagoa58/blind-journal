@@ -51,14 +51,14 @@ async function deriveUserKeys(rawMasterKey: Uint8Array): Promise<AuthUserKeys> {
       info: new TextEncoder().encode("encrypt-key-context"),
     },
     masterKey,
-    { name: "AES-GCM", length: 256 },
+    { name: "AES-KW", length: 256 },
     false,
     ["wrapKey", "unwrapKey"],
   );
 
   return {
     authKey: uint8ArrayToBase64(new Uint8Array(authKey)),
-    keyEncryptKey: encryptKey,
+    keyEncryptionKey: encryptKey,
   };
 }
 

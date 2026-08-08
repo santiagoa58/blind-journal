@@ -5,5 +5,5 @@ export interface ApiUser {
 }
 
 export interface ClientUser extends ApiUser {
-  masterKey: CryptoKey;
+  keyEncryptionKey: CryptoKey;
 }

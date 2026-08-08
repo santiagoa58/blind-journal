@@ -49,7 +49,7 @@ export async function login(input: ClientLoginRequest) {
       if (resp.success) {
         // cleanup auth worker after successful login
         terminateAuthWorkerClient();
-        return { ...resp, data: { ...resp.data, masterKey: userKeys.keyEncryptKey } };
+        return { ...resp, data: { ...resp.data, keyEncryptionKey: userKeys.keyEncryptionKey } };
       }
       return resp;
     });
@@ -73,7 +73,7 @@ export async function createAccount(input: ClientCreateAccountRequest) {
     .then((resp) => {
       if (resp.success) {
         terminateAuthWorkerClient();
-        return { ...resp, data: { ...resp.data, masterKey: userKeys.keyEncryptKey } };
+        return { ...resp, data: { ...resp.data, keyEncryptionKey: userKeys.keyEncryptionKey } };
       }
       return resp;
     });

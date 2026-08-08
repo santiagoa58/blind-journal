@@ -55,7 +55,7 @@ export function LoginCard() {
       if (!response.success) {
         return;
       }
-      setUser({ ...response.data.user, masterKey: response.data.masterKey });
+      setUser({ ...response.data.user, keyEncryptionKey: response.data.keyEncryptionKey });
       appToast.success(t("success.signedIn"));
       router.replace("/journal");
     },

@@ -25,13 +25,13 @@ vi.mock("@/api/auth/authWorkerClient", async () => {
       async getUserKeys(password: string) {
         const masterKey = await deriveMockMasterKey(password);
         const { authKey } = await deriveMockUserKeys(masterKey);
-        const keyEncryptKey = await crypto.subtle.generateKey(
+        const keyEncryptionKey = await crypto.subtle.generateKey(
           { name: "AES-KW", length: 256 },
           false,
           ["wrapKey", "unwrapKey"],
         );
 
-        return { authKey, keyEncryptKey };
+        return { authKey, keyEncryptionKey };
       },
       terminate() {},
     }),
