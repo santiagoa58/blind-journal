@@ -24,6 +24,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState } from "react";
+import { MAX_JOURNAL_ENTRY_TITLE_CHARACTERS } from "@/api/journal/journal.constants";
 import type { ClientUpdateJournalEntryRequest, JournalEntry } from "@/api/journal/journal.type";
 import styles from "./journal-editor.module.css";
 import { JournalEditorToolbar } from "./journal-editor-toolbar";
@@ -90,7 +91,13 @@ export function JournalEditor({
   const updatedAt = new Date(entry.updatedAt);
 
   function saveEntry() {
-    onSave({ id: entry.id, title: title.trim(), content: editor?.getHTML() ?? entry.content });
+    onSave({
+      id: entry.id,
+      title: title.trim(),
+      content: editor?.getHTML() ?? entry.content,
+      favorite: entry.favorite,
+      tags: entry.tags,
+    });
   }
 
   return (
@@ -166,7 +173,7 @@ export function JournalEditor({
               className={css.titleInput}
               aria-label={t("entryTitleLabel")}
               value={title}
-              maxLength={120}
+              maxLength={MAX_JOURNAL_ENTRY_TITLE_CHARACTERS}
               placeholder={t("entryTitlePlaceholder")}
               rows={1}
               onChange={(event) => setTitle(event.target.value)}

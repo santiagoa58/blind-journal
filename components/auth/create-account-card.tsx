@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { createAccount, getCreateAccountSalt } from "@/api/auth/auth";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { AUTH_ERROR_CODES, isAuthClientError } from "@/api/auth/auth.error";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
@@ -38,9 +38,12 @@ export function CreateAccountCard() {
   const createAccountMutation = useMutation({
     mutationKey: ["auth", "create-account"],
     mutationFn: submitCreateAccount,
-    onError() {
-      appToast.error(tCommon("errors.network"));
-      setErrorMessage(tCommon("errors.network"));
+    onError(error) {
+      const message = isAuthClientError(error)
+        ? t("errors.unlockFailed")
+        : tCommon("errors.network");
+      appToast.error(message);
+      setErrorMessage(message);
     },
     onSuccess(response) {
       if (!response.success) {

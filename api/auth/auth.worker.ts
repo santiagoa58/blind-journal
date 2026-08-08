@@ -1,7 +1,9 @@
 /// <reference lib="webworker" />
 
 import sodium from "libsodium-wrappers-sumo";
+import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth.error";
 import { base64ToUint8Array, uint8ArrayToBase64 } from "@/crypto/base64";
+import { AES_KEY_LENGTH_BITS } from "@/crypto/encrypt.constants";
 import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
 const HASH_KEY_LENGTH_BITS = 256; // Desired output length in bits (32 bytes * 8 bits/byte)
@@ -9,7 +11,7 @@ const HASH_KEY_LENGTH_BYTES = 32; // Desired output length in bytes (32 bytes is
 
 function deriveMasterKey(userPassword: string, salt: Uint8Array) {
   if (salt.byteLength !== sodium.crypto_pwhash_SALTBYTES) {
-    throw new Error("Invalid salt length");
+    throw new Error(AUTH_CLIENT_ERROR_CODES.unavailable);
   }
   // Hash the password with Argon2id and 'sensitive' parameters for better security
   return sodium.crypto_pwhash(
@@ -51,7 +53,7 @@ async function deriveUserKeys(rawMasterKey: Uint8Array): Promise<AuthUserKeys> {
       info: new TextEncoder().encode("encrypt-key-context"),
     },
     masterKey,
-    { name: "AES-KW", length: 256 },
+    { name: "AES-KW", length: AES_KEY_LENGTH_BITS },
     false,
     ["wrapKey", "unwrapKey"],
   );
@@ -76,12 +78,11 @@ self.addEventListener("message", async (e: MessageEvent<AuthWorkerPayload>) => {
       data: userKeys,
     } satisfies AuthWorkerResponse;
     self.postMessage(response);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  } catch {
     const response = {
       reqId: e.data.reqId,
       success: false,
-      error: msg,
+      error: AUTH_CLIENT_ERROR_CODES.unavailable,
     } satisfies AuthWorkerResponse;
     self.postMessage(response);
   } finally {

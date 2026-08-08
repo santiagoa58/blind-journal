@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { MAX_JOURNAL_ENTRY_REQUEST_BYTES } from "@/api/journal/journal.constants";
 import type { ApiJournalEntriesResponse } from "@/api/journal/journal.type";
 import { isSameOrigin, jsonResponse, REQUEST_ERROR_CODES, readJsonBody } from "@/server/http";
 import { createEntry, listEntries } from "@/server/journal";
@@ -34,7 +35,10 @@ export async function POST(request: NextRequest) {
     return unauthorizedResponse();
   }
 
-  const response = createEntry(userId, await readJsonBody(request, 110_000));
+  const response = createEntry(
+    userId,
+    await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES),
+  );
 
   return jsonResponse(response, response.success ? 201 : 400);
 }

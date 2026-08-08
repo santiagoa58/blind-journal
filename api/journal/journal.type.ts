@@ -11,6 +11,22 @@ export type JournalEntry = {
   tags: string[];
 };
 
+export type JournalEntryContent = Pick<JournalEntry, "title" | "content" | "favorite" | "tags">;
+
+export type EncryptedJournalData = {
+  version: 1;
+  wrappedKeyBase64: Base64;
+  ciphertextBase64: Base64;
+  ivBase64: Base64;
+};
+
+export type EncryptedJournalEntry = {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  encryptedData: EncryptedJournalData;
+};
+
 export type ClientCreateJournalEntryRequest = {
   title: string;
   content: string;
@@ -18,20 +34,13 @@ export type ClientCreateJournalEntryRequest = {
 
 export type ClientUpdateJournalEntryRequest = {
   id: string;
-  title?: string;
-  content?: string;
-  favorite?: boolean;
-  tags?: string[];
-};
+} & JournalEntryContent;
 
-export type ApiUpdateJournalEntryRequest = {
-  wrappedKeyBase64: Base64;
-  cipherTextBase64: Base64;
-  ivBase64: Base64;
-};
+export type ApiCreateJournalEntryRequest = Pick<EncryptedJournalEntry, "id" | "encryptedData">;
+export type ApiUpdateJournalEntryRequest = Pick<EncryptedJournalEntry, "encryptedData">;
 
-export type ApiCreateJournalEntryRequest = ApiUpdateJournalEntryRequest;
-
-export type ApiJournalEntriesResponse = ApiResponse<JournalEntry[]>;
-export type ApiJournalEntryResponse = ApiResponse<JournalEntry>;
+export type ApiJournalEntriesResponse = ApiResponse<EncryptedJournalEntry[]>;
+export type ApiJournalEntryResponse = ApiResponse<EncryptedJournalEntry>;
+export type ClientJournalEntriesResponse = ApiResponse<JournalEntry[]>;
+export type ClientJournalEntryResponse = ApiResponse<JournalEntry>;
 export type ApiDeleteJournalEntryResponse = ApiResponse<{ id: string }>;

@@ -9,6 +9,7 @@ import {
   Heading,
   ScrollArea,
   SegmentedControl,
+  Separator,
   Text,
   TextField,
 } from "@radix-ui/themes";
@@ -133,9 +134,7 @@ export function EntryList({
                               day: "numeric",
                             })}
                           </Text>
-                          <Text size="1" color="gray" aria-hidden>
-                            ·
-                          </Text>
+                          <Separator orientation="vertical" size="1" />
                           <Text size="1" color="gray">
                             {format.dateTime(updatedAt, {
                               hour: "numeric",

@@ -18,6 +18,8 @@
     "create": "No se pudo crear la entrada.",
     "save": "No se pudieron guardar tus cambios.",
     "delete": "No se pudo eliminar la entrada.",
+    "documentTooLarge": "Esta entrada es demasiado grande. Debe ocupar {maxSize, number} MiB o menos.",
+    "encryptionKeyUnavailable": "Vuelve a desbloquear tu diario para continuar.",
     "invalidEntry": "Agrega un título antes de guardar esta entrada.",
     "entryNotFound": "Esa entrada ya no está disponible."
   }

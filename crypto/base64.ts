@@ -10,6 +10,6 @@ export function uint8ArrayToBase64(data: Uint8Array): Base64 {
   return btoa(binary);
 }
 
-export function base64ToUint8Array(data: Base64): Uint8Array {
+export function base64ToUint8Array(data: Base64): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(data), (character) => character.charCodeAt(0));
 }

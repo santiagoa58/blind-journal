@@ -41,6 +41,7 @@
         "noUnusedVariables": "error"
       },
       "style": {
+        "noJsxLiterals": "error",
         "noNonNullAssertion": "error",
         "noParameterAssign": "error",
         "useConst": "error",

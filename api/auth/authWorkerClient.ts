@@ -1,3 +1,4 @@
+import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth.error";
 import type { Base64 } from "../general.type";
 import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
@@ -25,12 +26,12 @@ class AuthWorkerClient {
     this._pending.clear();
   };
 
-  private handleWorkerError = (e: ErrorEvent) => {
-    this.rejectAll(new Error(e.message || "Authentication worker encountered unexpected error"));
+  private handleWorkerError = (_e: ErrorEvent) => {
+    this.rejectAll(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
   };
 
   private handleMessageError = (_e: MessageEvent) => {
-    this.rejectAll(new Error("Authentication worker message error"));
+    this.rejectAll(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
   };
 
   private handleWorkerResponse = (e: MessageEvent<AuthWorkerResponse>) => {
@@ -48,7 +49,7 @@ class AuthWorkerClient {
 
   getUserKeys = async (password: string, salt: Base64) => {
     if (this.closed) {
-      return Promise.reject(new Error("Authentication worker is closed"));
+      return Promise.reject(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
     }
     return new Promise<AuthUserKeys>((resolve, reject) => {
       const payload = {
@@ -67,7 +68,7 @@ class AuthWorkerClient {
       return;
     }
     this._worker.terminate();
-    this.rejectAll(new Error("Authentication worker terminated"));
+    this.rejectAll(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
     this.closed = true;
   };
 }

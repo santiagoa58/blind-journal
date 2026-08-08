@@ -24,10 +24,15 @@ import {
   listJournalEntries,
   updateJournalEntry,
 } from "@/api/journal/journal";
-import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
+import { MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES } from "@/api/journal/journal.constants";
+import {
+  JOURNAL_CLIENT_ERROR_CODES,
+  JOURNAL_ERROR_CODES,
+  JournalClientError,
+} from "@/api/journal/journal.error";
 import type {
-  ApiJournalEntriesResponse,
   ClientCreateJournalEntryRequest,
+  ClientJournalEntriesResponse,
   ClientUpdateJournalEntryRequest,
   JournalEntry,
 } from "@/api/journal/journal.type";
@@ -43,9 +48,9 @@ const sessionQueryKey = ["auth", "session"] as const;
 const entriesQueryKey = ["journal", "entries"] as const;
 
 function updateEntryCache(
-  current: ApiJournalEntriesResponse | undefined,
+  current: ClientJournalEntriesResponse | undefined,
   entry: JournalEntry,
-): ApiJournalEntriesResponse | undefined {
+): ClientJournalEntriesResponse | undefined {
   if (!current?.success) {
     return current;
   }
@@ -75,8 +80,13 @@ export function JournalWorkspace() {
   const authenticated = sessionQuery.data?.success === true;
   const entriesQuery = useQuery({
     queryKey: entriesQueryKey,
-    queryFn: listJournalEntries,
-    enabled: authenticated,
+    queryFn: () => {
+      if (!user) {
+        throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
+      }
+      return listJournalEntries(user);
+    },
+    enabled: authenticated && user !== null,
     retry: 1,
   });
   const entries = entriesQuery.data?.success ? entriesQuery.data.data : [];
@@ -88,11 +98,11 @@ export function JournalWorkspace() {
   );
 
   useEffect(() => {
-    if (sessionQuery.data && !sessionQuery.data.success) {
+    if (sessionQuery.data && (!sessionQuery.data.success || !user)) {
       appToast.error(tAuth("errors.unauthorized"));
       router.replace("/");
     }
-  }, [appToast, router, sessionQuery.data, tAuth]);
+  }, [appToast, router, sessionQuery.data, tAuth, user]);
 
   function getJournalErrorMessage(code: string, fallback: "create" | "save" | "delete") {
     switch (code) {
@@ -105,16 +115,34 @@ export function JournalWorkspace() {
     }
   }
 
+  function getJournalClientErrorMessage(
+    error: unknown,
+    fallback: "load" | "create" | "save" | "delete",
+  ) {
+    if (error instanceof JournalClientError) {
+      switch (error.code) {
+        case JOURNAL_CLIENT_ERROR_CODES.documentTooLarge:
+          return t("errors.documentTooLarge", {
+            maxSize: MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES,
+          });
+        case JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable:
+          return t("errors.encryptionKeyUnavailable");
+      }
+    }
+
+    return t(`errors.${fallback}`);
+  }
+
   const createMutation = useMutation({
     mutationKey: ["journal", "create"],
     mutationFn: (input: ClientCreateJournalEntryRequest) => {
       if (!user) {
-        throw new Error("User not found");
+        throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
       }
       return createJournalEntry(input, user);
     },
-    onError() {
-      appToast.error(t("errors.create"));
+    onError(error) {
+      appToast.error(getJournalClientErrorMessage(error, "create"));
     },
     onSuccess(response, _vars, _mutationRes, ctx) {
       if (!response.success) {
@@ -122,7 +150,7 @@ export function JournalWorkspace() {
         return;
       }
 
-      ctx.client.setQueryData<ApiJournalEntriesResponse>(entriesQueryKey, (current) => ({
+      ctx.client.setQueryData<ClientJournalEntriesResponse>(entriesQueryKey, (current) => ({
         success: true,
         data: [response.data, ...(current?.success ? current.data : [])],
       }));
@@ -135,12 +163,12 @@ export function JournalWorkspace() {
     mutationKey: ["journal", "save"],
     mutationFn: (input: ClientUpdateJournalEntryRequest) => {
       if (!user) {
-        throw new Error("User not found");
+        throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
       }
       return updateJournalEntry(input, user);
     },
-    onError() {
-      appToast.error(t("errors.save"));
+    onError(error) {
+      appToast.error(getJournalClientErrorMessage(error, "save"));
     },
     onSuccess(response, _vars, _mutationRes, ctx) {
       if (!response.success) {
@@ -148,7 +176,7 @@ export function JournalWorkspace() {
         return;
       }
 
-      ctx.client.setQueryData<ApiJournalEntriesResponse>(entriesQueryKey, (current) =>
+      ctx.client.setQueryData<ClientJournalEntriesResponse>(entriesQueryKey, (current) =>
         updateEntryCache(current, response.data),
       );
       appToast.success(t("success.saved"));
@@ -158,8 +186,8 @@ export function JournalWorkspace() {
   const deleteMutation = useMutation({
     mutationKey: ["journal", "delete"],
     mutationFn: deleteJournalEntry,
-    onError() {
-      appToast.error(t("errors.delete"));
+    onError(error) {
+      appToast.error(getJournalClientErrorMessage(error, "delete"));
     },
     onSuccess(response, _vars, _mutationRes, ctx) {
       if (!response.success) {
@@ -167,7 +195,7 @@ export function JournalWorkspace() {
         return;
       }
 
-      ctx.client.setQueryData<ApiJournalEntriesResponse>(entriesQueryKey, (current) => {
+      ctx.client.setQueryData<ClientJournalEntriesResponse>(entriesQueryKey, (current) => {
         if (!current?.success) {
           return current;
         }
@@ -188,6 +216,7 @@ export function JournalWorkspace() {
       appToast.error(tCommon("errors.network"));
     },
     onSuccess(_resp, _vars, _mutationRes, ctx) {
+      useUser.getState().setUser(null);
       ctx.client.removeQueries({ queryKey: sessionQueryKey });
       ctx.client.removeQueries({ queryKey: entriesQueryKey });
       router.replace("/");
@@ -209,7 +238,7 @@ export function JournalWorkspace() {
     }
   }
 
-  if (sessionQuery.isPending || (authenticated && entriesQuery.isPending)) {
+  if (sessionQuery.isPending || (authenticated && user !== null && entriesQuery.isPending)) {
     return (
       <Flex align="center" justify="center" gap="3" height="100dvh">
         <Spinner aria-label={tCommon("labels.loading")} />
@@ -229,7 +258,7 @@ export function JournalWorkspace() {
           <Callout.Icon>
             <ExclamationTriangleIcon />
           </Callout.Icon>
-          <Callout.Text>{t("errors.load")}</Callout.Text>
+          <Callout.Text>{getJournalClientErrorMessage(entriesQuery.error, "load")}</Callout.Text>
         </Callout.Root>
         <Button mt="4" onClick={() => entriesQuery.refetch()}>
           {tCommon("actions.retry")}
@@ -287,7 +316,10 @@ export function JournalWorkspace() {
             onToggleFavorite={() =>
               saveMutation.mutate({
                 id: selectedEntry.id,
+                title: selectedEntry.title,
+                content: selectedEntry.content,
                 favorite: !selectedEntry.favorite,
+                tags: selectedEntry.tags,
               })
             }
           />

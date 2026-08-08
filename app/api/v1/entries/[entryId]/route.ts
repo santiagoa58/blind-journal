@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { MAX_JOURNAL_ENTRY_REQUEST_BYTES } from "@/api/journal/journal.constants";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { journalEntryIdSchema } from "@/api/journal/journal.schema";
 import type { ApiJournalEntryResponse } from "@/api/journal/journal.type";
@@ -50,7 +51,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return entryNotFoundResponse();
   }
 
-  const response = updateEntry(userId, entryId, await readJsonBody(request, 110_000));
+  const response = updateEntry(
+    userId,
+    entryId,
+    await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES),
+  );
   const status = response.success
     ? 200
     : response.error.code === JOURNAL_ERROR_CODES.entryNotFound

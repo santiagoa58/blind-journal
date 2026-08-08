@@ -18,6 +18,8 @@
     "create": "The entry could not be created.",
     "save": "Your changes could not be saved.",
     "delete": "The entry could not be deleted.",
+    "documentTooLarge": "This entry is too large. Keep it at {maxSize, number} MiB or less.",
+    "encryptionKeyUnavailable": "Unlock your journal again to continue.",
     "invalidEntry": "Add a title before saving this entry.",
     "entryNotFound": "That entry is no longer available."
   }

@@ -1,37 +1,80 @@
 import type { Base64 } from "@/api/general.type";
 import { uint8ArrayToBase64 } from "@/crypto/base64";
+import {
+  AES_GCM_AUTH_TAG_BITS,
+  AES_GCM_IV_BYTES,
+  AES_KEY_LENGTH_BITS,
+} from "@/crypto/encrypt.constants";
 
 type EncryptedData = {
-  cipherTextBase64: Base64;
+  ciphertextBase64: Base64;
   iv: Uint8Array<ArrayBuffer>;
 };
 
 export async function encrypt(
   encryptionKey: CryptoKey,
   rawData: Uint8Array<ArrayBuffer>,
+  additionalData?: Uint8Array<ArrayBuffer>,
 ): Promise<EncryptedData> {
-  // Generates a unique 12-byte IV (Initialization Vector)
-  // NEVER reuse the same IV with the same key!
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  // Generates a unique IV for every encryption. Never reuse an IV with the same key.
+  const iv = crypto.getRandomValues(new Uint8Array(AES_GCM_IV_BYTES));
   const buffer = await crypto.subtle.encrypt(
     {
       name: "AES-GCM",
       iv: iv,
+      additionalData,
+      tagLength: AES_GCM_AUTH_TAG_BITS,
     },
     encryptionKey,
     rawData,
   );
   return {
-    cipherTextBase64: uint8ArrayToBase64(new Uint8Array(buffer)),
+    ciphertextBase64: uint8ArrayToBase64(new Uint8Array(buffer)),
     iv,
   };
 }
 
 export function generateEncryptionKey() {
-  return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+  return crypto.subtle.generateKey({ name: "AES-GCM", length: AES_KEY_LENGTH_BITS }, true, [
+    "encrypt",
+    "decrypt",
+  ]);
 }
 
 export async function wrapKey(key: CryptoKey, wrapperKey: CryptoKey): Promise<Base64> {
   const keyBuffer = await crypto.subtle.wrapKey("raw", key, wrapperKey, "AES-KW");
   return uint8ArrayToBase64(new Uint8Array(keyBuffer));
+}
+
+export async function unwrapKey(
+  key: Uint8Array<ArrayBuffer>,
+  wrapperKey: CryptoKey,
+): Promise<CryptoKey> {
+  return crypto.subtle.unwrapKey(
+    "raw",
+    key,
+    wrapperKey,
+    "AES-KW",
+    { name: "AES-GCM", length: AES_KEY_LENGTH_BITS },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+export async function decrypt(
+  encryptionKey: CryptoKey,
+  ciphertext: Uint8Array<ArrayBuffer>,
+  iv: Uint8Array<ArrayBuffer>,
+  additionalData?: Uint8Array<ArrayBuffer>,
+): Promise<ArrayBuffer> {
+  return crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv,
+      additionalData,
+      tagLength: AES_GCM_AUTH_TAG_BITS,
+    },
+    encryptionKey,
+    ciphertext,
+  );
 }

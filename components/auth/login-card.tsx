@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { getLoginSalt, login } from "@/api/auth/auth";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { AUTH_ERROR_CODES, isAuthClientError } from "@/api/auth/auth.error";
 import type { ApiSaltRequest, ClientLoginRequest } from "@/api/auth/auth.type";
 import type { Base64 } from "@/api/general.type";
 import { useAppToast } from "@/hooks/use-app-toast";
@@ -29,8 +29,10 @@ export function LoginCard() {
   const saltMutation = useMutation({
     mutationKey: ["auth", "login", "salt"],
     mutationFn: getLoginSalt,
-    onError() {
-      appToast.error(tCommon("errors.network"));
+    onError(error) {
+      appToast.error(
+        isAuthClientError(error) ? t("errors.unlockFailed") : tCommon("errors.network"),
+      );
     },
     onSuccess(response, request) {
       if (response.success) {
@@ -48,8 +50,10 @@ export function LoginCard() {
   const loginMutation = useMutation({
     mutationKey: ["auth", "login"],
     mutationFn: login,
-    onError() {
-      appToast.error(tCommon("errors.network"));
+    onError(error) {
+      appToast.error(
+        isAuthClientError(error) ? t("errors.unlockFailed") : tCommon("errors.network"),
+      );
     },
     onSuccess(response) {
       if (!response.success) {
@@ -65,7 +69,11 @@ export function LoginCard() {
 
   const response = loginMutation.data ?? saltMutation.data;
 
-  if (loginMutation.isError || saltMutation.isError) {
+  if (loginMutation.isError) {
+    errorMessage = isAuthClientError(loginMutation.error)
+      ? t("errors.unlockFailed")
+      : tCommon("errors.network");
+  } else if (saltMutation.isError) {
     errorMessage = tCommon("errors.network");
   } else if (response && !response.success) {
     switch (response.error.code) {
