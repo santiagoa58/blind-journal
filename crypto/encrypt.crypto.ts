@@ -1,10 +1,10 @@
-import type { Base64 } from "@/api/general.type";
 import { uint8ArrayToBase64 } from "@/crypto/base64";
 import {
   AES_GCM_AUTH_TAG_BITS,
   AES_GCM_IV_BYTES,
   AES_KEY_LENGTH_BITS,
 } from "@/crypto/encrypt.constants";
+import type { Base64 } from "@/types/base64";
 
 type EncryptedData = {
   ciphertextBase64: Base64;

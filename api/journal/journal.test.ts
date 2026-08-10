@@ -6,9 +6,10 @@ import {
   listJournalEntries,
   updateJournalEntry,
 } from "@/api/journal/journal";
+import { JOURNAL_CLIENT_ERROR_CODES } from "@/api/journal/journal-client.error";
 import { localServerStore, type StoredUser } from "@/local-server/store";
 
-describe("journal API", () => {
+describe("client journal workflow", () => {
   let clientUser: ClientUser;
 
   beforeEach(async () => {
@@ -36,21 +37,15 @@ describe("journal API", () => {
     const created = await createJournalEntry(
       {
         title: "A test entry",
-        content: "<p>Written through the client API.</p>",
+        content: "<p>Written through the client workflow.</p>",
       },
       clientUser,
     );
 
-    expect(created.success).toBe(true);
-
-    if (!created.success) {
-      throw new Error("The entry fixture should have been created.");
-    }
-
     const storedEntries = localServerStore.entriesByUserId[clientUser.id] ?? [];
     expect(storedEntries).toHaveLength(1);
     expect(storedEntries[0]).toMatchObject({
-      id: created.data.id,
+      id: created.id,
       encryptedData: {
         version: 1,
         ciphertextBase64: expect.any(String),
@@ -59,50 +54,38 @@ describe("journal API", () => {
       },
     });
     expect(JSON.stringify(storedEntries)).not.toContain("A test entry");
-    expect(JSON.stringify(storedEntries)).not.toContain("Written through the client API");
+    expect(JSON.stringify(storedEntries)).not.toContain("Written through the client workflow");
 
     const listed = await listJournalEntries(clientUser);
-    expect(listed.success && listed.data.some(({ id }) => id === created.data.id)).toBe(true);
+    expect(listed.some(({ id }) => id === created.id)).toBe(true);
 
     const updated = await updateJournalEntry(
       {
-        id: created.data.id,
+        id: created.id,
         title: "An updated test entry",
-        content: created.data.content,
+        content: created.content,
         favorite: true,
-        tags: created.data.tags,
+        tags: created.tags,
       },
       clientUser,
     );
     expect(updated).toMatchObject({
-      success: true,
-      data: {
-        id: created.data.id,
-        title: "An updated test entry",
-        favorite: true,
-      },
+      id: created.id,
+      title: "An updated test entry",
+      favorite: true,
     });
 
-    await expect(deleteJournalEntry(created.data.id)).resolves.toEqual({
-      success: true,
-      data: { id: created.data.id },
-    });
+    await expect(deleteJournalEntry(created.id)).resolves.toEqual({ id: created.id });
 
     const afterDelete = await listJournalEntries(clientUser);
-    expect(afterDelete.success && afterDelete.data.some(({ id }) => id === created.data.id)).toBe(
-      false,
-    );
+    expect(afterDelete.some(({ id }) => id === created.id)).toBe(false);
   });
 
   it("rejects ciphertext moved to a different public entry identity", async () => {
-    const created = await createJournalEntry(
+    await createJournalEntry(
       { title: "Bound entry", content: "<p>Authenticated content.</p>" },
       clientUser,
     );
-
-    if (!created.success) {
-      throw new Error("The entry fixture should have been created.");
-    }
 
     const storedEntry = localServerStore.entriesByUserId[clientUser.id]?.[0];
     if (!storedEntry) {
@@ -111,6 +94,16 @@ describe("journal API", () => {
 
     storedEntry.id = crypto.randomUUID();
 
-    await expect(listJournalEntries(clientUser)).rejects.toThrow();
+    await expect(listJournalEntries(clientUser)).rejects.toMatchObject({
+      name: "JournalClientError",
+      code: JOURNAL_CLIENT_ERROR_CODES.decryptionFailed,
+    });
+  });
+
+  it("reports a locked journal before making an HTTP request", async () => {
+    await expect(listJournalEntries(null)).rejects.toMatchObject({
+      name: "JournalClientError",
+      code: JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable,
+    });
   });
 });

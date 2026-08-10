@@ -1,21 +1,29 @@
+import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
+import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/api/auth/auth.schema";
+import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import { verifyCredentials } from "@/server/auth";
-import { isSameOrigin, jsonResponse, REQUEST_ERROR_CODES, readJsonBody } from "@/server/http";
+import { getAuthErrorHttpStatus } from "@/server/auth.error";
+import { isSameOrigin, jsonResponse, readJsonBody } from "@/server/http";
+import { getRequestErrorHttpStatus } from "@/server/request.error";
 import { startSession } from "@/server/session";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
-    return jsonResponse({ success: false, error: { code: REQUEST_ERROR_CODES.forbidden } }, 403);
+    return jsonResponse(
+      { code: REQUEST_ERROR_CODES.forbidden },
+      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
+    );
   }
 
-  const result = await verifyCredentials(await readJsonBody(request, 1_024));
-  const response = jsonResponse(result, result.success ? 200 : 401);
-
-  if (result.success) {
-    startSession(response, result.data.user.id);
+  const result = await verifyCredentials(await readJsonBody(request, MAX_AUTH_REQUEST_BODY_BYTES));
+  if (!result.success) {
+    return jsonResponse(result.error, getAuthErrorHttpStatus(result.error.code));
   }
 
+  const response = jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_OK);
+  startSession(response, result.data.user.id);
   return response;
 }

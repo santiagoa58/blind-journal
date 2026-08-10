@@ -1,32 +1,33 @@
-import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
+import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/api/journal/journal.error";
 import { createEntryRequestSchema, updateEntryRequestSchema } from "@/api/journal/journal.schema";
 import type {
   ApiDeleteJournalEntryResponse,
-  ApiJournalEntriesResponse,
-  ApiJournalEntryResponse,
   EncryptedJournalEntry,
 } from "@/api/journal/journal.type";
+import type { ServiceResult } from "@/server/service-result";
 import type { ApplicationStore } from "@/server/store.type";
 
-function invalidEntryResponse(): ApiJournalEntryResponse {
+type JournalServiceResult<TData> = ServiceResult<TData, JournalErrorCode>;
+
+function invalidEntryResponse(): JournalServiceResult<EncryptedJournalEntry> {
   return { success: false, error: { code: JOURNAL_ERROR_CODES.invalidEntry } };
 }
 
-function entryNotFoundResponse(): ApiJournalEntryResponse {
+function entryNotFoundResponse(): JournalServiceResult<EncryptedJournalEntry> {
   return { success: false, error: { code: JOURNAL_ERROR_CODES.entryNotFound } };
 }
 
 export function createJournalService(store: ApplicationStore) {
-  function listEntries(userId: string): ApiJournalEntriesResponse {
-    return {
-      success: true,
-      data: store
-        .getJournalEntries(userId)
-        .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-    };
+  function listEntries(userId: string): EncryptedJournalEntry[] {
+    return store
+      .getJournalEntries(userId)
+      .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
-  function createEntry(userId: string, input: unknown): ApiJournalEntryResponse {
+  function createEntry(
+    userId: string,
+    input: unknown,
+  ): JournalServiceResult<EncryptedJournalEntry> {
     const result = createEntryRequestSchema.safeParse(input);
     if (!result.success) {
       return invalidEntryResponse();
@@ -45,7 +46,11 @@ export function createJournalService(store: ApplicationStore) {
       : invalidEntryResponse();
   }
 
-  function updateEntry(userId: string, entryId: string, input: unknown): ApiJournalEntryResponse {
+  function updateEntry(
+    userId: string,
+    entryId: string,
+    input: unknown,
+  ): JournalServiceResult<EncryptedJournalEntry> {
     const result = updateEntryRequestSchema.safeParse(input);
     if (!result.success) {
       return invalidEntryResponse();
@@ -66,7 +71,10 @@ export function createJournalService(store: ApplicationStore) {
       : entryNotFoundResponse();
   }
 
-  function deleteEntry(userId: string, entryId: string): ApiDeleteJournalEntryResponse {
+  function deleteEntry(
+    userId: string,
+    entryId: string,
+  ): JournalServiceResult<ApiDeleteJournalEntryResponse> {
     return store.deleteJournalEntry(userId, entryId)
       ? { success: true, data: { id: entryId } }
       : { success: false, error: { code: JOURNAL_ERROR_CODES.entryNotFound } };

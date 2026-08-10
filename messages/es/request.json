@@ -1,0 +1,6 @@
+{
+  "errors": {
+    "forbidden": "Esta solicitud no está permitida.",
+    "invalid": "La solicitud no es válida."
+  }
+}

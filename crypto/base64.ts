@@ -1,4 +1,4 @@
-import type { Base64 } from "@/api/general.type";
+import type { Base64 } from "@/types/base64";
 
 export function uint8ArrayToBase64(data: Uint8Array): Base64 {
   let binary = "";

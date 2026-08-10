@@ -1,16 +1,23 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-
-const appToast = {
-  error(message: string) {
-    toast.error(message);
-  },
-  success(message: string) {
-    toast.success(message);
-  },
-};
+import type { CodedError } from "@/client.error";
+import { useErrorMessage } from "@/i18n/error-message";
 
 export function useAppToast() {
-  return appToast;
+  const t = useTranslations("api.errors");
+  const getErrorMessage = useErrorMessage();
+
+  return {
+    error(error: CodedError) {
+      const message = getErrorMessage(error);
+
+      // TODO(observability): Report unmapped error codes before showing this intentional fallback.
+      toast.error(message ?? t("unexpected"));
+    },
+    success(message: string) {
+      toast.success(message);
+    },
+  };
 }

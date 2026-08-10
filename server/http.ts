@@ -1,15 +1,11 @@
 import "server-only";
 
+import { constants as HTTP_STATUS } from "node:http2";
 import { NextResponse } from "next/server";
 
 const JSON_CONTENT_TYPE = "application/json";
 
-export const REQUEST_ERROR_CODES = {
-  forbidden: "REQUEST_FORBIDDEN",
-  invalid: "REQUEST_INVALID",
-} as const;
-
-export function jsonResponse<T>(body: T, status = 200): NextResponse<T> {
+export function jsonResponse<T>(body: T, status = HTTP_STATUS.HTTP_STATUS_OK): NextResponse<T> {
   return NextResponse.json(body, {
     status,
     headers: {

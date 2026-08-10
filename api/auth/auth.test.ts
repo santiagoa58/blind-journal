@@ -1,3 +1,4 @@
+import { HTTPError } from "ky";
 import { describe, expect, it, vi } from "vitest";
 import {
   createAccount,
@@ -8,6 +9,7 @@ import {
   logout,
 } from "@/api/auth/auth";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth-client.error";
 import { localServerStore, type StoredUser } from "@/local-server/store";
 import { deriveMasterKey, deriveUserKeys } from "@/tests/mocks/auth-crypto";
 
@@ -21,7 +23,7 @@ vi.mock("@/api/auth/authWorkerClient", async () => {
   );
 
   return {
-    getAuthWorkerClient: () => ({
+    getAuthWorker: () => ({
       async getUserKeys(password: string) {
         const masterKey = await deriveMockMasterKey(password);
         const { authKey } = await deriveMockUserKeys(masterKey);
@@ -35,7 +37,7 @@ vi.mock("@/api/auth/authWorkerClient", async () => {
       },
       terminate() {},
     }),
-    terminateAuthWorkerClient() {},
+    terminateAuthWorker() {},
   };
 });
 
@@ -45,13 +47,10 @@ const account = {
 };
 
 async function registerAccount() {
-  const saltResponse = await getCreateAccountSalt({ username: account.username });
-
-  if (!saltResponse.success) {
-    throw new Error("The account salt should have been created.");
-  }
-
-  return createAccount({ ...account, salt: saltResponse.data.salt });
+  return createAccount({
+    ...account,
+    confirmPassword: account.password,
+  });
 }
 
 async function seedUser(): Promise<StoredUser> {
@@ -73,36 +72,32 @@ async function seedUser(): Promise<StoredUser> {
   return user;
 }
 
-describe("auth API", () => {
+describe("client auth workflow", () => {
   it("creates an account after username validation errors and rejects a duplicate", async () => {
-    await expect(getCreateAccountSalt({ username: "" })).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.usernameRequired },
+    await expect(getCreateAccountSalt({ username: "" })).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.usernameRequired,
     });
-    await expect(getCreateAccountSalt({ username: "ab" })).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.usernameInvalid },
+    await expect(getCreateAccountSalt({ username: "ab" })).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.usernameInvalid,
     });
 
-    await expect(getSession()).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.unauthorized },
+    const sessionError = await getSession().catch((error: unknown) => error);
+    expect(sessionError).toBeInstanceOf(HTTPError);
+    expect(sessionError).toMatchObject({
+      code: AUTH_ERROR_CODES.unauthorized,
+      data: { code: AUTH_ERROR_CODES.unauthorized },
     });
 
     const created = await registerAccount();
 
     expect(created).toMatchObject({
-      success: true,
-      data: {
-        user: {
-          username: account.username,
-          displayName: account.username,
-        },
+      user: {
+        username: account.username,
+        displayName: account.username,
       },
     });
     await expect(getSession()).resolves.toMatchObject({
-      success: true,
-      data: { user: { username: account.username } },
+      user: { username: account.username },
     });
 
     await logout();
@@ -110,67 +105,66 @@ describe("auth API", () => {
     const saltResponse = await getLoginSalt({ username: account.username });
 
     expect(saltResponse).toMatchObject({
-      success: true,
-      data: { salt: expect.any(String) },
+      salt: expect.any(String),
     });
 
-    if (saltResponse.success) {
-      expect(saltResponse.data.salt).not.toHaveLength(0);
-    }
+    expect(saltResponse.salt).not.toHaveLength(0);
 
-    await expect(getCreateAccountSalt({ username: account.username })).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.usernameTaken },
+    await expect(getCreateAccountSalt({ username: account.username })).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.usernameTaken,
     });
   });
 
   it("logs in an existing user after credential errors and supports retrying", async () => {
     const user = await seedUser();
 
-    await expect(getLoginSalt({ username: "unknown_writer" })).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+    await expect(getLoginSalt({ username: "unknown_writer" })).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.invalidCredentials,
     });
 
     const saltResponse = await getLoginSalt({ username: account.username });
 
     expect(saltResponse).toEqual({
-      success: true,
-      data: { salt: user.salt },
+      salt: user.salt,
     });
-
-    if (!saltResponse.success) {
-      throw new Error("The seeded user's salt should be available.");
-    }
 
     await expect(
       login({
         username: account.username,
         password: "incorrect-password",
-        salt: saltResponse.data.salt,
+        salt: saltResponse.salt,
       }),
-    ).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+    ).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.invalidCredentials,
     });
-    await expect(getSession()).resolves.toEqual({
-      success: false,
-      error: { code: AUTH_ERROR_CODES.unauthorized },
+    await expect(getSession()).rejects.toMatchObject({
+      code: AUTH_ERROR_CODES.unauthorized,
     });
 
     const loggedIn = await login({
       username: account.username,
       password: account.password,
-      salt: saltResponse.data.salt,
+      salt: saltResponse.salt,
     });
 
     expect(loggedIn).toMatchObject({
-      success: true,
-      data: { user: { id: user.id, username: account.username } },
+      user: { id: user.id, username: account.username },
     });
     await expect(getSession()).resolves.toMatchObject({
-      success: true,
-      data: { user: { id: user.id, username: account.username } },
+      user: { id: user.id, username: account.username },
+    });
+  });
+
+  it("keeps client credential validation separate from HTTP errors", async () => {
+    await expect(
+      createAccount({
+        username: account.username,
+        password: "short",
+        confirmPassword: "short",
+      }),
+    ).rejects.toMatchObject({
+      name: "AuthClientError",
+      code: AUTH_CLIENT_ERROR_CODES.passwordTooShort,
     });
   });
 });

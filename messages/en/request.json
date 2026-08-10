@@ -1,0 +1,6 @@
+{
+  "errors": {
+    "forbidden": "This request was not allowed.",
+    "invalid": "The request was invalid."
+  }
+}

@@ -20,34 +20,25 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { ApiUser } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
-import type { SidebarSection } from "./app-sidebar";
+import { useLogout } from "@/hooks/use-logout";
+import { useUser } from "@/state/user.state";
+import { useJournalWorkspace } from "./journal-workspace-context";
+import { useCreateJournalEntry } from "./use-create-journal-entry";
 
-type JournalMobileHeaderProps = {
-  activeSection: SidebarSection;
-  currentUser: ApiUser;
-  entries: JournalEntry[];
-  selectedId: string | undefined;
-  onNewEntry: () => void;
-  onSectionChange: (section: SidebarSection) => void;
-  onSelectEntry: (entryId: string) => void;
-  onSignOut: () => void;
-};
-
-export function JournalMobileHeader({
-  activeSection,
-  currentUser,
-  entries,
-  selectedId,
-  onNewEntry,
-  onSectionChange,
-  onSelectEntry,
-  onSignOut,
-}: JournalMobileHeaderProps) {
+export function JournalMobileHeader() {
   const t = useTranslations("sidebar");
   const tEntries = useTranslations("entry-list");
+  const currentUser = useUser((state) => state.user);
+  const workspace = useJournalWorkspace();
+  const { createEntry, isPending: creatingEntry } = useCreateJournalEntry();
+  const { isPending: signingOut, signOut } = useLogout();
+
+  if (!currentUser || !workspace) {
+    return null;
+  }
+
+  const { activeSection, entries, selectedEntry, selectEntry, selectSection } = workspace;
 
   return (
     <Box asChild display={{ initial: "block", lg: "none" }}>
@@ -71,7 +62,7 @@ export function JournalMobileHeader({
                   <Dialog.Close>
                     <Button
                       variant={activeSection === "journal" ? "soft" : "ghost"}
-                      onClick={() => onSectionChange("journal")}
+                      onClick={() => selectSection("journal")}
                     >
                       <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                         <ReaderIcon aria-hidden />
@@ -82,7 +73,7 @@ export function JournalMobileHeader({
                   <Dialog.Close>
                     <Button
                       variant={activeSection === "favorites" ? "soft" : "ghost"}
-                      onClick={() => onSectionChange("favorites")}
+                      onClick={() => selectSection("favorites")}
                     >
                       <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                         <HeartIcon aria-hidden />
@@ -97,7 +88,7 @@ export function JournalMobileHeader({
 
               <Flex direction="column" gap="2">
                 <Dialog.Close>
-                  <Button variant="ghost" color="red" onClick={onSignOut}>
+                  <Button variant="ghost" color="red" onClick={signOut} disabled={signingOut}>
                     <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                       <ExitIcon aria-hidden />
                       <Text align="left">{t("account.signOut")}</Text>
@@ -108,7 +99,7 @@ export function JournalMobileHeader({
             </Dialog.Content>
           </Dialog.Root>
 
-          <Select.Root value={selectedId ?? ""} onValueChange={onSelectEntry}>
+          <Select.Root value={selectedEntry?.id ?? ""} onValueChange={selectEntry}>
             <Box asChild flexGrow="1" minWidth="0">
               <Select.Trigger
                 aria-label={tEntries("sectionLabel")}
@@ -125,7 +116,7 @@ export function JournalMobileHeader({
           </Select.Root>
 
           <Tooltip content={t("newEntry")}>
-            <IconButton onClick={onNewEntry} aria-label={t("newEntry")}>
+            <IconButton onClick={createEntry} aria-label={t("newEntry")} loading={creatingEntry}>
               <PlusIcon aria-hidden />
             </IconButton>
           </Tooltip>

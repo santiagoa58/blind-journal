@@ -1,14 +1,3 @@
-export type ApiError = {
-  code: string;
-  message?: string;
+export type ApiErrorResponse<TCode extends string> = {
+  code: TCode;
 };
-
-export type ApiResponse<TData> =
-  | {
-      success: true;
-      data: TData;
-    }
-  | {
-      success: false;
-      error: ApiError;
-    };

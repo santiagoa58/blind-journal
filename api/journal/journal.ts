@@ -1,78 +1,79 @@
-import { api } from "@/api/client";
+import type { ClientUser } from "@/api/auth/user.type";
+import { api } from "@/api/http";
+import { decryptJournalEntry, encryptJournalEntry } from "@/api/journal/journal.crypto";
 import type {
+  ApiCreateJournalEntryRequest,
   ApiDeleteJournalEntryResponse,
-  ApiJournalEntriesResponse,
-  ApiJournalEntryResponse,
+  ApiUpdateJournalEntryRequest,
   ClientCreateJournalEntryRequest,
-  ClientJournalEntriesResponse,
-  ClientJournalEntryResponse,
   ClientUpdateJournalEntryRequest,
+  EncryptedJournalEntry,
 } from "@/api/journal/journal.type";
-import type { ClientUser } from "../auth/user.type";
-import { decryptJournalEntry, encryptJournalEntry } from "./journal.crypto";
+import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
 
-export async function listJournalEntries(user: ClientUser): Promise<ClientJournalEntriesResponse> {
-  const response = await api
-    .get("entries", { cache: "no-store" })
-    .json<ApiJournalEntriesResponse>();
+function listEncryptedJournalEntries() {
+  return api.get("entries", { cache: "no-store" }).json<EncryptedJournalEntry[]>();
+}
 
-  if (!response.success) {
-    return response;
+function createEncryptedJournalEntry(input: ApiCreateJournalEntryRequest) {
+  return api.post("entries", { cache: "no-store", json: input }).json<EncryptedJournalEntry>();
+}
+
+function updateEncryptedJournalEntry(entryId: string, input: ApiUpdateJournalEntryRequest) {
+  return api
+    .patch(`entries/${entryId}`, { cache: "no-store", json: input })
+    .json<EncryptedJournalEntry>();
+}
+
+export function deleteJournalEntry(entryId: string) {
+  return api
+    .delete(`entries/${entryId}`, { cache: "no-store" })
+    .json<ApiDeleteJournalEntryResponse>();
+}
+
+export async function listJournalEntries(user: ClientUser | null) {
+  if (!user) {
+    throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
   }
 
-  return {
-    success: true,
-    data: await Promise.all(
-      response.data.map((entry) => decryptJournalEntry(user.keyEncryptionKey, user.id, entry)),
-    ),
-  };
+  // TODO(encryption-protocol): Decrypt entry keys with the in-memory vault key once account unlock
+  // provisions it. The current keyEncryptionKey is derived directly from the password.
+  const entries = await listEncryptedJournalEntries();
+  return Promise.all(
+    entries.map((entry) => decryptJournalEntry(user.keyEncryptionKey, user.id, entry)),
+  );
 }
 
 export async function createJournalEntry(
   input: ClientCreateJournalEntryRequest,
-  user: ClientUser,
-): Promise<ClientJournalEntryResponse> {
+  user: ClientUser | null,
+) {
+  if (!user) {
+    throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
+  }
+
   const id = crypto.randomUUID();
   const encryptedInput = await encryptJournalEntry(user.keyEncryptionKey, user.id, id, {
     ...input,
     favorite: false,
     tags: [],
   });
-  const response = await api
-    .post("entries", { cache: "no-store", json: encryptedInput })
-    .json<ApiJournalEntryResponse>();
-
-  return response.success
-    ? {
-        success: true,
-        data: await decryptJournalEntry(user.keyEncryptionKey, user.id, response.data),
-      }
-    : response;
+  const response = await createEncryptedJournalEntry(encryptedInput);
+  return decryptJournalEntry(user.keyEncryptionKey, user.id, response);
 }
 
 export async function updateJournalEntry(
   input: ClientUpdateJournalEntryRequest,
-  user: ClientUser,
-): Promise<ClientJournalEntryResponse> {
+  user: ClientUser | null,
+) {
+  if (!user) {
+    throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
+  }
+
   const { id, ...content } = input;
   const encryptedInput = await encryptJournalEntry(user.keyEncryptionKey, user.id, id, content);
-  const response = await api
-    .patch(`entries/${id}`, {
-      cache: "no-store",
-      json: { encryptedData: encryptedInput.encryptedData },
-    })
-    .json<ApiJournalEntryResponse>();
-
-  return response.success
-    ? {
-        success: true,
-        data: await decryptJournalEntry(user.keyEncryptionKey, user.id, response.data),
-      }
-    : response;
-}
-
-export function deleteJournalEntry(entryId: string): Promise<ApiDeleteJournalEntryResponse> {
-  return api
-    .delete(`entries/${entryId}`, { cache: "no-store" })
-    .json<ApiDeleteJournalEntryResponse>();
+  const response = await updateEncryptedJournalEntry(id, {
+    encryptedData: encryptedInput.encryptedData,
+  });
+  return decryptJournalEntry(user.keyEncryptionKey, user.id, response);
 }

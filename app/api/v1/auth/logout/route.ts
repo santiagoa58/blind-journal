@@ -1,17 +1,20 @@
 import type { NextRequest } from "next/server";
-import type { ApiLogoutResponse } from "@/api/auth/auth.type";
-import { isSameOrigin, jsonResponse, REQUEST_ERROR_CODES } from "@/server/http";
+import { REQUEST_ERROR_CODES } from "@/api/request.error";
+import { isSameOrigin, jsonResponse } from "@/server/http";
+import { getRequestErrorHttpStatus } from "@/server/request.error";
 import { endSession } from "@/server/session";
 
 export const runtime = "nodejs";
 
 export function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
-    return jsonResponse({ success: false, error: { code: REQUEST_ERROR_CODES.forbidden } }, 403);
+    return jsonResponse(
+      { code: REQUEST_ERROR_CODES.forbidden },
+      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
+    );
   }
 
-  const body = { success: true, data: null } satisfies ApiLogoutResponse;
-  const response = jsonResponse(body);
+  const response = jsonResponse(null);
   endSession(request, response);
 
   return response;

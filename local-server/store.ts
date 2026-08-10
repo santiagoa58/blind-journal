@@ -1,6 +1,9 @@
 import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
 import type { ApplicationStore, PendingAccountSalt, StoredUser } from "@/server/store.type";
 
+// TODO(boundaries): Move the repository contract to a neutral domain module. The test store should
+// implement that contract without importing a type owned by the production server directory.
+
 type LocalServerState = {
   activeUserId: string | null;
   entriesByUserId: Record<string, EncryptedJournalEntry[]>;

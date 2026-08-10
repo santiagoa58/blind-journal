@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "networkUnavailable": "We could not reach the server. Check your connection and try again.",
+    "timeout": "The server took too long to respond. Try again.",
+    "unexpected": "Something went wrong. Please try again."
+  }
+}

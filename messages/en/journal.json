@@ -14,12 +14,10 @@
     "deleted": "Entry deleted."
   },
   "errors": {
-    "load": "Your journal could not be loaded.",
-    "create": "The entry could not be created.",
-    "save": "Your changes could not be saved.",
-    "delete": "The entry could not be deleted.",
     "documentTooLarge": "This entry is too large. Keep it at {maxSize, number} MiB or less.",
     "encryptionKeyUnavailable": "Unlock your journal again to continue.",
+    "encryptionFailed": "This entry could not be encrypted. Try again.",
+    "decryptionFailed": "This journal entry could not be decrypted.",
     "invalidEntry": "Add a title before saving this entry.",
     "entryNotFound": "That entry is no longer available."
   }

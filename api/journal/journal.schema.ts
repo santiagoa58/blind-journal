@@ -16,21 +16,6 @@ import type {
 
 export const journalEntryIdSchema = z.uuid();
 
-export const journalEntryContentSchema: z.ZodType<JournalEntryContent> = z.strictObject({
-  title: z
-    .string()
-    .trim()
-    .min(MIN_JOURNAL_ENTRY_TITLE_CHARACTERS)
-    .max(MAX_JOURNAL_ENTRY_TITLE_CHARACTERS),
-  content: z.string(),
-  favorite: z.boolean(),
-  tags: z
-    .array(
-      z.string().trim().min(MIN_JOURNAL_ENTRY_TAG_CHARACTERS).max(MAX_JOURNAL_ENTRY_TAG_CHARACTERS),
-    )
-    .max(MAX_JOURNAL_ENTRY_TAGS),
-});
-
 export const encryptedJournalDataSchema = z.strictObject({
   version: z.literal(JOURNAL_ENTRY_ENCRYPTION_VERSION),
   wrappedKeyBase64: z.base64(),
@@ -52,4 +37,19 @@ export const createEntryRequestSchema: z.ZodType<ApiCreateJournalEntryRequest> =
 
 export const updateEntryRequestSchema: z.ZodType<ApiUpdateJournalEntryRequest> = z.strictObject({
   encryptedData: encryptedJournalDataSchema,
+});
+
+export const journalEntryContentSchema: z.ZodType<JournalEntryContent> = z.strictObject({
+  title: z
+    .string()
+    .trim()
+    .min(MIN_JOURNAL_ENTRY_TITLE_CHARACTERS)
+    .max(MAX_JOURNAL_ENTRY_TITLE_CHARACTERS),
+  content: z.string(),
+  favorite: z.boolean(),
+  tags: z
+    .array(
+      z.string().trim().min(MIN_JOURNAL_ENTRY_TAG_CHARACTERS).max(MAX_JOURNAL_ENTRY_TAG_CHARACTERS),
+    )
+    .max(MAX_JOURNAL_ENTRY_TAGS),
 });

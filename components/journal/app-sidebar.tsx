@@ -20,21 +20,11 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { ApiUser } from "@/api/auth/user.type";
 import { BrandMark } from "@/components/brand-mark";
-
-export type SidebarSection = "journal" | "favorites";
-
-type AppSidebarProps = {
-  activeSection: SidebarSection;
-  currentUser: ApiUser;
-  entryCount: number;
-  favoriteCount: number;
-  onSectionChange: (section: SidebarSection) => void;
-  onNewEntry: () => void;
-  onSignOut: () => void;
-  signingOut: boolean;
-};
+import { useLogout } from "@/hooks/use-logout";
+import { useUser } from "@/state/user.state";
+import { useJournalWorkspace } from "./journal-workspace-context";
+import { useCreateJournalEntry } from "./use-create-journal-entry";
 
 function getInitials(displayName: string) {
   return displayName
@@ -46,23 +36,24 @@ function getInitials(displayName: string) {
     .toUpperCase();
 }
 
-export function AppSidebar({
-  activeSection,
-  currentUser,
-  entryCount,
-  favoriteCount,
-  onSectionChange,
-  onNewEntry,
-  onSignOut,
-  signingOut,
-}: AppSidebarProps) {
+export function AppSidebar() {
   const t = useTranslations("sidebar");
+  const currentUser = useUser((state) => state.user);
+  const workspace = useJournalWorkspace();
+  const { createEntry, isPending: creatingEntry } = useCreateJournalEntry();
+  const { isPending: signingOut, signOut } = useLogout();
+
+  if (!currentUser || !workspace) {
+    return null;
+  }
+
+  const { activeSection, entries, favoriteCount, selectSection } = workspace;
   const navigationItems = [
     {
       value: "journal" as const,
       label: t("sections.journal"),
       icon: ReaderIcon,
-      count: entryCount,
+      count: entries.length,
     },
     {
       value: "favorites" as const,
@@ -86,7 +77,7 @@ export function AppSidebar({
       <aside aria-label={t("journalNavigationLabel")}>
         <BrandMark />
 
-        <Button onClick={onNewEntry} size="3">
+        <Button onClick={createEntry} size="3" loading={creatingEntry}>
           <PlusIcon aria-hidden width={17} height={17} />
           {t("newEntry")}
         </Button>
@@ -101,7 +92,7 @@ export function AppSidebar({
                   key={value}
                   variant={active ? "soft" : "ghost"}
                   color={active ? "iris" : "gray"}
-                  onClick={() => onSectionChange(value)}
+                  onClick={() => selectSection(value)}
                   aria-current={active ? "page" : undefined}
                 >
                   <Grid columns="auto 1fr auto" align="center" gap="2" width="100%">
@@ -153,7 +144,7 @@ export function AppSidebar({
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="top">
                 <DropdownMenu.Label>{currentUser.username}</DropdownMenu.Label>
-                <DropdownMenu.Item color="red" onSelect={onSignOut} disabled={signingOut}>
+                <DropdownMenu.Item color="red" onSelect={signOut} disabled={signingOut}>
                   <ExitIcon aria-hidden width={15} height={15} />
                   {t("account.signOut")}
                 </DropdownMenu.Item>

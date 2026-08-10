@@ -1,85 +1,28 @@
 "use client";
 
-import { ExclamationTriangleIcon, LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
-import { Button, Callout, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
+import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { createAccount, getCreateAccountSalt } from "@/api/auth/auth";
-import { AUTH_ERROR_CODES, isAuthClientError } from "@/api/auth/auth.error";
+import { createAccount } from "@/api/auth/auth";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
 import { LabeledInput } from "./labeled-input";
 
-type CreateAccountCredentials = Omit<ClientCreateAccountRequest, "salt">;
-
-async function submitCreateAccount(input: CreateAccountCredentials) {
-  const saltResponse = await getCreateAccountSalt({ username: input.username });
-
-  if (!saltResponse.success) {
-    return saltResponse;
-  }
-
-  return createAccount({
-    ...input,
-    salt: saltResponse.data.salt,
-  });
-}
-
 export function CreateAccountCard() {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const setUser = useUser((state) => state.setUser);
   const t = useTranslations("auth");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const appToast = useAppToast();
+
   const createAccountMutation = useMutation({
     mutationKey: ["auth", "create-account"],
-    mutationFn: submitCreateAccount,
-    onError(error) {
-      const message = isAuthClientError(error)
-        ? t("errors.unlockFailed")
-        : tCommon("errors.network");
-      appToast.error(message);
-      setErrorMessage(message);
-    },
-    onSuccess(response) {
-      if (!response.success) {
-        const errCode = response.error.code;
-        switch (errCode) {
-          case AUTH_ERROR_CODES.usernameRequired:
-            setErrorMessage(t("errors.usernameRequired"));
-            return;
-          case AUTH_ERROR_CODES.usernameInvalid:
-            setErrorMessage(t("errors.usernameInvalid"));
-            return;
-          case AUTH_ERROR_CODES.usernameTaken:
-            setErrorMessage(t("errors.usernameTaken"));
-            return;
-          case AUTH_ERROR_CODES.passwordRequired:
-            setErrorMessage(t("errors.passwordRequired"));
-            return;
-          case AUTH_ERROR_CODES.passwordTooShort:
-            setErrorMessage(t("errors.passwordTooShort"));
-            return;
-          case AUTH_ERROR_CODES.passwordsMismatch:
-            setErrorMessage(t("errors.passwordsMismatch"));
-            return;
-          default:
-            setErrorMessage(tCommon("errors.unexpected"));
-            return;
-        }
-      }
-      setErrorMessage(null);
-      setUser({ ...response.data.user, keyEncryptionKey: response.data.keyEncryptionKey });
-      appToast.success(t("success.accountCreated"));
-      router.replace("/journal");
-    },
+    mutationFn: createAccount,
   });
 
-  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
@@ -93,13 +36,15 @@ export function CreateAccountCard() {
     ) {
       return;
     }
-    if (password !== confirmPassword) {
-      setErrorMessage(t("errors.passwordsMismatch"));
-      return;
+    const input: ClientCreateAccountRequest = { username, password, confirmPassword };
+    try {
+      const response = await createAccountMutation.mutateAsync(input);
+      setUser({ ...response.user, keyEncryptionKey: response.keyEncryptionKey });
+      appToast.success(t("success.accountCreated"));
+      router.replace("/journal");
+    } catch {
+      // The shared MutationCache presents the localized error.
     }
-
-    const input: CreateAccountCredentials = { username, password };
-    createAccountMutation.mutate(input);
   }
 
   return (
@@ -147,15 +92,6 @@ export function CreateAccountCard() {
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
-
-          {errorMessage ? (
-            <Callout.Root color="red" role="alert" size="1">
-              <Callout.Icon>
-                <ExclamationTriangleIcon />
-              </Callout.Icon>
-              <Callout.Text>{errorMessage}</Callout.Text>
-            </Callout.Root>
-          ) : null}
 
           <Button
             type="submit"

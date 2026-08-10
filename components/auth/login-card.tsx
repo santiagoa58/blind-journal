@@ -1,97 +1,37 @@
 "use client";
 
-import { ExclamationTriangleIcon, LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
-import { Button, Callout, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
+import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
+import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { getLoginSalt, login } from "@/api/auth/auth";
-import { AUTH_ERROR_CODES, isAuthClientError } from "@/api/auth/auth.error";
 import type { ApiSaltRequest, ClientLoginRequest } from "@/api/auth/auth.type";
-import type { Base64 } from "@/api/general.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
 import { LabeledInput } from "./labeled-input";
 
-type LoginSalt = {
-  username: string;
-  saltBase64: Base64;
-};
-
 export function LoginCard() {
   const setUser = useUser((state) => state.setUser);
   const t = useTranslations("auth");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const appToast = useAppToast();
-  const [loginSalt, setLoginSalt] = useState<LoginSalt | null>(null);
   const saltMutation = useMutation({
     mutationKey: ["auth", "login", "salt"],
     mutationFn: getLoginSalt,
-    onError(error) {
-      appToast.error(
-        isAuthClientError(error) ? t("errors.unlockFailed") : tCommon("errors.network"),
-      );
-    },
-    onSuccess(response, request) {
-      if (response.success) {
-        // TODO(auth-worker): Prewarm one reusable KDF worker after salt lookup so libsodium can
-        // initialize before password submission. Define ownership explicitly and terminate it on
-        // lock/logout; do not create a new worker during every render or mutation attempt.
-        // Learn more: https://developer.mozilla.org/en-US/docs/Web/API/Worker/terminate
-        setLoginSalt({
-          username: request.username.trim(),
-          saltBase64: response.data.salt,
-        });
-      }
-    },
   });
+  const loginSalt = saltMutation.data
+    ? {
+        username: saltMutation.variables.username.trim(),
+        saltBase64: saltMutation.data.salt,
+      }
+    : null;
   const loginMutation = useMutation({
     mutationKey: ["auth", "login"],
     mutationFn: login,
-    onError(error) {
-      appToast.error(
-        isAuthClientError(error) ? t("errors.unlockFailed") : tCommon("errors.network"),
-      );
-    },
-    onSuccess(response) {
-      if (!response.success) {
-        return;
-      }
-      setUser({ ...response.data.user, keyEncryptionKey: response.data.keyEncryptionKey });
-      appToast.success(t("success.signedIn"));
-      router.replace("/journal");
-    },
   });
 
-  let errorMessage: string | null = null;
-
-  const response = loginMutation.data ?? saltMutation.data;
-
-  if (loginMutation.isError) {
-    errorMessage = isAuthClientError(loginMutation.error)
-      ? t("errors.unlockFailed")
-      : tCommon("errors.network");
-  } else if (saltMutation.isError) {
-    errorMessage = tCommon("errors.network");
-  } else if (response && !response.success) {
-    switch (response.error.code) {
-      case AUTH_ERROR_CODES.usernameRequired:
-        errorMessage = t("errors.usernameRequired");
-        break;
-      case AUTH_ERROR_CODES.passwordRequired:
-        errorMessage = t("errors.passwordRequired");
-        break;
-      case AUTH_ERROR_CODES.invalidCredentials:
-        errorMessage = t("errors.invalidCredentials");
-        break;
-      default:
-        errorMessage = tCommon("errors.unexpected");
-    }
-  }
-
-  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
@@ -102,7 +42,11 @@ export function LoginCard() {
 
     if (!loginSalt) {
       const input: ApiSaltRequest = { username };
-      saltMutation.mutate(input);
+      try {
+        await saltMutation.mutateAsync(input);
+      } catch {
+        // The shared MutationCache presents the localized error.
+      }
       return;
     }
 
@@ -117,11 +61,17 @@ export function LoginCard() {
       password,
       salt: loginSalt.saltBase64,
     };
-    loginMutation.mutate(input);
+    try {
+      const response = await loginMutation.mutateAsync(input);
+      setUser({ ...response.user, keyEncryptionKey: response.keyEncryptionKey });
+      appToast.success(t("success.signedIn"));
+      router.replace("/journal");
+    } catch {
+      // The shared MutationCache presents the localized error.
+    }
   }
 
   function handleChangeUsername() {
-    setLoginSalt(null);
     saltMutation.reset();
     loginMutation.reset();
   }
@@ -148,42 +98,24 @@ export function LoginCard() {
             name="username"
             placeholder={t("signIn.usernamePlaceholder")}
             defaultValue={loginSalt?.username ?? ""}
-            readOnly={loginSalt !== null}
             required
+            onChange={handleChangeUsername}
+            disabled={isPending}
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
-
-          {loginSalt ? (
-            <>
-              <Flex justify="end">
-                <Button type="button" variant="ghost" size="1" onClick={handleChangeUsername}>
-                  {t("signIn.changeUsername")}
-                </Button>
-              </Flex>
-              <LabeledInput
-                autoComplete="current-password"
-                autoFocus
-                label={t("signIn.passwordLabel")}
-                name="password"
-                placeholder={t("signIn.passwordPlaceholder")}
-                type="password"
-                required
-              >
-                <LockClosedIcon aria-hidden />
-              </LabeledInput>
-            </>
-          ) : null}
-
-          {errorMessage ? (
-            <Callout.Root color="red" role="alert" size="1">
-              <Callout.Icon>
-                <ExclamationTriangleIcon />
-              </Callout.Icon>
-              <Callout.Text>{errorMessage}</Callout.Text>
-            </Callout.Root>
-          ) : null}
-
+          <LabeledInput
+            autoComplete="current-password"
+            autoFocus
+            label={t("signIn.passwordLabel")}
+            name="password"
+            placeholder={t("signIn.passwordPlaceholder")}
+            type="password"
+            required
+            disabled={loginMutation.isPending}
+          >
+            <LockClosedIcon aria-hidden />
+          </LabeledInput>
           <Button type="submit" size="3" loading={isPending} disabled={isPending}>
             {loginSalt ? t("signIn.submit") : t("signIn.continue")}
           </Button>

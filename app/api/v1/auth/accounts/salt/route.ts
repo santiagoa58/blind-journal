@@ -1,21 +1,25 @@
+import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/api/auth/auth.schema";
+import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import { createAccountSalt } from "@/server/auth";
-import { isSameOrigin, jsonResponse, REQUEST_ERROR_CODES, readJsonBody } from "@/server/http";
+import { getAuthErrorHttpStatus } from "@/server/auth.error";
+import { isSameOrigin, jsonResponse, readJsonBody } from "@/server/http";
+import { getRequestErrorHttpStatus } from "@/server/request.error";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
-    return jsonResponse({ success: false, error: { code: REQUEST_ERROR_CODES.forbidden } }, 403);
+    return jsonResponse(
+      { code: REQUEST_ERROR_CODES.forbidden },
+      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
+    );
   }
 
-  const response = await createAccountSalt(await readJsonBody(request, 1_024));
-  const status = response.success
-    ? 201
-    : response.error.code === AUTH_ERROR_CODES.usernameTaken
-      ? 409
-      : 400;
+  const result = await createAccountSalt(await readJsonBody(request, MAX_AUTH_REQUEST_BODY_BYTES));
 
-  return jsonResponse(response, status);
+  return result.success
+    ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_CREATED)
+    : jsonResponse(result.error, getAuthErrorHttpStatus(result.error.code));
 }

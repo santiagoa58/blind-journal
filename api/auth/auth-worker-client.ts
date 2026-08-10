@@ -1,6 +1,6 @@
-import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth.error";
-import type { Base64 } from "../general.type";
+import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/api/auth/auth-worker.error";
 import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
+import type { Base64 } from "@/types/base64";
 
 type PendingRequest = {
   resolve: (keys: AuthUserKeys) => void;
@@ -26,40 +26,46 @@ class AuthWorkerClient {
     this._pending.clear();
   };
 
-  private handleWorkerError = (_e: ErrorEvent) => {
-    this.rejectAll(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
+  private handleWorkerError = (event: ErrorEvent) => {
+    this.rejectAll(
+      new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, {
+        cause: event.error ?? event,
+      }),
+    );
   };
 
-  private handleMessageError = (_e: MessageEvent) => {
-    this.rejectAll(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
+  private handleMessageError = (event: MessageEvent) => {
+    this.rejectAll(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: event }));
   };
 
   private handleWorkerResponse = (e: MessageEvent<AuthWorkerResponse>) => {
-    const request = this._pending.get(e.data.reqId);
+    const request = this._pending.get(e.data.requestId);
     if (!request) {
       return;
     }
-    this._pending.delete(e.data.reqId);
-    if (e.data.success) {
-      request.resolve(e.data.data);
+    this._pending.delete(e.data.requestId);
+    if ("error" in e.data) {
+      request.reject(
+        new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, e.data.error),
+      );
     } else {
-      request.reject(new Error(e.data.error));
+      request.resolve(e.data.data);
     }
   };
 
   getUserKeys = async (password: string, salt: Base64) => {
     if (this.closed) {
-      return Promise.reject(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
+      return Promise.reject(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
     }
     return new Promise<AuthUserKeys>((resolve, reject) => {
       const payload = {
         password,
         salt,
-        reqId: crypto.randomUUID(),
+        requestId: crypto.randomUUID(),
       } satisfies AuthWorkerPayload;
 
       this._worker.postMessage(payload);
-      this._pending.set(payload.reqId, { resolve, reject });
+      this._pending.set(payload.requestId, { resolve, reject });
     });
   };
 
@@ -68,7 +74,7 @@ class AuthWorkerClient {
       return;
     }
     this._worker.terminate();
-    this.rejectAll(new Error(AUTH_CLIENT_ERROR_CODES.unavailable));
+    this.rejectAll(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
     this.closed = true;
   };
 }

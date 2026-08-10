@@ -14,41 +14,31 @@ import {
   TextField,
 } from "@radix-ui/themes";
 import { useFormatter, useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
-import type { JournalEntry } from "@/api/journal/journal.type";
+import { useState } from "react";
+import { useJournalWorkspace } from "./journal-workspace-context";
 
-type EntryListProps = {
-  entries: JournalEntry[];
-  selectedId: string | undefined;
-  filter: "all" | "favorites";
-  onFilterChange: (filter: "all" | "favorites") => void;
-  onSelect: (entryId: string) => void;
-};
-
-export function EntryList({
-  entries,
-  selectedId,
-  filter,
-  onFilterChange,
-  onSelect,
-}: EntryListProps) {
+export function EntryList() {
   const t = useTranslations("entry-list");
   const format = useFormatter();
   const [query, setQuery] = useState("");
+  const workspace = useJournalWorkspace();
 
-  const visibleEntries = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  if (!workspace) {
+    return null;
+  }
 
-    return entries.filter((entry) => {
-      const matchesFilter = filter === "all" || entry.favorite;
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        entry.title.toLowerCase().includes(normalizedQuery) ||
-        entry.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
+  const { activeSection, entries, selectedEntry, selectEntry, selectSection } = workspace;
+  const filter = activeSection === "favorites" ? "favorites" : "all";
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleEntries = entries.filter((entry) => {
+    const matchesFilter = filter === "all" || entry.favorite;
+    const matchesQuery =
+      normalizedQuery.length === 0 ||
+      entry.title.toLowerCase().includes(normalizedQuery) ||
+      entry.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
 
-      return matchesFilter && matchesQuery;
-    });
-  }, [entries, filter, query]);
+    return matchesFilter && matchesQuery;
+  });
 
   return (
     <Flex
@@ -73,6 +63,7 @@ export function EntryList({
           <TextField.Root
             mt="4"
             size="3"
+            aria-label={t("searchPlaceholder")}
             placeholder={t("searchPlaceholder")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -86,7 +77,7 @@ export function EntryList({
             <SegmentedControl.Root
               size="1"
               value={filter}
-              onValueChange={(value) => onFilterChange(value as "all" | "favorites")}
+              onValueChange={(value) => selectSection(value === "all" ? "journal" : "favorites")}
             >
               <SegmentedControl.Item value="all">{t("all")}</SegmentedControl.Item>
               <SegmentedControl.Item value="favorites">{t("favorites")}</SegmentedControl.Item>
@@ -101,14 +92,14 @@ export function EntryList({
           <ScrollArea scrollbars="vertical">
             <Flex direction="column" gap="2" p="3" pt="1">
               {visibleEntries.map((entry) => {
-                const selected = entry.id === selectedId;
+                const selected = entry.id === selectedEntry?.id;
                 const updatedAt = new Date(entry.updatedAt);
 
                 return (
                   <Card asChild key={entry.id} size="2" variant={selected ? "classic" : "ghost"}>
                     <button
                       type="button"
-                      onClick={() => onSelect(entry.id)}
+                      onClick={() => selectEntry(entry.id)}
                       aria-label={t("openEntryLabel", { title: entry.title })}
                     >
                       <Flex direction="column" gap="2">

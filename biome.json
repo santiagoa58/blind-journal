@@ -6,18 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "**",
-      "!**/.next",
-      "!**/node_modules",
-      "!public/mockServiceWorker.js",
-      "!public/file.svg",
-      "!public/globe.svg",
-      "!public/next.svg",
-      "!public/vercel.svg",
-      "!public/window.svg",
-      "!pnpm-lock.yaml"
-    ],
+    "includes": ["**", "!**/.next", "!**/node_modules", "!pnpm-lock.yaml"],
     "ignoreUnknown": true
   },
   "formatter": {

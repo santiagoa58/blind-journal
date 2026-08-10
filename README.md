@@ -166,23 +166,17 @@ flowchart LR
 
 ### API response contract
 
-Endpoints return one consistent discriminated response:
+A successful endpoint returns its data directly. Any error uses an appropriate non-2xx HTTP status
+and a body containing only its stable, domain-namespaced code:
 
 ```ts
-type ApiResponse<T> =
-  | { success: true; data: T }
-  | {
-      success: false;
-      error: {
-        code: string;
-        message?: string;
-      };
-    };
+type ApiError<TCode extends string> = { code: TCode };
 ```
 
-The server owns stable machine-readable error codes. The optional message is diagnostic, not final
-interface copy. The client maps codes to localized user-facing messages. Raw transport responses do
-not leak beyond the endpoint boundary.
+Ky preserves its native HTTP, network, and timeout error classes while attaching that code for the
+UI. Error codes are also typed translation IDs, so user-facing messages come from the locale catalog
+instead of server-provided or hard-coded text. Diagnostic details remain on the server rather than
+crossing the API boundary.
 
 ### State ownership
 

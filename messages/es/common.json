@@ -7,9 +7,5 @@
   },
   "labels": {
     "loading": "Cargando…"
-  },
-  "errors": {
-    "network": "No pudimos comunicarnos con el servidor. Revisa tu conexión e inténtalo de nuevo.",
-    "unexpected": "Algo salió mal. Inténtalo de nuevo."
   }
 }

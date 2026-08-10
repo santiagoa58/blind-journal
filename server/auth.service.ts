@@ -1,21 +1,23 @@
 import sodium from "libsodium-wrappers-sumo";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
+import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
 import {
   createAccountRequestSchema,
   saltRequestSchema,
   verifyCredentialsRequestSchema,
 } from "@/api/auth/auth.schema";
-import type {
-  ApiCreateAccountResponse,
-  ApiSaltResponse,
-  ApiSessionResponse,
-  ApiVerifyCredentialsResponse,
-} from "@/api/auth/auth.type";
+import type { ApiAuthSession, ApiSaltResponse } from "@/api/auth/auth.type";
 import type { ApiUser } from "@/api/auth/user.type";
-import type { Base64 } from "@/api/general.type";
+import type { ServiceResult } from "@/server/service-result";
 import type { ApplicationStore, StoredUser } from "@/server/store.type";
+import type { Base64 } from "@/types/base64";
 
 const ACCOUNT_SALT_LIFETIME_MS = 10 * 60 * 1_000;
+
+// TODO(auth-hardening): Rate-limit salt, registration, and verification attempts and return decoy
+// KDF metadata for unknown usernames so the username-first flow does not become an enumeration
+// oracle. Expired pending salts also need bounded cleanup in the durable store.
+
+type AuthServiceResult<TData> = ServiceResult<TData, AuthErrorCode>;
 
 async function generateSalt(): Promise<Base64> {
   await sodium.ready;
@@ -56,7 +58,7 @@ async function authKeyMatches(authKey: Base64, storedHash: Base64): Promise<bool
 }
 
 export function createAuthService(store: ApplicationStore) {
-  function getLoginSalt(input: unknown): ApiSaltResponse {
+  function getLoginSalt(input: unknown): AuthServiceResult<ApiSaltResponse> {
     const result = saltRequestSchema.safeParse(input);
 
     if (!result.success) {
@@ -69,7 +71,7 @@ export function createAuthService(store: ApplicationStore) {
       : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
   }
 
-  async function createAccountSalt(input: unknown): Promise<ApiSaltResponse> {
+  async function createAccountSalt(input: unknown): Promise<AuthServiceResult<ApiSaltResponse>> {
     const result = saltRequestSchema.safeParse(input);
 
     if (!result.success) {
@@ -89,7 +91,7 @@ export function createAuthService(store: ApplicationStore) {
     return { success: true, data: { salt } };
   }
 
-  async function createAccount(input: unknown): Promise<ApiCreateAccountResponse> {
+  async function createAccount(input: unknown): Promise<AuthServiceResult<ApiAuthSession>> {
     const result = createAccountRequestSchema.safeParse(input);
     if (!result.success) {
       return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
@@ -122,7 +124,7 @@ export function createAuthService(store: ApplicationStore) {
     return { success: true, data: { user: toPublicUser(user) } };
   }
 
-  async function verifyCredentials(input: unknown): Promise<ApiVerifyCredentialsResponse> {
+  async function verifyCredentials(input: unknown): Promise<AuthServiceResult<ApiAuthSession>> {
     const result = verifyCredentialsRequestSchema.safeParse(input);
     if (!result.success) {
       return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
@@ -137,7 +139,7 @@ export function createAuthService(store: ApplicationStore) {
       : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
   }
 
-  function getSession(userId: string | null): ApiSessionResponse {
+  function getSession(userId: string | null): AuthServiceResult<ApiAuthSession> {
     const user = userId ? store.findUserById(userId) : undefined;
     return user
       ? { success: true, data: { user: toPublicUser(user) } }

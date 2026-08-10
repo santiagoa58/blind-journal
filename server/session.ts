@@ -26,9 +26,7 @@ export function startSession(response: NextResponse, userId: string): void {
   });
 }
 
-export function getSessionUserId(request: NextRequest): string | null {
-  const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-
+export function getSessionUserIdFromSessionId(sessionId: string | undefined): string | null {
   if (!sessionId) {
     return null;
   }
@@ -42,6 +40,12 @@ export function getSessionUserId(request: NextRequest): string | null {
 
   return session.userId;
 }
+
+export function getSessionUserId(request: NextRequest): string | null {
+  return getSessionUserIdFromSessionId(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+}
+
+export { SESSION_COOKIE_NAME };
 
 export function endSession(request: NextRequest, response: NextResponse): void {
   const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
