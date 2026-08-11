@@ -20,25 +20,32 @@ import {
   Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
 import { useLogout } from "@/hooks/use-logout";
+import { useJournalWorkspace } from "@/state/journal-workspace.state";
 import { useUser } from "@/state/user.state";
-import { useJournalWorkspace } from "./journal-workspace-context";
 import { useCreateJournalEntry } from "./use-create-journal-entry";
 
-export function JournalMobileHeader() {
+export function JournalMobileHeader({ entries }: { entries: JournalEntry[] }) {
   const t = useTranslations("sidebar");
   const tEntries = useTranslations("entry-list");
   const currentUser = useUser((state) => state.user);
-  const workspace = useJournalWorkspace();
+  const activeSection = useJournalWorkspace((state) => state.activeSection);
+  const selectedEntryId = useJournalWorkspace((state) => state.selectedEntryId);
+  const selectEntry = useJournalWorkspace((state) => state.selectEntry);
+  const selectSection = useJournalWorkspace((state) => state.selectSection);
   const { createEntry, isPending: creatingEntry } = useCreateJournalEntry();
   const { isPending: signingOut, signOut } = useLogout();
 
-  if (!currentUser || !workspace) {
+  if (!currentUser) {
     return null;
   }
 
-  const { activeSection, entries, selectedEntry, selectEntry, selectSection } = workspace;
+  const sectionEntries =
+    activeSection === "favorites" ? entries.filter(({ favorite }) => favorite) : entries;
+  const selectedEntry =
+    sectionEntries.find(({ id }) => id === selectedEntryId) ?? sectionEntries[0];
 
   return (
     <Box asChild display={{ initial: "block", lg: "none" }}>
@@ -62,7 +69,7 @@ export function JournalMobileHeader() {
                   <Dialog.Close>
                     <Button
                       variant={activeSection === "journal" ? "soft" : "ghost"}
-                      onClick={() => selectSection("journal")}
+                      onClick={() => selectSection("journal", entries)}
                     >
                       <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                         <ReaderIcon aria-hidden />
@@ -73,7 +80,7 @@ export function JournalMobileHeader() {
                   <Dialog.Close>
                     <Button
                       variant={activeSection === "favorites" ? "soft" : "ghost"}
-                      onClick={() => selectSection("favorites")}
+                      onClick={() => selectSection("favorites", entries)}
                     >
                       <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                         <HeartIcon aria-hidden />
@@ -107,7 +114,7 @@ export function JournalMobileHeader() {
               />
             </Box>
             <Select.Content>
-              {entries.map((entry) => (
+              {sectionEntries.map((entry) => (
                 <Select.Item key={entry.id} value={entry.id}>
                   {entry.title}
                 </Select.Item>

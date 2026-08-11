@@ -7,10 +7,9 @@ import { journalEntryIdSchema } from "@/api/journal/journal.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import type { ApiErrorResponse } from "@/api/response.type";
 import { getAuthErrorHttpStatus } from "@/server/auth.error";
-import { isSameOrigin, jsonResponse, readJsonBody } from "@/server/http";
+import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
 import { deleteEntry, updateEntry } from "@/server/journal";
 import { getJournalErrorHttpStatus } from "@/server/journal.error";
-import { getRequestErrorHttpStatus } from "@/server/request.error";
 import { getSessionUserId } from "@/server/session";
 
 export const runtime = "nodejs";
@@ -39,10 +38,7 @@ function entryNotFoundResponse() {
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
   if (!isSameOrigin(request)) {
-    return jsonResponse(
-      { code: REQUEST_ERROR_CODES.forbidden },
-      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
-    );
+    return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
   const userId = getSessionUserId(request);
@@ -57,11 +53,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return entryNotFoundResponse();
   }
 
-  const result = updateEntry(
-    userId,
-    entryId,
-    await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES),
-  );
+  const body = await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES);
+  if ("error" in body) {
+    return requestErrorResponse(body.error);
+  }
+
+  const result = updateEntry(userId, entryId, body.data);
   return result.success
     ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_OK)
     : jsonResponse(result.error, getJournalErrorHttpStatus(result.error.code));
@@ -69,10 +66,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!isSameOrigin(request)) {
-    return jsonResponse(
-      { code: REQUEST_ERROR_CODES.forbidden },
-      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
-    );
+    return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
   const userId = getSessionUserId(request);

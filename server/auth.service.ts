@@ -2,6 +2,8 @@ import sodium from "libsodium-wrappers-sumo";
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
 import {
   createAccountRequestSchema,
+  normalizeUsername,
+  requiredUsernameSchema,
   saltRequestSchema,
   verifyCredentialsRequestSchema,
 } from "@/api/auth/auth.schema";
@@ -13,9 +15,9 @@ import type { Base64 } from "@/types/base64";
 
 const ACCOUNT_SALT_LIFETIME_MS = 10 * 60 * 1_000;
 
-// TODO(auth-hardening): Rate-limit salt, registration, and verification attempts and return decoy
-// KDF metadata for unknown usernames so the username-first flow does not become an enumeration
-// oracle. Expired pending salts also need bounded cleanup in the durable store.
+// TODO(review-high-auth-abuse-controls): Rate-limit salt, registration, and verification attempts
+// and return decoy KDF metadata for unknown usernames so the username-first flow does not become an
+// enumeration oracle. Expired pending salts also need bounded cleanup in the durable store.
 
 type AuthServiceResult<TData> = ServiceResult<TData, AuthErrorCode>;
 
@@ -40,9 +42,9 @@ function getUsernameErrorCode(input: unknown) {
 
   const username = (input as Record<string, unknown>)["username"];
 
-  return typeof username !== "string" || username.trim().length === 0
-    ? AUTH_ERROR_CODES.usernameRequired
-    : AUTH_ERROR_CODES.usernameInvalid;
+  return requiredUsernameSchema.safeParse(username).success
+    ? AUTH_ERROR_CODES.usernameInvalid
+    : AUTH_ERROR_CODES.usernameRequired;
 }
 
 async function hashAuthKey(authKey: Base64): Promise<Uint8Array<ArrayBuffer>> {
@@ -78,7 +80,7 @@ export function createAuthService(store: ApplicationStore) {
       return { success: false, error: { code: getUsernameErrorCode(input) } };
     }
 
-    const normalizedUsername = result.data.username.toLowerCase();
+    const normalizedUsername = normalizeUsername(result.data.username);
     if (store.findUserByUsername(normalizedUsername)) {
       return { success: false, error: { code: AUTH_ERROR_CODES.usernameTaken } };
     }
@@ -97,7 +99,11 @@ export function createAuthService(store: ApplicationStore) {
       return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
     }
 
-    const normalizedUsername = result.data.username.toLowerCase();
+    const normalizedUsername = normalizeUsername(result.data.username);
+    // TODO(review-high-registration-atomicity): The existence check, pending-salt consumption,
+    // user insert, and journal initialization must be one transactional operation backed by a
+    // unique normalized-username constraint. Concurrent requests can currently create duplicates
+    // or leave a partially initialized account.
     if (store.findUserByUsername(normalizedUsername)) {
       return { success: false, error: { code: AUTH_ERROR_CODES.usernameTaken } };
     }
@@ -139,12 +145,5 @@ export function createAuthService(store: ApplicationStore) {
       : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
   }
 
-  function getSession(userId: string | null): AuthServiceResult<ApiAuthSession> {
-    const user = userId ? store.findUserById(userId) : undefined;
-    return user
-      ? { success: true, data: { user: toPublicUser(user) } }
-      : { success: false, error: { code: AUTH_ERROR_CODES.unauthorized } };
-  }
-
-  return { createAccount, createAccountSalt, getLoginSalt, getSession, verifyCredentials };
+  return { createAccount, createAccountSalt, getLoginSalt, verifyCredentials };
 }

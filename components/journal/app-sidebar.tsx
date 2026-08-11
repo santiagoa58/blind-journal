@@ -20,10 +20,11 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
 import { useLogout } from "@/hooks/use-logout";
+import { useJournalWorkspace } from "@/state/journal-workspace.state";
 import { useUser } from "@/state/user.state";
-import { useJournalWorkspace } from "./journal-workspace-context";
 import { useCreateJournalEntry } from "./use-create-journal-entry";
 
 function getInitials(displayName: string) {
@@ -36,18 +37,19 @@ function getInitials(displayName: string) {
     .toUpperCase();
 }
 
-export function AppSidebar() {
+export function AppSidebar({ entries }: { entries: JournalEntry[] }) {
   const t = useTranslations("sidebar");
   const currentUser = useUser((state) => state.user);
-  const workspace = useJournalWorkspace();
+  const activeSection = useJournalWorkspace((state) => state.activeSection);
+  const selectSection = useJournalWorkspace((state) => state.selectSection);
   const { createEntry, isPending: creatingEntry } = useCreateJournalEntry();
   const { isPending: signingOut, signOut } = useLogout();
 
-  if (!currentUser || !workspace) {
+  if (!currentUser) {
     return null;
   }
 
-  const { activeSection, entries, favoriteCount, selectSection } = workspace;
+  const favoriteCount = entries.filter(({ favorite }) => favorite).length;
   const navigationItems = [
     {
       value: "journal" as const,
@@ -92,7 +94,7 @@ export function AppSidebar() {
                   key={value}
                   variant={active ? "soft" : "ghost"}
                   color={active ? "iris" : "gray"}
-                  onClick={() => selectSection(value)}
+                  onClick={() => selectSection(value, entries)}
                   aria-current={active ? "page" : undefined}
                 >
                   <Grid columns="auto 1fr auto" align="center" gap="2" width="100%">

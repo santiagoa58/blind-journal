@@ -13,6 +13,11 @@
     "saved": "Entry saved.",
     "deleted": "Entry deleted."
   },
+  "unreadableEntries": {
+    "message": "{count, plural, one {One encrypted entry could not be opened.} other {# encrypted entries could not be opened.}} Your other entries are still available. Export these records for safekeeping or recovery.",
+    "export": "Export encrypted records",
+    "fileName": "blind-journal-unreadable-entries.json"
+  },
   "errors": {
     "documentTooLarge": "This entry is too large. Keep it at {maxSize, number} MiB or less.",
     "encryptionKeyUnavailable": "Unlock your journal again to continue.",

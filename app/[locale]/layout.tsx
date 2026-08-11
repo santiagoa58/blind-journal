@@ -36,6 +36,7 @@ export async function generateMetadata({
 
   return {
     applicationName: t("applicationName"),
+    manifest: "/manifest.webmanifest",
     title: {
       default: t("title"),
       template: t("titleTemplate"),

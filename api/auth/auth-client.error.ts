@@ -3,6 +3,7 @@ import { ClientError, type ClientErrorOptions } from "@/client.error";
 export const AUTH_CLIENT_ERROR_CODES = {
   passwordRequired: "AUTH_CLIENT_PASSWORD_REQUIRED",
   passwordTooShort: "AUTH_CLIENT_PASSWORD_TOO_SHORT",
+  passwordTooLong: "AUTH_CLIENT_PASSWORD_TOO_LONG",
   passwordsMismatch: "AUTH_CLIENT_PASSWORDS_MISMATCH",
 } as const;
 

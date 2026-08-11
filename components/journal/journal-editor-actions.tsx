@@ -13,7 +13,7 @@ import type { Editor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { deleteJournalEntry, updateJournalEntry } from "@/api/journal/journal";
-import type { JournalEntry } from "@/api/journal/journal.type";
+import type { JournalEntriesResult, JournalEntry } from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { useUser } from "@/state/user.state";
 import styles from "./journal-editor.module.css";
@@ -35,6 +35,10 @@ export function JournalEditorActions({ editor, entry, title }: JournalEditorActi
   const queryClient = useQueryClient();
   const appToast = useAppToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  // TODO(review-high-entry-write-ordering): Coordinate update, favorite, and delete as one
+  // per-entry mutation scope and disable conflicting actions. Separate mutations can race, leaving
+  // server state and the manually updated cache in different orders (including resurrecting a
+  // locally deleted entry from a late save response).
   const updateMutation = useMutation({
     mutationKey: ["journal", "save", entry.id],
     mutationFn: (input: Parameters<typeof updateJournalEntry>[0]) =>
@@ -53,15 +57,25 @@ export function JournalEditorActions({ editor, entry, title }: JournalEditorActi
         title: title.trim(),
         content: editor?.getHTML() ?? entry.content,
         favorite,
+        // TODO(review-medium-tags-feature-gap): Provide the documented tag editing interaction (or
+        // remove tags/search-by-tag from the final product contract). Tags are always initialized
+        // empty and merely copied here, so users currently cannot create the data the UI searches.
         tags: entry.tags,
       });
-      queryClient.setQueryData<JournalEntry[]>(journalEntriesQueryKey, (entries) =>
-        entries
-          ?.map((currentEntry) =>
-            currentEntry.id === updatedEntry.id ? updatedEntry : currentEntry,
-          )
-          .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
-      );
+      if (user) {
+        queryClient.setQueryData<JournalEntriesResult>(journalEntriesQueryKey(user.id), (result) =>
+          result
+            ? {
+                ...result,
+                entries: result.entries
+                  .map((currentEntry) =>
+                    currentEntry.id === updatedEntry.id ? updatedEntry : currentEntry,
+                  )
+                  .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
+              }
+            : result,
+        );
+      }
       appToast.success(tJournal("success.saved"));
     } catch {
       // The shared MutationCache presents the localized error.
@@ -69,11 +83,21 @@ export function JournalEditorActions({ editor, entry, title }: JournalEditorActi
   }
 
   async function deleteEntry() {
+    // TODO(review-medium-delete-dialog-state): Keep the confirmation dialog open and its actions
+    // disabled until deletion succeeds; AlertDialog.Action currently closes it before a failed
+    // request is known and falsely presents failure as completion.
     try {
       const deletedEntry = await deleteMutation.mutateAsync();
-      queryClient.setQueryData<JournalEntry[]>(journalEntriesQueryKey, (entries) =>
-        entries?.filter(({ id }) => id !== deletedEntry.id),
-      );
+      if (user) {
+        queryClient.setQueryData<JournalEntriesResult>(journalEntriesQueryKey(user.id), (result) =>
+          result
+            ? {
+                ...result,
+                entries: result.entries.filter(({ id }) => id !== deletedEntry.id),
+              }
+            : result,
+        );
+      }
       appToast.success(tJournal("success.deleted"));
     } catch {
       // The shared MutationCache presents the localized error.

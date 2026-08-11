@@ -13,6 +13,11 @@
     "saved": "Entrada guardada.",
     "deleted": "Entrada eliminada."
   },
+  "unreadableEntries": {
+    "message": "{count, plural, one {No se pudo abrir una entrada cifrada.} other {No se pudieron abrir # entradas cifradas.}} Tus otras entradas siguen disponibles. Exporta estos registros para guardarlos o recuperarlos.",
+    "export": "Exportar registros cifrados",
+    "fileName": "blind-journal-entradas-ilegibles.json"
+  },
   "errors": {
     "documentTooLarge": "Esta entrada es demasiado grande. Debe ocupar {maxSize, number} MiB o menos.",
     "encryptionKeyUnavailable": "Vuelve a desbloquear tu diario para continuar.",

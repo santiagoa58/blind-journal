@@ -1,47 +1,99 @@
 import type { ClientUser } from "@/api/auth/user.type";
 import { api } from "@/api/http";
+import { JOURNAL_ENTRY_UNREADABLE_REASONS } from "@/api/journal/journal.constants";
 import { decryptJournalEntry, encryptJournalEntry } from "@/api/journal/journal.crypto";
+import {
+  deleteJournalEntryResponseSchema,
+  encryptedJournalEntryRecordsSchema,
+  encryptedJournalEntrySchema,
+} from "@/api/journal/journal.schema";
 import type {
   ApiCreateJournalEntryRequest,
-  ApiDeleteJournalEntryResponse,
   ApiUpdateJournalEntryRequest,
   ClientCreateJournalEntryRequest,
   ClientUpdateJournalEntryRequest,
-  EncryptedJournalEntry,
+  JournalEntriesResult,
 } from "@/api/journal/journal.type";
 import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
 
-function listEncryptedJournalEntries() {
-  return api.get("entries", { cache: "no-store" }).json<EncryptedJournalEntry[]>();
+async function listEncryptedJournalEntries() {
+  const response = await api.get("entries", { cache: "no-store" }).json<unknown>();
+  return encryptedJournalEntryRecordsSchema.parse(response);
 }
 
-function createEncryptedJournalEntry(input: ApiCreateJournalEntryRequest) {
-  return api.post("entries", { cache: "no-store", json: input }).json<EncryptedJournalEntry>();
+async function createEncryptedJournalEntry(input: ApiCreateJournalEntryRequest) {
+  const response = await api.post("entries", { cache: "no-store", json: input }).json<unknown>();
+  return encryptedJournalEntrySchema.parse(response);
 }
 
-function updateEncryptedJournalEntry(entryId: string, input: ApiUpdateJournalEntryRequest) {
-  return api
+async function updateEncryptedJournalEntry(entryId: string, input: ApiUpdateJournalEntryRequest) {
+  const response = await api
     .patch(`entries/${entryId}`, { cache: "no-store", json: input })
-    .json<EncryptedJournalEntry>();
+    .json<unknown>();
+  return encryptedJournalEntrySchema.parse(response);
 }
 
-export function deleteJournalEntry(entryId: string) {
-  return api
-    .delete(`entries/${entryId}`, { cache: "no-store" })
-    .json<ApiDeleteJournalEntryResponse>();
+export async function deleteJournalEntry(entryId: string) {
+  const response = await api.delete(`entries/${entryId}`, { cache: "no-store" }).json<unknown>();
+  return deleteJournalEntryResponseSchema.parse(response);
 }
 
-export async function listJournalEntries(user: ClientUser | null) {
+export async function listJournalEntries(user: ClientUser | null): Promise<JournalEntriesResult> {
   if (!user) {
     throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
   }
 
-  // TODO(encryption-protocol): Decrypt entry keys with the in-memory vault key once account unlock
-  // provisions it. The current keyEncryptionKey is derived directly from the password.
-  const entries = await listEncryptedJournalEntries();
-  return Promise.all(
-    entries.map((entry) => decryptJournalEntry(user.keyEncryptionKey, user.id, entry)),
+  const records = await listEncryptedJournalEntries();
+  const results = await Promise.all(
+    records.map(async (record) => {
+      const parsedEntry = encryptedJournalEntrySchema.safeParse(record);
+      if (!parsedEntry.success) {
+        return {
+          status: "unreadable" as const,
+          unreadableEntry: {
+            reason: JOURNAL_ENTRY_UNREADABLE_REASONS.invalidEnvelope,
+            record,
+          },
+        };
+      }
+
+      try {
+        return {
+          status: "readable" as const,
+          entry: await decryptJournalEntry(user.keyEncryptionKey, user.id, parsedEntry.data),
+        };
+      } catch (error) {
+        if (
+          !(error instanceof JournalClientError) ||
+          error.code !== JOURNAL_CLIENT_ERROR_CODES.decryptionFailed
+        ) {
+          throw error;
+        }
+
+        return {
+          status: "unreadable" as const,
+          unreadableEntry: {
+            reason: JOURNAL_ENTRY_UNREADABLE_REASONS.decryptionFailed,
+            record,
+          },
+        };
+      }
+    }),
   );
+  const journalEntries: JournalEntriesResult = {
+    entries: [],
+    unreadableEntries: [],
+  };
+
+  for (const result of results) {
+    if (result.status === "readable") {
+      journalEntries.entries.push(result.entry);
+    } else {
+      journalEntries.unreadableEntries.push(result.unreadableEntry);
+    }
+  }
+
+  return journalEntries;
 }
 
 export async function createJournalEntry(

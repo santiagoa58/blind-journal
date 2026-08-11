@@ -1,109 +1,140 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientUser } from "@/api/auth/user.type";
+import { listJournalEntries } from "@/api/journal/journal";
 import {
-  createJournalEntry,
-  deleteJournalEntry,
-  listJournalEntries,
-  updateJournalEntry,
-} from "@/api/journal/journal";
-import { JOURNAL_CLIENT_ERROR_CODES } from "@/api/journal/journal-client.error";
-import { localServerStore, type StoredUser } from "@/local-server/store";
+  JOURNAL_ENTRY_ENCRYPTION_VERSION,
+  JOURNAL_ENTRY_UNREADABLE_REASONS,
+} from "@/api/journal/journal.constants";
+import { encryptJournalEntry } from "@/api/journal/journal.crypto";
+import type { EncryptedJournalEntry, JournalEntryContent } from "@/api/journal/journal.type";
+import { base64ToUint8Array, uint8ArrayToBase64 } from "@/crypto/base64";
 
-describe("client journal workflow", () => {
-  let clientUser: ClientUser;
+const apiMocks = vi.hoisted(() => ({
+  get: vi.fn(),
+  json: vi.fn(),
+}));
 
-  beforeEach(async () => {
-    const user = {
-      id: "journal-user",
-      username: "journal_writer",
-      displayName: "Journal Writer",
-      authKeyHash: "unused-by-journal-tests",
-      salt: "unused-by-journal-tests",
-    } satisfies StoredUser;
+vi.mock("@/api/http", () => ({
+  api: {
+    get: apiMocks.get,
+  },
+}));
 
-    localServerStore.users.push(user);
-    localServerStore.entriesByUserId[user.id] = [];
-    localServerStore.activeUserId = user.id;
-    clientUser = {
-      ...user,
-      keyEncryptionKey: await crypto.subtle.generateKey({ name: "AES-KW", length: 256 }, false, [
-        "wrapKey",
-        "unwrapKey",
-      ]),
-    };
-  });
+const FIRST_CONTENT = {
+  title: "First readable entry",
+  content: "<p>First</p>",
+  favorite: false,
+  tags: [],
+} satisfies JournalEntryContent;
 
-  it("supports create, read, update, and delete through the mock HTTP boundary", async () => {
-    const created = await createJournalEntry(
-      {
-        title: "A test entry",
-        content: "<p>Written through the client workflow.</p>",
-      },
-      clientUser,
-    );
+const SECOND_CONTENT = {
+  title: "Second readable entry",
+  content: "<p>Second</p>",
+  favorite: true,
+  tags: ["readable"],
+} satisfies JournalEntryContent;
 
-    const storedEntries = localServerStore.entriesByUserId[clientUser.id] ?? [];
-    expect(storedEntries).toHaveLength(1);
-    expect(storedEntries[0]).toMatchObject({
-      id: created.id,
+async function createUser(): Promise<ClientUser> {
+  return {
+    id: crypto.randomUUID(),
+    username: "journal-user",
+    displayName: "Journal User",
+    keyEncryptionKey: await crypto.subtle.generateKey({ name: "AES-KW", length: 256 }, false, [
+      "wrapKey",
+      "unwrapKey",
+    ]),
+  };
+}
+
+async function createEncryptedEntry(
+  user: ClientUser,
+  content: JournalEntryContent,
+): Promise<EncryptedJournalEntry> {
+  const encrypted = await encryptJournalEntry(
+    user.keyEncryptionKey,
+    user.id,
+    crypto.randomUUID(),
+    content,
+  );
+  const timestamp = "2026-01-01T00:00:00.000Z";
+
+  return {
+    ...encrypted,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+function corruptCiphertext(entry: EncryptedJournalEntry): EncryptedJournalEntry {
+  const ciphertext = base64ToUint8Array(entry.encryptedData.ciphertextBase64);
+  const firstByte = ciphertext[0];
+  if (firstByte === undefined) {
+    throw new Error("The encrypted test fixture has no ciphertext");
+  }
+  ciphertext[0] = firstByte ^ 1;
+
+  return {
+    ...entry,
+    encryptedData: {
+      ...entry.encryptedData,
+      ciphertextBase64: uint8ArrayToBase64(ciphertext),
+    },
+  };
+}
+
+beforeEach(() => {
+  apiMocks.get.mockReturnValue({ json: apiMocks.json });
+});
+
+describe("listJournalEntries", () => {
+  it("keeps healthy entries available while preserving corrupt and invalid records", async () => {
+    const user = await createUser();
+    const firstEntry = await createEncryptedEntry(user, FIRST_CONTENT);
+    const corruptEntry = corruptCiphertext(await createEncryptedEntry(user, FIRST_CONTENT));
+    const supportedEntry = await createEncryptedEntry(user, FIRST_CONTENT);
+    const unsupportedEntry = {
+      ...supportedEntry,
       encryptedData: {
-        version: 1,
-        ciphertextBase64: expect.any(String),
-        ivBase64: expect.any(String),
-        wrappedKeyBase64: expect.any(String),
+        ...supportedEntry.encryptedData,
+        version: JOURNAL_ENTRY_ENCRYPTION_VERSION + 1,
       },
-    });
-    expect(JSON.stringify(storedEntries)).not.toContain("A test entry");
-    expect(JSON.stringify(storedEntries)).not.toContain("Written through the client workflow");
+    };
+    const malformedEntry = { id: "not-a-valid-entry" };
+    const secondEntry = await createEncryptedEntry(user, SECOND_CONTENT);
+    apiMocks.json.mockResolvedValue([
+      firstEntry,
+      corruptEntry,
+      unsupportedEntry,
+      malformedEntry,
+      secondEntry,
+    ]);
 
-    const listed = await listJournalEntries(clientUser);
-    expect(listed.some(({ id }) => id === created.id)).toBe(true);
+    const result = await listJournalEntries(user);
 
-    const updated = await updateJournalEntry(
+    expect(result.entries.map(({ title }) => title)).toEqual([
+      FIRST_CONTENT.title,
+      SECOND_CONTENT.title,
+    ]);
+    expect(result.unreadableEntries).toEqual([
       {
-        id: created.id,
-        title: "An updated test entry",
-        content: created.content,
-        favorite: true,
-        tags: created.tags,
+        reason: JOURNAL_ENTRY_UNREADABLE_REASONS.decryptionFailed,
+        record: corruptEntry,
       },
-      clientUser,
-    );
-    expect(updated).toMatchObject({
-      id: created.id,
-      title: "An updated test entry",
-      favorite: true,
-    });
-
-    await expect(deleteJournalEntry(created.id)).resolves.toEqual({ id: created.id });
-
-    const afterDelete = await listJournalEntries(clientUser);
-    expect(afterDelete.some(({ id }) => id === created.id)).toBe(false);
+      {
+        reason: JOURNAL_ENTRY_UNREADABLE_REASONS.invalidEnvelope,
+        record: unsupportedEntry,
+      },
+      {
+        reason: JOURNAL_ENTRY_UNREADABLE_REASONS.invalidEnvelope,
+        record: malformedEntry,
+      },
+    ]);
   });
 
-  it("rejects ciphertext moved to a different public entry identity", async () => {
-    await createJournalEntry(
-      { title: "Bound entry", content: "<p>Authenticated content.</p>" },
-      clientUser,
-    );
+  it("still rejects a response that is not an entry collection", async () => {
+    const user = await createUser();
+    apiMocks.json.mockResolvedValue({ entries: [] });
 
-    const storedEntry = localServerStore.entriesByUserId[clientUser.id]?.[0];
-    if (!storedEntry) {
-      throw new Error("The encrypted entry should have been stored.");
-    }
-
-    storedEntry.id = crypto.randomUUID();
-
-    await expect(listJournalEntries(clientUser)).rejects.toMatchObject({
-      name: "JournalClientError",
-      code: JOURNAL_CLIENT_ERROR_CODES.decryptionFailed,
-    });
-  });
-
-  it("reports a locked journal before making an HTTP request", async () => {
-    await expect(listJournalEntries(null)).rejects.toMatchObject({
-      name: "JournalClientError",
-      code: JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable,
-    });
+    await expect(listJournalEntries(user)).rejects.toMatchObject({ name: "ZodError" });
   });
 });

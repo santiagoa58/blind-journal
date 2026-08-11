@@ -4,20 +4,21 @@ import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/api/auth/auth.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import { createAccountSalt } from "@/server/auth";
 import { getAuthErrorHttpStatus } from "@/server/auth.error";
-import { isSameOrigin, jsonResponse, readJsonBody } from "@/server/http";
-import { getRequestErrorHttpStatus } from "@/server/request.error";
+import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
-    return jsonResponse(
-      { code: REQUEST_ERROR_CODES.forbidden },
-      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
-    );
+    return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
-  const result = await createAccountSalt(await readJsonBody(request, MAX_AUTH_REQUEST_BODY_BYTES));
+  const body = await readJsonBody(request, MAX_AUTH_REQUEST_BODY_BYTES);
+  if ("error" in body) {
+    return requestErrorResponse(body.error);
+  }
+
+  const result = await createAccountSalt(body.data);
 
   return result.success
     ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_CREATED)

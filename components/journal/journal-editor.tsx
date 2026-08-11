@@ -3,11 +3,11 @@
 import { CheckCircledIcon } from "@radix-ui/react-icons";
 import { Badge, Flex, ScrollArea, Separator, Text } from "@radix-ui/themes";
 import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useState } from "react";
 import { MAX_JOURNAL_ENTRY_TITLE_CHARACTERS } from "@/api/journal/journal.constants";
 import type { JournalEntry } from "@/api/journal/journal.type";
+import { journalEditorExtensions } from "./journal-editor.config";
 import styles from "./journal-editor.module.css";
 import { JournalEditorActions } from "./journal-editor-actions";
 import { JournalEditorToolbar } from "./journal-editor-toolbar";
@@ -32,16 +32,13 @@ export function JournalEditor({ entry }: JournalEditorProps) {
   const t = useTranslations("journal-editor");
   const format = useFormatter();
   const now = useNow({ updateInterval: 60_000 });
+  // TODO(review-high-unsaved-draft-loss): Track whether the title/editor differs from the cached
+  // entry and guard entry switches, section switches, navigation, and deletion. The keyed editor
+  // currently discards an unsaved journal draft without warning, which is unacceptable data loss
+  // behavior for the core writing flow.
   const [title, setTitle] = useState(entry.title);
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-        heading: { levels: [1, 2, 3] },
-        horizontalRule: false,
-        link: false,
-      }),
-    ],
+    extensions: journalEditorExtensions,
     content: entry.content,
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,

@@ -9,6 +9,7 @@ import {
 } from "@/api/journal/journal.constants";
 import type {
   ApiCreateJournalEntryRequest,
+  ApiDeleteJournalEntryResponse,
   ApiUpdateJournalEntryRequest,
   EncryptedJournalEntry,
   JournalEntryContent,
@@ -29,6 +30,13 @@ export const encryptedJournalEntrySchema: z.ZodType<EncryptedJournalEntry> = z.s
   updatedAt: z.iso.datetime(),
   encryptedData: encryptedJournalDataSchema,
 });
+
+export const encryptedJournalEntryRecordsSchema = z.array(z.unknown());
+
+export const deleteJournalEntryResponseSchema: z.ZodType<ApiDeleteJournalEntryResponse> =
+  z.strictObject({
+    id: journalEntryIdSchema,
+  });
 
 export const createEntryRequestSchema: z.ZodType<ApiCreateJournalEntryRequest> = z.strictObject({
   id: journalEntryIdSchema,

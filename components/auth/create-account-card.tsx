@@ -5,6 +5,11 @@ import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/th
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { createAccount } from "@/api/auth/auth";
+import {
+  MAX_PASSWORD_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_PASSWORD_LENGTH,
+} from "@/api/auth/auth.constants";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
@@ -63,7 +68,7 @@ export function CreateAccountCard() {
         <Grid gap="4" mt="6">
           <LabeledInput
             autoComplete="username"
-            description={t("createAccount.usernameHint")}
+            description={t("usernameRequirements", { maxLength: MAX_USERNAME_LENGTH })}
             label={t("createAccount.usernameLabel")}
             name="username"
             placeholder={t("createAccount.usernamePlaceholder")}
@@ -73,7 +78,10 @@ export function CreateAccountCard() {
           </LabeledInput>
           <LabeledInput
             autoComplete="new-password"
-            description={t("createAccount.passwordHint")}
+            description={t("passwordRequirements", {
+              maxLength: MAX_PASSWORD_LENGTH,
+              minLength: MIN_PASSWORD_LENGTH,
+            })}
             label={t("createAccount.passwordLabel")}
             name="password"
             placeholder={t("createAccount.passwordPlaceholder")}

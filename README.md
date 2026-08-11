@@ -29,10 +29,9 @@ and does not use zk-SNARKs or similar proof protocols.
 Blind Journal is designed to provide:
 
 - Explicit create-account and sign-in flows; an unknown login never silently creates an account.
-- A username-first login that retrieves the account’s password KDF salt before accepting the
-  password.
-- A responsive journal workspace with multiple dated entries, search, favorites, moods, tags,
-  and a Tiptap rich-text editor.
+- A login flow that retrieves the account’s password KDF salt before deriving credentials locally.
+- A responsive journal workspace with multiple dated entries, search, favorites, tags, and a
+  Tiptap rich-text editor.
 - Create, read, update, and delete operations through an ordinary HTTP client boundary.
 - English and Spanish interfaces with locale-aware routing, metadata, plurals, dates, and times.
 - Installable PWA branding and a theme-aware interface.
@@ -49,8 +48,8 @@ The intended deployment model has four logical boundaries:
    decrypts incoming ciphertext.
 3. **HTTPS API** — transports agreed request and response contracts and authenticates requests
    through an opaque session.
-4. **Server and database** — validate requests, authenticate and authorize users, and persist
-   authentication verifiers, sessions, wrapped keys, and encrypted journal records.
+4. **Server** — validates requests, authenticates and authorizes users, and persists authentication
+   verifiers, sessions, wrapped entry keys, and encrypted journal records.
 
 The browser communicates with versioned Next.js Route Handlers through ordinary same-origin HTTP
 requests. React components and TanStack Query hooks depend only on the endpoint functions under
@@ -61,20 +60,21 @@ requests. React components and TanStack Query hooks depend only on the endpoint 
 A practical encrypted service still observes some metadata, including:
 
 - The pseudonymous username and opaque user identifier.
-- Account KDF salt and versioned KDF parameters.
+- Account KDF salt.
 - Authentication verifier material.
 - Opaque session records.
-- Ciphertext sizes, record counts, revisions, request timing, and access patterns.
+- Entry creation and update timestamps, ciphertext sizes, record counts, request timing, and access
+  patterns.
 
-The journal payload—including its human-readable title, body, date, mood, and tags—must be encrypted
-before it crosses the client boundary.
+The journal payload—including its title, body, favorite status, and tags—must be encrypted before it
+crosses the client boundary.
 
 ### What the server must never receive
 
 - The master password.
 - The password-derived master key.
-- The key-encryption key.
-- An unwrapped vault key or entry key.
+- The password-derived key-encryption key.
+- An unwrapped journal entry key.
 - Decrypted journal content.
 
 ## Authentication and key hierarchy
@@ -89,18 +89,17 @@ the cryptographic operations.
 2. The server rejects an existing username or generates a cryptographically random per-account
    salt.
 3. The client derives a 256-bit master key from the password and salt using Argon2id.
-4. HKDF-SHA-256 derives independent, domain-separated material for authentication and key
-   encryption.
-5. The client generates a random vault key and wraps it with the key-encryption key.
-6. Over HTTPS, the client sends the username, derived authentication key,
-   wrapped vault key, and versioned protocol metadata—not the password or decryption keys.
-7. The server hashes the received authentication key before storing its verifier and completes
+4. HKDF-SHA-256 derives independent, domain-separated authentication and key-encryption material.
+5. Over HTTPS, the client sends the username and derived authentication key—not the password or
+   journal decryption key.
+6. The server hashes the received authentication key before storing its verifier and completes
    registration with an opaque session.
+7. The client keeps the derived key-encryption key in memory while the journal is unlocked.
 
 ### Sign in
 
 1. The client submits the username.
-2. The server retrieves the account’s salt and versioned KDF parameters.
+2. The server retrieves the account’s salt.
 3. The client accepts the password and derives the same master, authentication, and key-encryption
    material locally.
 4. The client sends the derived authentication key over HTTPS.
@@ -108,8 +107,8 @@ the cryptographic operations.
    byte comparison.
 6. On success, the server creates an opaque, expiring, revocable session and delivers its
    identifier in a `Secure`, `HttpOnly`, appropriately `SameSite` cookie.
-7. The client receives the wrapped vault key and unwraps it locally before decrypting journal
-   entries.
+7. The client keeps the rederived key-encryption key in memory and uses it to unwrap each journal
+   entry key locally.
 
 Blind Journal deliberately does not use JWTs for browser sessions. A random opaque session ID keeps
 authorization state revocable and avoids putting unnecessary claims in a client-held token.
@@ -118,14 +117,14 @@ authorization state revocable and avoids putting unnecessary claims in a client-
 
 - Journal payloads use authenticated encryption with AES-256-GCM.
 - Every encryption uses a fresh, unpredictable 96-bit IV.
+- Every journal entry has a random encryption key wrapped by the password-derived key-encryption
+  key. Its ciphertext, IV, and wrapped key are stored together.
 - Authenticated additional data binds the ciphertext to versioned context such as the account,
   entry, and revision.
 - Ciphertext envelopes include only the fields required to select the protocol version and perform
   authenticated decryption.
-- Password changes rederive key-encryption material and rewrap the vault key instead of requiring
-  every journal entry to be encrypted again.
 - Passwords, raw keys, plaintext payloads, and session identifiers never enter logs, URLs, query
-  keys, state-machine inspection data, or analytics.
+  keys, or analytics.
 
 ## Architecture
 
@@ -136,14 +135,12 @@ flowchart LR
     API --> Fetch["Browser fetch"]
     Fetch --> Routes["Next.js Route Handlers"]
     Routes --> Server["Server-only application logic"]
-    Server --> Repository["Server-owned repository"]
-    Repository --> Database["Persistent database"]
+    Server --> Store["Persistent server storage"]
 
     State --> Crypto["Client crypto boundary"]
     Crypto --> Sodium["Argon2id via libsodium"]
     Crypto --> WebCrypto["HKDF and AES-GCM via Web Crypto"]
 
-    Tests["Vitest and MSW"] -. exercise the same contract .-> API
 ```
 
 ### Boundary rules
@@ -157,12 +154,9 @@ flowchart LR
   project controls.
 - `app/api/v1/` contains thin Route Handlers. They apply HTTP concerns, call server services, and
   return the agreed response shape.
-- `server/` contains server-only authentication, session, journal, and repository logic. It validates
-  untrusted input with the Zod schemas colocated with each API area.
-- MSW handlers are test transport adapters only. They match the same HTTP contract and delegate to
-  isolated test implementations without containing business logic.
-- Persistence belongs behind the server boundary. Client code never imports a repository or
-  database implementation.
+- `server/` contains server-only authentication, session, journal, and persistence logic. It
+  validates untrusted input with the Zod schemas colocated with each API area.
+- Storage belongs behind the server boundary. Client code never imports its implementation.
 
 ### API response contract
 
@@ -174,23 +168,21 @@ type ApiError<TCode extends string> = { code: TCode };
 ```
 
 Ky preserves its native HTTP, network, and timeout error classes while attaching that code for the
-UI. Error codes are also typed translation IDs, so user-facing messages come from the locale catalog
-instead of server-provided or hard-coded text. Diagnostic details remain on the server rather than
-crossing the API boundary.
+UI. A compile-time exhaustive mapping keeps stable codes independent from the locale catalog, and
+callers intentionally choose the fallback for unknown codes. Diagnostic details remain on the
+server rather than crossing the API boundary.
 
 ### State ownership
 
 | State                                                              | Owner                   |
 | ------------------------------------------------------------------ | ----------------------- |
-| Requests, mutations, session view, and unlocked journal query data | TanStack Query          |
+| Requests, mutations, and unlocked journal query data               | TanStack Query          |
 | Form fields, editor drafts, and local display controls             | React component state   |
-| Multi-step authentication, locking, and saving workflows           | XState actors           |
-| Password-derived and unwrapped key material                        | Client crypto boundary  |
-| Accounts, verifiers, sessions, wrapped keys, and ciphertext        | Server-owned repository |
+| Password-derived and unwrapped entry-key material                  | Client crypto boundary  |
+| Accounts, verifiers, sessions, wrapped entry keys, and ciphertext  | Server persistence      |
 
 TanStack Query is used directly rather than hidden behind a generic `useApi` abstraction. Local
-React state remains local. XState is reserved for workflows that genuinely benefit from explicit
-states and transitions; it is not a replacement for every boolean or form field.
+React state remains local.
 
 ## Technology choices
 
@@ -202,13 +194,11 @@ states and transitions; it is not a replacement for every boolean or form field.
 | Rich-text editor                          | Tiptap                       | A maintained editor framework instead of a custom `contenteditable` implementation |
 | HTTP client                               | Ky                           | A small standards-based client over `fetch`                                        |
 | Async state                               | TanStack Query               | Explicit request, mutation, caching, and invalidation behavior                     |
-| Workflow state                            | XState                       | Inspectable deterministic flows for authentication and locking                     |
 | Runtime validation                        | Zod                          | Validation of data entering server and persistence boundaries                      |
-| HTTP test isolation                       | MSW                          | Contract-level client tests without depending on a running server                  |
 | Password KDF and constant-time operations | libsodium                    | Audited Argon2id, secure randomness, encodings, and byte comparison                |
 | Key derivation and encryption             | Web Crypto API               | Native HKDF-SHA-256 and AES-256-GCM                                                |
 | Localization                              | next-intl and Eloqnt         | Next.js-native routing and formatting with typed, synchronized message catalogs    |
-| Unit tests                                | Vitest                       | Fast focused tests for protocol and API behavior                                   |
+| Unit tests                                | Vitest                       | Fast focused tests for cryptographic and domain behavior                           |
 | Formatting and linting                    | Biome                        | One deterministic code-quality and formatting tool                                 |
 
 Exact installed versions and the package-manager version are pinned in `package.json` and
@@ -226,12 +216,9 @@ components/             React UI grouped by owning domain
 crypto/                 Cryptographic helpers and client/server protocol boundaries
 hooks/                  Small reusable React hooks
 i18n/                   Locale routing, navigation, message loading, and type integration
-local-server/           Isolated server behavior used by MSW-backed unit tests
 messages/               Translation catalogs as messages/{locale}/{feature}.json
-mocks/                  Thin MSW transport handlers
 public/                 Brand assets and install icons
-server/                 Server-only auth, session, journal, and repository logic
-tests/                  Shared Vitest setup and test-only boundary fixtures
+server/                 Server-only auth, session, journal, and persistence logic
 ```
 
 Directories express concrete ownership. Avoid generic dumping grounds, duplicate contract folders,
@@ -292,7 +279,7 @@ introduced deliberately so private data is never cached outside the encrypted st
 
 - Node.js 24 or newer
 - Corepack
-- A modern browser with Web Crypto, Web Workers, IndexedDB, and Service Worker support
+- A modern browser with Web Crypto and Web Worker support
 
 Corepack selects the PNPM version pinned by the repository.
 
@@ -313,7 +300,7 @@ HTTPS.
 
 | Variable                   | Purpose                                        | Example   |
 | -------------------------- | ---------------------------------------------- | --------- |
-| `NEXT_PUBLIC_API_BASE_URL` | Client-visible base URL used by the API client | `/api/v1` |
+| `NEXT_PUBLIC_API_BASE_URL` | Browser-visible base URL used by the HTTP layer | `/api/v1` |
 
 The application validates required environment variables at startup and fails fast when they are
 missing or malformed. `NEXT_PUBLIC_` values are always visible in the browser and must never contain
@@ -342,20 +329,10 @@ pnpm build
 
 ## Testing strategy
 
-Tests concentrate on boundaries where a regression would undermine the protocol:
-
-- Account creation exercises validation failures, retries, server-issued salts, successful
-  registration, session behavior, and duplicate usernames as one coherent scenario.
-- Login begins with a server-side user fixture and exercises unknown usernames, incorrect
-  credentials, unauthorized sessions, and a successful retry.
-- Journal API coverage exercises create, read, update, and delete through an MSW-isolated HTTP
-  boundary that implements the same response contract.
-- Cryptographic envelope, encoding, and key-schedule tests should use deterministic fixtures and
-  published primitive behavior without weakening production parameters.
-
-Broad browser automation and snapshot-heavy testing are intentionally out of scope. Focused unit
-tests, production builds, and manual browser verification provide proportionate confidence while
-keeping the suite fast and maintainable.
+Tests cover the cryptographic protocol, validation and authorization rules, and critical account and
+journal flows against the real application boundaries. Test code does not maintain a parallel local
+server implementation. Focused tests and production builds keep the suite fast while protecting the
+security-sensitive behavior.
 
 ## Security requirements
 
@@ -363,9 +340,8 @@ The implementation must preserve these rules:
 
 - Use cryptographically secure randomness for salts, IVs, keys, session identifiers, and CSRF
   material.
-- Version KDF parameters, HKDF context labels, encrypted envelopes, and authenticated metadata.
-- Keep passwords and unlocked keys short-lived and outside persistent React, Query, and XState
-  state.
+- Version encrypted envelopes and authenticated metadata.
+- Keep passwords and unlocked keys short-lived and outside persistent React and Query state.
 - Clear private query data and key material on lock or logout.
 - Validate untrusted request and persisted data at the server boundary.
 - Authorize every journal operation against the authenticated user.
@@ -384,18 +360,14 @@ cryptographic security boundary, not merely UI concerns.
 ## Scope
 
 Blind Journal focuses on a personal journal and its security protocol. Sharing, multi-user
-collaboration, attachments, a real hosted authentication service, and claims of hiding all traffic
+collaboration, attachments, third-party authentication providers, and claims of hiding all traffic
 metadata are outside the project’s scope.
-
-Development proceeds in explicitly approved, reviewable changes. The architecture describes the
-intended destination, not authorization to implement unrelated phases automatically.
 
 ## References
 
 - [Next.js documentation](https://nextjs.org/docs)
 - [next-intl documentation](https://next-intl.dev/docs/getting-started/app-router)
 - [Radix Themes documentation](https://www.radix-ui.com/themes/docs/overview/getting-started)
-- [MSW browser integration](https://mswjs.io/docs/integrations/browser)
 - [TanStack Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview)
 - [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
 - [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)

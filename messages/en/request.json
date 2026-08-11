@@ -1,6 +1,8 @@
 {
   "errors": {
     "forbidden": "This request was not allowed.",
-    "invalid": "The request was invalid."
+    "invalid": "The request was invalid.",
+    "payloadTooLarge": "The request was too large.",
+    "unsupportedMediaType": "The request format was not supported."
   }
 }

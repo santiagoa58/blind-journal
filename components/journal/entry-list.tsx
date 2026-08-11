@@ -15,20 +15,22 @@ import {
 } from "@radix-ui/themes";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
-import { useJournalWorkspace } from "./journal-workspace-context";
+import type { JournalEntry } from "@/api/journal/journal.type";
+import { useJournalWorkspace } from "@/state/journal-workspace.state";
 
-export function EntryList() {
+export function EntryList({ entries }: { entries: JournalEntry[] }) {
   const t = useTranslations("entry-list");
   const format = useFormatter();
   const [query, setQuery] = useState("");
-  const workspace = useJournalWorkspace();
-
-  if (!workspace) {
-    return null;
-  }
-
-  const { activeSection, entries, selectedEntry, selectEntry, selectSection } = workspace;
+  const activeSection = useJournalWorkspace((state) => state.activeSection);
+  const selectedEntryId = useJournalWorkspace((state) => state.selectedEntryId);
+  const selectEntry = useJournalWorkspace((state) => state.selectEntry);
+  const selectSection = useJournalWorkspace((state) => state.selectSection);
   const filter = activeSection === "favorites" ? "favorites" : "all";
+  const sectionEntries =
+    filter === "favorites" ? entries.filter(({ favorite }) => favorite) : entries;
+  const effectiveSelectedEntryId =
+    sectionEntries.find(({ id }) => id === selectedEntryId)?.id ?? sectionEntries[0]?.id;
   const normalizedQuery = query.trim().toLowerCase();
   const visibleEntries = entries.filter((entry) => {
     const matchesFilter = filter === "all" || entry.favorite;
@@ -77,7 +79,9 @@ export function EntryList() {
             <SegmentedControl.Root
               size="1"
               value={filter}
-              onValueChange={(value) => selectSection(value === "all" ? "journal" : "favorites")}
+              onValueChange={(value) =>
+                selectSection(value === "all" ? "journal" : "favorites", entries)
+              }
             >
               <SegmentedControl.Item value="all">{t("all")}</SegmentedControl.Item>
               <SegmentedControl.Item value="favorites">{t("favorites")}</SegmentedControl.Item>
@@ -92,7 +96,7 @@ export function EntryList() {
           <ScrollArea scrollbars="vertical">
             <Flex direction="column" gap="2" p="3" pt="1">
               {visibleEntries.map((entry) => {
-                const selected = entry.id === selectedEntry?.id;
+                const selected = entry.id === effectiveSelectedEntryId;
                 const updatedAt = new Date(entry.updatedAt);
 
                 return (

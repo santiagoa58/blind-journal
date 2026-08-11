@@ -1,6 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import {
+  MAX_PASSWORD_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_PASSWORD_LENGTH,
+} from "@/api/auth/auth.constants";
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
 import { AUTH_CLIENT_ERROR_CODES, type AuthClientErrorCode } from "@/api/auth/auth-client.error";
 import { AUTH_WORKER_ERROR_CODES, type AuthWorkerErrorCode } from "@/api/auth/auth-worker.error";
@@ -32,14 +37,25 @@ export function useErrorMessage() {
     [API_ERROR_CODES.unexpected]: (values) => t("api.errors.unexpected", values),
 
     [AUTH_ERROR_CODES.usernameRequired]: (values) => t("auth.errors.usernameRequired", values),
-    [AUTH_ERROR_CODES.usernameInvalid]: (values) => t("auth.errors.usernameInvalid", values),
+    [AUTH_ERROR_CODES.usernameInvalid]: (values) =>
+      t("auth.usernameRequirements", { maxLength: MAX_USERNAME_LENGTH, ...values }),
     [AUTH_ERROR_CODES.usernameTaken]: (values) => t("auth.errors.usernameTaken", values),
     [AUTH_ERROR_CODES.invalidCredentials]: (values) => t("auth.errors.invalidCredentials", values),
     [AUTH_ERROR_CODES.unauthorized]: (values) => t("auth.errors.unauthorized", values),
     [AUTH_CLIENT_ERROR_CODES.passwordRequired]: (values) =>
       t("auth.errors.passwordRequired", values),
     [AUTH_CLIENT_ERROR_CODES.passwordTooShort]: (values) =>
-      t("auth.errors.passwordTooShort", values),
+      t("auth.passwordRequirements", {
+        maxLength: MAX_PASSWORD_LENGTH,
+        minLength: MIN_PASSWORD_LENGTH,
+        ...values,
+      }),
+    [AUTH_CLIENT_ERROR_CODES.passwordTooLong]: (values) =>
+      t("auth.passwordRequirements", {
+        maxLength: MAX_PASSWORD_LENGTH,
+        minLength: MIN_PASSWORD_LENGTH,
+        ...values,
+      }),
     [AUTH_CLIENT_ERROR_CODES.passwordsMismatch]: (values) =>
       t("auth.errors.passwordsMismatch", values),
     [AUTH_WORKER_ERROR_CODES.unavailable]: (values) => t("auth.errors.unlockFailed", values),
@@ -57,6 +73,9 @@ export function useErrorMessage() {
 
     [REQUEST_ERROR_CODES.forbidden]: (values) => t("request.errors.forbidden", values),
     [REQUEST_ERROR_CODES.invalid]: (values) => t("request.errors.invalid", values),
+    [REQUEST_ERROR_CODES.payloadTooLarge]: (values) => t("request.errors.payloadTooLarge", values),
+    [REQUEST_ERROR_CODES.unsupportedMediaType]: (values) =>
+      t("request.errors.unsupportedMediaType", values),
   } satisfies Record<KnownErrorCode, ErrorMessageFormatter>;
 
   return (error: CodedError): string | undefined => {

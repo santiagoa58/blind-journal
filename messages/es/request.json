@@ -1,6 +1,8 @@
 {
   "errors": {
     "forbidden": "Esta solicitud no está permitida.",
-    "invalid": "La solicitud no es válida."
+    "invalid": "La solicitud no es válida.",
+    "payloadTooLarge": "La solicitud es demasiado grande.",
+    "unsupportedMediaType": "El formato de la solicitud no es compatible."
   }
 }

@@ -1,6 +1,10 @@
 const BYTES_PER_MEBIBYTE = 1_024 * 1_024;
 
 export const JOURNAL_ENTRY_ENCRYPTION_VERSION = 1 as const;
+export const JOURNAL_ENTRY_UNREADABLE_REASONS = {
+  decryptionFailed: "decryption-failed",
+  invalidEnvelope: "invalid-envelope",
+} as const;
 export const MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES = 5;
 export const MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES =
   MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES * BYTES_PER_MEBIBYTE;

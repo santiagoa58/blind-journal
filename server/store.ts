@@ -1,33 +1,25 @@
 import "server-only";
 
+import { normalizeUsername } from "@/api/auth/auth.schema";
 import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
 import type { ApplicationStore, PendingAccountSalt, StoredUser } from "@/server/store.type";
+
+// TODO(review-critical-durable-store): Replace every process-local collection below with one
+// durable transactional store before deployment. Vercel function instances are ephemeral and
+// isolated, so accounts, sessions, pending salts, and entries currently disappear on restart and
+// are inconsistent across concurrent instances. The free-tier choice must fail closed rather than
+// silently falling back to memory or enabling paid overages.
 
 type StoredSession = {
   expiresAt: number;
   userId: string;
 };
 
-const developmentUser = {
-  id: "00000000-0000-4000-8000-000000000001",
-  username: "test_user",
-  displayName: "Test User",
-  salt: "dGVzdC1zYWx0LTEyMzQ1Ng==",
-  authKeyHash: "sVjCRFs1/30yYjPMGCVr7cNWA+uycpwGHXd44KIjB3Q=",
-} satisfies StoredUser;
-
-const developmentUsers = process.env.NODE_ENV === "development" ? [developmentUser] : [];
-const developmentEntries = new Map<string, EncryptedJournalEntry[]>();
-
-if (process.env.NODE_ENV === "development") {
-  developmentEntries.set(developmentUser.id, []);
-}
-
 export const serverStore = {
-  entriesByUserId: developmentEntries,
+  entriesByUserId: new Map<string, EncryptedJournalEntry[]>(),
   pendingAccountSalts: new Map<string, PendingAccountSalt>(),
   sessions: new Map<string, StoredSession>(),
-  users: developmentUsers as StoredUser[],
+  users: [] as StoredUser[],
 };
 
 export const serverApplicationStore: ApplicationStore = {
@@ -45,8 +37,8 @@ export const serverApplicationStore: ApplicationStore = {
     return serverStore.users.find(({ id }) => id === userId);
   },
   findUserByUsername(username) {
-    const normalizedUsername = username.toLowerCase();
-    return serverStore.users.find((user) => user.username.toLowerCase() === normalizedUsername);
+    const normalizedUsername = normalizeUsername(username);
+    return serverStore.users.find((user) => user.username === normalizedUsername);
   },
   getJournalEntries(userId) {
     return serverStore.entriesByUserId.get(userId) ?? [];

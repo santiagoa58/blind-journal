@@ -9,6 +9,10 @@ declare global {
 }
 
 const envSchema = z.strictObject({
+  // TODO(review-medium-api-origin): Restrict the production API base to an origin-relative path
+  // unless cross-origin deployment becomes an explicit requirement. This client always includes
+  // credentials, so accepting any absolute URL makes a configuration mistake send cookie-bearing
+  // API requests outside the intended same-origin architecture.
   NEXT_PUBLIC_API_BASE_URL: z
     .string()
     .trim()

@@ -4,8 +4,8 @@ import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
 import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { getLoginSalt, login } from "@/api/auth/auth";
-import type { ApiSaltRequest, ClientLoginRequest } from "@/api/auth/auth.type";
+import { login } from "@/api/auth/auth";
+import type { ClientLoginRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
@@ -16,16 +16,6 @@ export function LoginCard() {
   const t = useTranslations("auth");
   const router = useRouter();
   const appToast = useAppToast();
-  const saltMutation = useMutation({
-    mutationKey: ["auth", "login", "salt"],
-    mutationFn: getLoginSalt,
-  });
-  const loginSalt = saltMutation.data
-    ? {
-        username: saltMutation.variables.username.trim(),
-        saltBase64: saltMutation.data.salt,
-      }
-    : null;
   const loginMutation = useMutation({
     mutationKey: ["auth", "login"],
     mutationFn: login,
@@ -40,28 +30,17 @@ export function LoginCard() {
       return;
     }
 
-    if (!loginSalt) {
-      const input: ApiSaltRequest = { username };
-      try {
-        await saltMutation.mutateAsync(input);
-      } catch {
-        // The shared MutationCache presents the localized error.
-      }
-      return;
-    }
-
     const password = formData.get("password");
 
     if (typeof password !== "string") {
       return;
     }
 
-    const input: ClientLoginRequest = {
-      username: loginSalt.username,
-      password,
-      salt: loginSalt.saltBase64,
-    };
     try {
+      const input: ClientLoginRequest = {
+        username,
+        password,
+      };
       const response = await loginMutation.mutateAsync(input);
       setUser({ ...response.user, keyEncryptionKey: response.keyEncryptionKey });
       appToast.success(t("success.signedIn"));
@@ -70,13 +49,6 @@ export function LoginCard() {
       // The shared MutationCache presents the localized error.
     }
   }
-
-  function handleChangeUsername() {
-    saltMutation.reset();
-    loginMutation.reset();
-  }
-
-  const isPending = saltMutation.isPending || loginMutation.isPending;
 
   return (
     <Card size="4" variant="classic">
@@ -97,10 +69,9 @@ export function LoginCard() {
             label={t("signIn.usernameLabel")}
             name="username"
             placeholder={t("signIn.usernamePlaceholder")}
-            defaultValue={loginSalt?.username ?? ""}
+            defaultValue={loginMutation.variables?.username ?? ""}
             required
-            onChange={handleChangeUsername}
-            disabled={isPending}
+            disabled={loginMutation.isPending}
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
@@ -116,8 +87,13 @@ export function LoginCard() {
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
-          <Button type="submit" size="3" loading={isPending} disabled={isPending}>
-            {loginSalt ? t("signIn.submit") : t("signIn.continue")}
+          <Button
+            type="submit"
+            size="3"
+            loading={loginMutation.isPending}
+            disabled={loginMutation.isPending}
+          >
+            {t("signIn.submit")}
           </Button>
         </Grid>
       </form>

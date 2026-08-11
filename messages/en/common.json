@@ -2,6 +2,7 @@
   "actions": {
     "cancel": "Cancel",
     "delete": "Delete",
+    "home": "Return home",
     "retry": "Try again",
     "save": "Save changes"
   },

@@ -1,11 +1,14 @@
 import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/api/auth/auth-worker.error";
-import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 import type { Base64 } from "@/types/base64";
+import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
 type PendingRequest = {
   resolve: (keys: AuthUserKeys) => void;
   reject: (reason: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
 };
+
+const AUTH_WORKER_REQUEST_TIMEOUT_MS = 60_000;
 
 class AuthWorkerClient {
   private readonly _worker: Worker;
@@ -19,15 +22,38 @@ class AuthWorkerClient {
     this._worker.addEventListener("messageerror", this.handleMessageError);
   }
 
+  private takePendingRequest(requestId: string): PendingRequest | undefined {
+    const request = this._pending.get(requestId);
+    if (request) {
+      clearTimeout(request.timeout);
+      this._pending.delete(requestId);
+    }
+    return request;
+  }
+
   private rejectAll = (err: Error) => {
     this._pending.forEach((req) => {
+      clearTimeout(req.timeout);
       req.reject(err);
     });
     this._pending.clear();
   };
 
+  private closeWithError(error: AuthWorkerError): void {
+    if (this.closed) {
+      return;
+    }
+
+    this.closed = true;
+    this._worker.removeEventListener("message", this.handleWorkerResponse);
+    this._worker.removeEventListener("error", this.handleWorkerError);
+    this._worker.removeEventListener("messageerror", this.handleMessageError);
+    this._worker.terminate();
+    this.rejectAll(error);
+  }
+
   private handleWorkerError = (event: ErrorEvent) => {
-    this.rejectAll(
+    this.closeWithError(
       new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, {
         cause: event.error ?? event,
       }),
@@ -35,25 +61,24 @@ class AuthWorkerClient {
   };
 
   private handleMessageError = (event: MessageEvent) => {
-    this.rejectAll(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: event }));
+    this.closeWithError(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: event }));
   };
 
   private handleWorkerResponse = (e: MessageEvent<AuthWorkerResponse>) => {
-    const request = this._pending.get(e.data.requestId);
+    const request = this.takePendingRequest(e.data.requestId);
     if (!request) {
       return;
     }
-    this._pending.delete(e.data.requestId);
     if ("error" in e.data) {
       request.reject(
-        new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, e.data.error),
+        new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: e.data.error }),
       );
     } else {
       request.resolve(e.data.data);
     }
   };
 
-  getUserKeys = async (password: string, salt: Base64) => {
+  getUserKeys = (password: string, salt: Base64) => {
     if (this.closed) {
       return Promise.reject(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
     }
@@ -64,18 +89,23 @@ class AuthWorkerClient {
         requestId: crypto.randomUUID(),
       } satisfies AuthWorkerPayload;
 
-      this._worker.postMessage(payload);
-      this._pending.set(payload.requestId, { resolve, reject });
+      const timeout = setTimeout(() => {
+        this.closeWithError(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
+      }, AUTH_WORKER_REQUEST_TIMEOUT_MS);
+      this._pending.set(payload.requestId, { resolve, reject, timeout });
+
+      try {
+        this._worker.postMessage(payload);
+      } catch (error) {
+        this.closeWithError(
+          new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: error }),
+        );
+      }
     });
   };
 
   terminate = () => {
-    if (this.closed) {
-      return;
-    }
-    this._worker.terminate();
-    this.rejectAll(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
-    this.closed = true;
+    this.closeWithError(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
   };
 }
 

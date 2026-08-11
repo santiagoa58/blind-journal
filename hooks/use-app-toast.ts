@@ -13,7 +13,8 @@ export function useAppToast() {
     error(error: CodedError) {
       const message = getErrorMessage(error);
 
-      // TODO(observability): Report unmapped error codes before showing this intentional fallback.
+      // TODO(review-medium-unmapped-toast-code): Report unmapped error codes before showing this
+      // intentional localized fallback; otherwise a broken server/client contract is invisible.
       toast.error(message ?? t("unexpected"));
     },
     success(message: string) {

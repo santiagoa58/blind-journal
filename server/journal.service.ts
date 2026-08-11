@@ -19,6 +19,10 @@ function entryNotFoundResponse(): JournalServiceResult<EncryptedJournalEntry> {
 
 export function createJournalService(store: ApplicationStore) {
   function listEntries(userId: string): EncryptedJournalEntry[] {
+    // TODO(review-medium-bounded-entry-list): Add an ownership-scoped pagination/cursor contract.
+    // Returning and decrypting every ciphertext in one request makes response size, browser memory,
+    // and KDF-unlock latency grow without bound and gives one account an easy resource-exhaustion
+    // path.
     return store
       .getJournalEntries(userId)
       .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt));
@@ -41,6 +45,9 @@ export function createJournalService(store: ApplicationStore) {
       updatedAt: now,
     };
 
+    // TODO(review-medium-entry-conflict-status): Distinguish a duplicate client-generated ID from
+    // malformed ciphertext and return a domain conflict mapped to HTTP 409. Treating storage
+    // conflicts as 422 makes the API less legible and hides an operationally distinct condition.
     return store.insertJournalEntry(userId, entry)
       ? { success: true, data: entry }
       : invalidEntryResponse();

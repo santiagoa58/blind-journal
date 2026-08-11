@@ -1,0 +1,10 @@
+{
+  "unexpected": {
+    "title": "Algo salió mal",
+    "description": "No pudimos cargar esta página. Inténtalo de nuevo."
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe."
+  }
+}

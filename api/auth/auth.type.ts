@@ -1,10 +1,6 @@
 import type { ApiUser } from "@/api/auth/user.type";
 import type { Base64 } from "@/types/base64";
 
-// TODO(encryption-protocol): Add versioned KDF parameters and a wrapped vault key to account
-// registration and session-unlock responses. The server must persist only that wrapped key; the
-// client should unwrap it with the password-derived key and discard the derivation key afterward.
-
 export interface ApiAuthSession {
   user: ApiUser;
 }
@@ -29,7 +25,6 @@ export type ApiCreateAccountRequest = {
 export interface ClientLoginRequest {
   username: string;
   password: string;
-  salt: Base64;
 }
 
 export interface ClientCreateAccountRequest {

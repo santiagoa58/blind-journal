@@ -1,6 +1,6 @@
 import type { ApiUser } from "@/api/auth/user.type";
-import type { Base64 } from "@/api/general.type";
 import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
+import type { Base64 } from "@/types/base64";
 
 export type StoredUser = ApiUser & {
   authKeyHash: Base64;
@@ -12,6 +12,10 @@ export type PendingAccountSalt = {
   salt: Base64;
 };
 
+// TODO(review-high-persistence-contract): Redesign this boundary for asynchronous, atomic database
+// operations before selecting the adapter. Registration must enforce normalized-username
+// uniqueness and create the user/session/journal consistently; journal writes must be owner-scoped
+// and concurrency-safe instead of composing synchronous reads and writes in services.
 export interface ApplicationStore {
   deleteJournalEntry(userId: string, entryId: string): boolean;
   deletePendingAccountSalt(username: string): void;

@@ -10,11 +10,16 @@ const SESSION_LIFETIME_SECONDS = 60 * 60 * 24;
 export function startSession(response: NextResponse, userId: string): void {
   const sessionId = randomBytes(32).toString("base64url");
 
+  // TODO(review-high-session-storage): Persist only a one-way hash of the bearer session ID in the
+  // durable store, rotate/delete any prior session supplied on authentication, and provide bounded
+  // expiry cleanup. A database disclosure currently yields immediately usable session tokens.
   serverStore.sessions.set(sessionId, {
     userId,
     expiresAt: Date.now() + SESSION_LIFETIME_SECONDS * 1_000,
   });
   response.cookies.set({
+    // TODO(review-medium-session-cookie-prefix): Use a production `__Host-` cookie name so the
+    // browser enforces Secure, Path=/, and no Domain attribute against cookie shadowing.
     name: SESSION_COOKIE_NAME,
     value: sessionId,
     httpOnly: true,
@@ -26,7 +31,7 @@ export function startSession(response: NextResponse, userId: string): void {
   });
 }
 
-export function getSessionUserIdFromSessionId(sessionId: string | undefined): string | null {
+function getSessionUserIdFromSessionId(sessionId: string | undefined): string | null {
   if (!sessionId) {
     return null;
   }
@@ -44,8 +49,6 @@ export function getSessionUserIdFromSessionId(sessionId: string | undefined): st
 export function getSessionUserId(request: NextRequest): string | null {
   return getSessionUserIdFromSessionId(request.cookies.get(SESSION_COOKIE_NAME)?.value);
 }
-
-export { SESSION_COOKIE_NAME };
 
 export function endSession(request: NextRequest, response: NextResponse): void {
   const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;

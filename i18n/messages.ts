@@ -4,6 +4,7 @@ import enAuth from "@/messages/en/auth.json";
 import enBrand from "@/messages/en/brand.json";
 import enCommon from "@/messages/en/common.json";
 import enEntryList from "@/messages/en/entry-list.json";
+import enErrorPage from "@/messages/en/error-page.json";
 import enJournal from "@/messages/en/journal.json";
 import enJournalEditor from "@/messages/en/journal-editor.json";
 import enMetadata from "@/messages/en/metadata.json";
@@ -14,6 +15,7 @@ import esAuth from "@/messages/es/auth.json";
 import esBrand from "@/messages/es/brand.json";
 import esCommon from "@/messages/es/common.json";
 import esEntryList from "@/messages/es/entry-list.json";
+import esErrorPage from "@/messages/es/error-page.json";
 import esJournal from "@/messages/es/journal.json";
 import esJournalEditor from "@/messages/es/journal-editor.json";
 import esMetadata from "@/messages/es/metadata.json";
@@ -26,6 +28,7 @@ export const englishMessages = {
   brand: enBrand,
   common: enCommon,
   "entry-list": enEntryList,
+  "error-page": enErrorPage,
   journal: enJournal,
   "journal-editor": enJournalEditor,
   metadata: enMetadata,
@@ -41,6 +44,7 @@ const spanishMessages = {
   brand: esBrand,
   common: esCommon,
   "entry-list": esEntryList,
+  "error-page": esErrorPage,
   journal: esJournal,
   "journal-editor": esJournalEditor,
   metadata: esMetadata,

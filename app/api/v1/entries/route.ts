@@ -5,10 +5,9 @@ import { MAX_JOURNAL_ENTRY_REQUEST_BYTES } from "@/api/journal/journal.constants
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import type { ApiErrorResponse } from "@/api/response.type";
 import { getAuthErrorHttpStatus } from "@/server/auth.error";
-import { isSameOrigin, jsonResponse, readJsonBody } from "@/server/http";
+import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
 import { createEntry, listEntries } from "@/server/journal";
 import { getJournalErrorHttpStatus } from "@/server/journal.error";
-import { getRequestErrorHttpStatus } from "@/server/request.error";
 import { getSessionUserId } from "@/server/session";
 
 export const runtime = "nodejs";
@@ -30,10 +29,7 @@ export function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
-    return jsonResponse(
-      { code: REQUEST_ERROR_CODES.forbidden },
-      getRequestErrorHttpStatus(REQUEST_ERROR_CODES.forbidden),
-    );
+    return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
   const userId = getSessionUserId(request);
@@ -42,7 +38,12 @@ export async function POST(request: NextRequest) {
     return unauthorizedResponse();
   }
 
-  const result = createEntry(userId, await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES));
+  const body = await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES);
+  if ("error" in body) {
+    return requestErrorResponse(body.error);
+  }
+
+  const result = createEntry(userId, body.data);
 
   return result.success
     ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_CREATED)
