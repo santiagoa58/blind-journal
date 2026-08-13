@@ -1,8 +1,12 @@
+import {
+  authSessionSchema,
+  logoutResponseSchema,
+  passwordSchema,
+  saltResponseSchema,
+} from "@/api/auth/auth.schema";
 import type {
-  ApiAuthSession,
   ApiCreateAccountRequest,
   ApiSaltRequest,
-  ApiSaltResponse,
   ApiVerifyCredentialsRequest,
   ClientCreateAccountRequest,
   ClientLoginRequest,
@@ -11,62 +15,83 @@ import { AUTH_CLIENT_ERROR_CODES, AuthClientError } from "@/api/auth/auth-client
 import { getAuthWorkerClient, terminateAuthWorkerClient } from "@/api/auth/auth-worker-client";
 import { api } from "@/api/http";
 
-const MINIMUM_PASSWORD_CHARACTERS = 8;
+function assertValidPassword(password: string): void {
+  const result = passwordSchema.safeParse(password);
+  if (result.success) {
+    return;
+  }
 
-export function getLoginSalt(input: ApiSaltRequest) {
-  return api
+  const exceedsMaximum = result.error.issues.some((issue) => issue.code === "too_big");
+  if (exceedsMaximum) {
+    throw new AuthClientError(AUTH_CLIENT_ERROR_CODES.passwordTooLong);
+  }
+
+  throw new AuthClientError(
+    password.length === 0
+      ? AUTH_CLIENT_ERROR_CODES.passwordRequired
+      : AUTH_CLIENT_ERROR_CODES.passwordTooShort,
+  );
+}
+
+export async function getLoginSalt(input: ApiSaltRequest) {
+  const response = await api
     .post("auth/login/salt", {
       cache: "no-store",
       json: input,
     })
-    .json<ApiSaltResponse>();
+    .json<unknown>();
+  return saltResponseSchema.parse(response);
 }
 
-export function getCreateAccountSalt(input: ApiSaltRequest) {
-  return api
+export async function getCreateAccountSalt(input: ApiSaltRequest) {
+  const response = await api
     .post("auth/accounts/salt", {
       cache: "no-store",
       json: input,
     })
-    .json<ApiSaltResponse>();
+    .json<unknown>();
+  return saltResponseSchema.parse(response);
 }
 
-function verifyCredentials(input: ApiVerifyCredentialsRequest) {
-  return api
+async function verifyCredentials(input: ApiVerifyCredentialsRequest) {
+  const response = await api
     .post("auth/login", {
       cache: "no-store",
       json: input,
     })
-    .json<ApiAuthSession>();
+    .json<unknown>();
+  return authSessionSchema.parse(response);
 }
 
-function submitAccount(input: ApiCreateAccountRequest) {
-  return api
+async function submitAccount(input: ApiCreateAccountRequest) {
+  const response = await api
     .post("auth/accounts", {
       cache: "no-store",
       json: input,
     })
-    .json<ApiAuthSession>();
+    .json<unknown>();
+  return authSessionSchema.parse(response);
 }
 
-export function getSession() {
-  return api.get("auth/session", { cache: "no-store" }).json<ApiAuthSession>();
-}
-
-export function logout() {
-  return api.post("auth/logout", { cache: "no-store" }).json<null>();
+export async function logout() {
+  const response = await api.post("auth/logout", { cache: "no-store" }).json<unknown>();
+  return logoutResponseSchema.parse(response);
 }
 
 export async function login(input: ClientLoginRequest) {
-  if (input.password.length === 0) {
-    throw new AuthClientError(AUTH_CLIENT_ERROR_CODES.passwordRequired);
-  }
+  assertValidPassword(input.password);
 
   try {
-    const userKeys = await getAuthWorkerClient().getUserKeys(input.password, input.salt);
+    const { keyScheduleVersion, salt } = await getLoginSalt({ username: input.username });
+    const userKeys = await getAuthWorkerClient().getUserKeys(
+      input.password,
+      salt,
+      keyScheduleVersion,
+    );
     const request = {
       username: input.username,
       authKey: userKeys.authKey,
+      keyScheduleVersion,
     } satisfies ApiVerifyCredentialsRequest;
     const response = await verifyCredentials(request);
 
@@ -77,25 +102,25 @@ export async function login(input: ClientLoginRequest) {
 }
 
 export async function createAccount(input: ClientCreateAccountRequest) {
-  if (input.password.length === 0) {
-    throw new AuthClientError(AUTH_CLIENT_ERROR_CODES.passwordRequired);
-  }
-
-  if (input.password.length < MINIMUM_PASSWORD_CHARACTERS) {
-    throw new AuthClientError(AUTH_CLIENT_ERROR_CODES.passwordTooShort);
-  }
+  assertValidPassword(input.password);
 
   if (input.password !== input.confirmPassword) {
     throw new AuthClientError(AUTH_CLIENT_ERROR_CODES.passwordsMismatch);
   }
 
-  const { salt } = await getCreateAccountSalt({ username: input.username });
+  const { keyScheduleVersion, salt } = await getCreateAccountSalt({ username: input.username });
 
   try {
-    const userKeys = await getAuthWorkerClient().getUserKeys(input.password, salt);
+    const userKeys = await getAuthWorkerClient().getUserKeys(
+      input.password,
+      salt,
+      keyScheduleVersion,
+    );
     const request = {
       username: input.username,
       authKey: userKeys.authKey,
+      keyScheduleVersion,
+      salt,
     } satisfies ApiCreateAccountRequest;
     const response = await submitAccount(request);
 

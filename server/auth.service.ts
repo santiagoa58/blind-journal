@@ -8,24 +8,19 @@ import {
   verifyCredentialsRequestSchema,
 } from "@/api/auth/auth.schema";
 import type { ApiAuthSession, ApiSaltResponse } from "@/api/auth/auth.type";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import type { ApiUser } from "@/api/auth/user.type";
+import { deriveAuthSalt } from "@/server/auth-salt";
 import type { ServiceResult } from "@/server/service-result";
 import type { ApplicationStore, StoredUser } from "@/server/store.type";
 import type { Base64 } from "@/types/base64";
 
-const ACCOUNT_SALT_LIFETIME_MS = 10 * 60 * 1_000;
-
-// TODO(review-high-auth-abuse-controls): Rate-limit salt, registration, and verification attempts
-// and return decoy KDF metadata for unknown usernames so the username-first flow does not become an
-// enumeration oracle. Expired pending salts also need bounded cleanup in the durable store.
-
+// TODO(review-high-auth-rate-limit-deployment): Replace this deployment assumption with an
+// enforceable, documented control before release. No server-side limiter or repository-visible
+// Vercel Firewall rule currently bounds the public salt, registration, or login endpoints. The
+// selected control must work across function instances, return a predictable 429 experience, and
+// respect the project's free-tier/no-overage constraint.
 type AuthServiceResult<TData> = ServiceResult<TData, AuthErrorCode>;
-
-async function generateSalt(): Promise<Base64> {
-  await sodium.ready;
-  const rawSalt = sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES);
-  return sodium.to_base64(rawSalt, sodium.base64_variants.ORIGINAL);
-}
 
 function toPublicUser(user: StoredUser): ApiUser {
   return {
@@ -60,6 +55,15 @@ async function authKeyMatches(authKey: Base64, storedHash: Base64): Promise<bool
 }
 
 export function createAuthService(store: ApplicationStore) {
+  function getSaltMetadata(normalizedUsername: string): ApiSaltResponse {
+    const derivedSalt = deriveAuthSalt(normalizedUsername);
+    const user = store.findUserByUsername(normalizedUsername);
+
+    return user
+      ? { keyScheduleVersion: user.keyScheduleVersion, salt: user.salt }
+      : { keyScheduleVersion: CURRENT_AUTH_KEY_SCHEDULE.version, salt: derivedSalt };
+  }
+
   function getLoginSalt(input: unknown): AuthServiceResult<ApiSaltResponse> {
     const result = saltRequestSchema.safeParse(input);
 
@@ -67,30 +71,25 @@ export function createAuthService(store: ApplicationStore) {
       return { success: false, error: { code: getUsernameErrorCode(input) } };
     }
 
-    const user = store.findUserByUsername(result.data.username);
-    return user
-      ? { success: true, data: { salt: user.salt } }
-      : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
+    const normalizedUsername = normalizeUsername(result.data.username);
+    return { success: true, data: getSaltMetadata(normalizedUsername) };
   }
 
-  async function createAccountSalt(input: unknown): Promise<AuthServiceResult<ApiSaltResponse>> {
+  // TODO(review-low-auth-salt-endpoint-duplication): Login and account creation now expose the same
+  // stateless salt metadata with the same validation and enumeration behavior, yet two service
+  // methods, routes, browser functions, and tests maintain that contract independently. Collapse
+  // them into one purpose-neutral auth-salt endpoint unless a real protocol distinction returns.
+  function createAccountSalt(input: unknown): AuthServiceResult<ApiSaltResponse> {
     const result = saltRequestSchema.safeParse(input);
 
     if (!result.success) {
       return { success: false, error: { code: getUsernameErrorCode(input) } };
     }
 
-    const normalizedUsername = normalizeUsername(result.data.username);
-    if (store.findUserByUsername(normalizedUsername)) {
-      return { success: false, error: { code: AUTH_ERROR_CODES.usernameTaken } };
-    }
-
-    const salt = await generateSalt();
-    store.setPendingAccountSalt(normalizedUsername, {
-      salt,
-      expiresAt: Date.now() + ACCOUNT_SALT_LIFETIME_MS,
-    });
-    return { success: true, data: { salt } };
+    return {
+      success: true,
+      data: getSaltMetadata(normalizeUsername(result.data.username)),
+    };
   }
 
   async function createAccount(input: unknown): Promise<AuthServiceResult<ApiAuthSession>> {
@@ -100,17 +99,15 @@ export function createAuthService(store: ApplicationStore) {
     }
 
     const normalizedUsername = normalizeUsername(result.data.username);
-    // TODO(review-high-registration-atomicity): The existence check, pending-salt consumption,
-    // user insert, and journal initialization must be one transactional operation backed by a
-    // unique normalized-username constraint. Concurrent requests can currently create duplicates
-    // or leave a partially initialized account.
+    // TODO(review-high-registration-atomicity): The existence check, user insert, and journal
+    // initialization must be one transactional operation backed by a unique normalized-username
+    // constraint. Concurrent requests can currently create duplicates or leave a partially
+    // initialized account.
     if (store.findUserByUsername(normalizedUsername)) {
-      return { success: false, error: { code: AUTH_ERROR_CODES.usernameTaken } };
+      return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
     }
 
-    const pendingSalt = store.getPendingAccountSalt(normalizedUsername);
-    if (!pendingSalt || pendingSalt.expiresAt <= Date.now()) {
-      store.deletePendingAccountSalt(normalizedUsername);
+    if (result.data.salt !== deriveAuthSalt(normalizedUsername)) {
       return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
     }
 
@@ -121,12 +118,12 @@ export function createAuthService(store: ApplicationStore) {
       username: normalizedUsername,
       displayName: result.data.username,
       authKeyHash: sodium.to_base64(authKeyHash, sodium.base64_variants.ORIGINAL),
-      salt: pendingSalt.salt,
+      keyScheduleVersion: result.data.keyScheduleVersion,
+      salt: result.data.salt,
     };
 
     store.insertUser(user);
     store.initializeJournal(user.id);
-    store.deletePendingAccountSalt(normalizedUsername);
     return { success: true, data: { user: toPublicUser(user) } };
   }
 
@@ -137,9 +134,14 @@ export function createAuthService(store: ApplicationStore) {
     }
 
     const user = store.findUserByUsername(result.data.username);
-    const credentialsMatch = user
-      ? await authKeyMatches(result.data.authKey, user.authKeyHash)
-      : false;
+    // TODO(review-medium-auth-verification-timing): Unknown users skip hashing and constant-time
+    // comparison while known users perform both. Responses are generic, but repeated timing samples
+    // can still distinguish account existence. Always verify against either the stored hash or a
+    // fixed valid dummy hash so both paths execute the same primitives.
+    const credentialsMatch =
+      user && result.data.keyScheduleVersion === user.keyScheduleVersion
+        ? await authKeyMatches(result.data.authKey, user.authKeyHash)
+        : false;
     return user && credentialsMatch
       ? { success: true, data: { user: toPublicUser(user) } }
       : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };

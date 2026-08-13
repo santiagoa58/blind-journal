@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthUserKeys, AuthWorkerPayload } from "@/api/auth/auth.type";
-import { AUTH_WORKER_ERROR_CODES } from "@/api/auth/auth-worker.error";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
+import { AUTH_WORKER_ERROR_CODES } from "@/api/auth/worker/auth-worker.error";
 import { getAuthWorkerClient, terminateAuthWorkerClient } from "@/api/auth/auth-worker-client";
-import { uint8ArrayToBase64 } from "@/crypto/base64";
+import { toBase64 } from "@/crypto/base64";
 
 class TestWorker extends EventTarget {
   readonly postedMessages: AuthWorkerPayload[] = [];
@@ -31,9 +32,22 @@ class TestWorker extends EventTarget {
       }),
     );
   }
+
+  fail(error: Error): void {
+    const request = this.postedMessages.at(-1);
+    if (!request) {
+      throw new Error("No worker request is pending.");
+    }
+    this.dispatchEvent(
+      new MessageEvent("message", {
+        data: { requestId: request.requestId, error },
+      }),
+    );
+  }
 }
 
-const SALT = uint8ArrayToBase64(new Uint8Array(16));
+const SALT = toBase64(new Uint8Array(16));
+const KEY_SCHEDULE_VERSION = CURRENT_AUTH_KEY_SCHEDULE.version;
 
 let worker: TestWorker;
 
@@ -61,10 +75,10 @@ describe("authentication worker lifecycle", () => {
       ["wrapKey", "unwrapKey"],
     );
     const keys = {
-      authKey: uint8ArrayToBase64(new Uint8Array(32)),
+      authKey: toBase64(new Uint8Array(32)),
       keyEncryptionKey,
     } satisfies AuthUserKeys;
-    const request = getAuthWorkerClient().getUserKeys("test password", SALT);
+    const request = getAuthWorkerClient().getUserKeys("test password", SALT, KEY_SCHEDULE_VERSION);
 
     worker.respond(keys);
 
@@ -74,7 +88,7 @@ describe("authentication worker lifecycle", () => {
 
   it("terminates a worker and rejects a derivation that never settles", async () => {
     vi.useFakeTimers();
-    const request = getAuthWorkerClient().getUserKeys("test password", SALT);
+    const request = getAuthWorkerClient().getUserKeys("test password", SALT, KEY_SCHEDULE_VERSION);
     const rejection = expect(request).rejects.toMatchObject({
       name: "AuthWorkerError",
       code: AUTH_WORKER_ERROR_CODES.unavailable,
@@ -90,7 +104,9 @@ describe("authentication worker lifecycle", () => {
     const cause = new DOMException("The worker cannot accept messages.", "InvalidStateError");
     worker.postError = cause;
 
-    await expect(getAuthWorkerClient().getUserKeys("test password", SALT)).rejects.toMatchObject({
+    await expect(
+      getAuthWorkerClient().getUserKeys("test password", SALT, KEY_SCHEDULE_VERSION),
+    ).rejects.toMatchObject({
       name: "AuthWorkerError",
       code: AUTH_WORKER_ERROR_CODES.unavailable,
       cause,
@@ -98,8 +114,21 @@ describe("authentication worker lifecycle", () => {
     expect(worker.terminated).toBe(true);
   });
 
+  it("rejects a derivation failure returned by the worker", async () => {
+    const cause = new RangeError("The account salt has an invalid length.");
+    const request = getAuthWorkerClient().getUserKeys("test password", SALT, KEY_SCHEDULE_VERSION);
+
+    worker.fail(cause);
+
+    await expect(request).rejects.toMatchObject({
+      name: "AuthWorkerError",
+      code: AUTH_WORKER_ERROR_CODES.unavailable,
+      cause,
+    });
+  });
+
   it("rejects pending work when the client explicitly terminates the worker", async () => {
-    const request = getAuthWorkerClient().getUserKeys("test password", SALT);
+    const request = getAuthWorkerClient().getUserKeys("test password", SALT, KEY_SCHEDULE_VERSION);
     const rejection = expect(request).rejects.toMatchObject({
       name: "AuthWorkerError",
       code: AUTH_WORKER_ERROR_CODES.unavailable,
@@ -112,7 +141,7 @@ describe("authentication worker lifecycle", () => {
   });
 
   it("rejects pending work and closes after a fatal worker error", async () => {
-    const request = getAuthWorkerClient().getUserKeys("test password", SALT);
+    const request = getAuthWorkerClient().getUserKeys("test password", SALT, KEY_SCHEDULE_VERSION);
     const rejection = expect(request).rejects.toMatchObject({
       name: "AuthWorkerError",
       code: AUTH_WORKER_ERROR_CODES.unavailable,

@@ -1,4 +1,5 @@
-import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/api/auth/auth-worker.error";
+import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
+import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/api/auth/worker/auth-worker.error";
 import type { Base64 } from "@/types/base64";
 import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
 
@@ -78,7 +79,7 @@ class AuthWorkerClient {
     }
   };
 
-  getUserKeys = (password: string, salt: Base64) => {
+  getUserKeys = (password: string, salt: Base64, keyScheduleVersion: AuthKeyScheduleVersion) => {
     if (this.closed) {
       return Promise.reject(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
     }
@@ -86,6 +87,7 @@ class AuthWorkerClient {
       const payload = {
         password,
         salt,
+        keyScheduleVersion,
         requestId: crypto.randomUUID(),
       } satisfies AuthWorkerPayload;
 

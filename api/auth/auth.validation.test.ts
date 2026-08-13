@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/api/auth/auth.constants";
 import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth-client.error";
 
@@ -6,7 +6,6 @@ const USERNAME = "journal_user";
 let auth: typeof import("@/api/auth/auth");
 
 beforeAll(async () => {
-  vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "/api/v1");
   auth = await import("@/api/auth/auth");
 });
 
@@ -17,12 +16,16 @@ describe("password validation errors", () => {
     });
   });
 
-  it("reports a new password below the minimum", async () => {
+  it.each([
+    (password: string) => auth.login({ username: USERNAME, password }),
+    (password: string) =>
+      auth.createAccount({ username: USERNAME, password, confirmPassword: password }),
+  ])("reports a password below the minimum before starting authentication", async (request) => {
     const password = "x".repeat(MIN_PASSWORD_LENGTH - 1);
 
-    await expect(
-      auth.createAccount({ username: USERNAME, password, confirmPassword: password }),
-    ).rejects.toMatchObject({ code: AUTH_CLIENT_ERROR_CODES.passwordTooShort });
+    await expect(request(password)).rejects.toMatchObject({
+      code: AUTH_CLIENT_ERROR_CODES.passwordTooShort,
+    });
   });
 
   it.each([
