@@ -14,7 +14,6 @@ export function UnexpectedErrorPage({ onRetry }: UnexpectedErrorPageProps) {
 
   return (
     <StatusPage title={t("title")} description={t("description")}>
-      <title>{t("title")}</title>
       <Button type="button" size="3" onClick={onRetry}>
         {tCommon("retry")}
       </Button>

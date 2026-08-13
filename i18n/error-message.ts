@@ -8,7 +8,10 @@ import {
 } from "@/api/auth/auth.constants";
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
 import { AUTH_CLIENT_ERROR_CODES, type AuthClientErrorCode } from "@/api/auth/auth-client.error";
-import { AUTH_WORKER_ERROR_CODES, type AuthWorkerErrorCode } from "@/api/auth/worker/auth-worker.error";
+import {
+  AUTH_WORKER_ERROR_CODES,
+  type AuthWorkerErrorCode,
+} from "@/api/auth/worker/auth-worker.error";
 import { API_ERROR_CODES, type ApiErrorCode } from "@/api/error";
 import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/api/journal/journal.error";
 import {
@@ -79,7 +82,7 @@ export function useErrorMessage() {
       t("request.errors.unsupportedMediaType", values),
   } satisfies Record<KnownErrorCode, ErrorMessageFormatter>;
 
-  return (error: unknown): string | undefined => {
+  return function getErrorMessage(error: unknown): string | undefined {
     if (!isCodedError(error) || !Object.hasOwn(formatters, error.code)) {
       return undefined;
     }

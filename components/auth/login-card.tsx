@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { login } from "@/api/auth/auth";
 import type { ClientLoginRequest } from "@/api/auth/auth.type";
+import { useLogoutUnresolved } from "@/hooks/logout-mutation";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
@@ -16,13 +17,22 @@ export function LoginCard() {
   const t = useTranslations("auth");
   const router = useRouter();
   const appToast = useAppToast();
+  const logoutUnresolved = useLogoutUnresolved();
+  // TODO(review-high-auth-secret-retention): This mutation stores the submitted password in
+  // Mutation.state.variables and the derived key-encryption CryptoKey in Mutation.state.data. A
+  // failed attempt remains while this form is mounted, and a successful attempt remains until
+  // garbage collection. Use an authentication submission path that does not cache secret inputs or
+  // outputs, or prove immediate disposal with a regression test.
   const loginMutation = useMutation({
-    mutationKey: ["auth", "login"],
     mutationFn: login,
   });
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loginMutation.isPending || logoutUnresolved) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
 
@@ -50,6 +60,8 @@ export function LoginCard() {
     }
   }
 
+  const authenticationDisabled = loginMutation.isPending || logoutUnresolved;
+
   return (
     <Card size="4" variant="classic">
       <Text as="p" size="2" weight="medium" color="iris">
@@ -71,7 +83,7 @@ export function LoginCard() {
             placeholder={t("signIn.usernamePlaceholder")}
             defaultValue={loginMutation.variables?.username ?? ""}
             required
-            disabled={loginMutation.isPending}
+            disabled={authenticationDisabled}
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
@@ -83,7 +95,7 @@ export function LoginCard() {
             placeholder={t("signIn.passwordPlaceholder")}
             type="password"
             required
-            disabled={loginMutation.isPending}
+            disabled={authenticationDisabled}
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
@@ -91,7 +103,7 @@ export function LoginCard() {
             type="submit"
             size="3"
             loading={loginMutation.isPending}
-            disabled={loginMutation.isPending}
+            disabled={authenticationDisabled}
           >
             {t("signIn.submit")}
           </Button>

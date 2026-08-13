@@ -1,11 +1,11 @@
 import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import { MAX_JOURNAL_ENTRY_REQUEST_BYTES } from "@/api/journal/journal.constants";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { journalEntryIdSchema } from "@/api/journal/journal.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import type { ApiErrorResponse } from "@/api/response.type";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
 import { getAuthErrorHttpStatus } from "@/server/auth.error";
 import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
 import { deleteEntry, updateEntry } from "@/server/journal";
@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return entryNotFoundResponse();
   }
 
-  const body = await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES);
+  const body = await readJsonBody(request, MAX_FUNCTION_PAYLOAD_BYTES);
   if ("error" in body) {
     return requestErrorResponse(body.error);
   }

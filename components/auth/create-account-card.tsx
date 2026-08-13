@@ -11,6 +11,7 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "@/api/auth/auth.constants";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
+import { useLogoutUnresolved } from "@/hooks/logout-mutation";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
@@ -21,14 +22,21 @@ export function CreateAccountCard() {
   const t = useTranslations("auth");
   const router = useRouter();
   const appToast = useAppToast();
+  const logoutUnresolved = useLogoutUnresolved();
 
+  // TODO(review-high-auth-secret-retention): As in the login form, TanStack Mutation retains the
+  // password/confirmation variables and the derived key-encryption CryptoKey result. Keep these
+  // secrets out of MutationCache or guarantee immediate disposal and test that invariant.
   const createAccountMutation = useMutation({
-    mutationKey: ["auth", "create-account"],
     mutationFn: createAccount,
   });
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (createAccountMutation.isPending || logoutUnresolved) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
     const password = formData.get("password");
@@ -52,6 +60,8 @@ export function CreateAccountCard() {
     }
   }
 
+  const authenticationDisabled = createAccountMutation.isPending || logoutUnresolved;
+
   return (
     <Card size="4" variant="classic">
       <Text as="p" size="2" weight="medium" color="iris">
@@ -73,6 +83,7 @@ export function CreateAccountCard() {
             name="username"
             placeholder={t("createAccount.usernamePlaceholder")}
             required
+            disabled={authenticationDisabled}
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
@@ -87,6 +98,7 @@ export function CreateAccountCard() {
             placeholder={t("createAccount.passwordPlaceholder")}
             type="password"
             required
+            disabled={authenticationDisabled}
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
@@ -97,6 +109,7 @@ export function CreateAccountCard() {
             placeholder={t("createAccount.confirmPasswordPlaceholder")}
             type="password"
             required
+            disabled={authenticationDisabled}
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
@@ -105,7 +118,7 @@ export function CreateAccountCard() {
             type="submit"
             size="3"
             loading={createAccountMutation.isPending}
-            disabled={createAccountMutation.isPending}
+            disabled={authenticationDisabled}
           >
             {t("createAccount.submit")}
           </Button>

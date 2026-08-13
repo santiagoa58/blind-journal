@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthUserKeys, AuthWorkerPayload } from "@/api/auth/auth.type";
 import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
-import { AUTH_WORKER_ERROR_CODES } from "@/api/auth/worker/auth-worker.error";
 import { getAuthWorkerClient, terminateAuthWorkerClient } from "@/api/auth/auth-worker-client";
+import { AUTH_WORKER_ERROR_CODES } from "@/api/auth/worker/auth-worker.error";
 import { toBase64 } from "@/crypto/base64";
 
 class TestWorker extends EventTarget {

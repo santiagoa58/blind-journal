@@ -1,8 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
-import type { CodedError } from "@/client.error";
+import { type ExternalToast, toast } from "sonner";
+import { API_ERROR_CODES } from "@/api/error";
+import { isCodedError, reportClientError } from "@/client.error";
 import { useErrorMessage } from "@/i18n/error-message";
 
 export function useAppToast() {
@@ -10,12 +11,20 @@ export function useAppToast() {
   const getErrorMessage = useErrorMessage();
 
   return {
-    error(error: CodedError) {
+    error(error: unknown, options?: ExternalToast) {
       const message = getErrorMessage(error);
 
-      // TODO(review-medium-unmapped-toast-code): Report unmapped error codes before showing this
-      // intentional localized fallback; otherwise a broken server/client contract is invisible.
-      toast.error(message ?? t("unexpected"));
+      if (
+        message === undefined ||
+        (isCodedError(error) && error.code === API_ERROR_CODES.unexpected)
+      ) {
+        reportClientError(error);
+      }
+
+      return toast.error(message ?? t("unexpected"), options);
+    },
+    dismiss(toastId: string | number) {
+      toast.dismiss(toastId);
     },
     success(message: string) {
       toast.success(message);

@@ -7,13 +7,23 @@ import { type PropsWithChildren, useState } from "react";
 import { Toaster } from "sonner";
 import { useAppToast } from "@/hooks/use-app-toast";
 
-export function Providers(props: PropsWithChildren) {
+type ProvidersProps = PropsWithChildren<{ nonce?: string | undefined }>;
+
+export function Providers({ children, nonce }: ProvidersProps) {
   const appToast = useAppToast();
+  // TODO(review-high-expired-session-local-lock): Global AUTH_UNAUTHORIZED failures currently show
+  // a toast but leave the unlocked CryptoKey, decrypted Query data, and workspace state in memory.
+  // A revoked or expired server session must trigger the same atomic local-lock transition as
+  // logout before redirecting; otherwise private data remains visible indefinitely in the open tab.
   const [queryClient] = useState(
     () =>
       new QueryClient({
         mutationCache: new MutationCache({
-          onError: appToast.error,
+          onError(error, _variables, _onMutateResult, mutation) {
+            if (mutation.meta?.["suppressGlobalErrorToast"] !== true) {
+              appToast.error(error);
+            }
+          },
         }),
         queryCache: new QueryCache({
           onError(error, query) {
@@ -26,10 +36,10 @@ export function Providers(props: PropsWithChildren) {
   );
 
   return (
-    <ThemeProvider attribute="class">
+    <ThemeProvider attribute="class" {...(nonce ? { nonce } : {})}>
       <Theme accentColor="iris" grayColor="slate" radius="large" panelBackground="translucent">
         <QueryClientProvider client={queryClient}>
-          {props.children}
+          {children}
           <Toaster position="bottom-right" richColors theme="system" />
         </QueryClientProvider>
       </Theme>
