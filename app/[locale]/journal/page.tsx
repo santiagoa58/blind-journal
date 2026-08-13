@@ -1,5 +1,9 @@
 import { JournalWorkspace } from "@/components/journal/journal-workspace";
 
 export default function JournalPage() {
-  return <JournalWorkspace />;
+  return (
+    <main>
+      <JournalWorkspace />
+    </main>
+  );
 }

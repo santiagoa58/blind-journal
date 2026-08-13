@@ -8,11 +8,13 @@ export default function NotFoundPage() {
   const tCommon = useTranslations("common.actions");
 
   return (
-    <StatusPage title={t("title")} description={t("description")}>
+    <>
       <title>{t("title")}</title>
-      <Button asChild size="3">
-        <Link href="/">{tCommon("home")}</Link>
-      </Button>
-    </StatusPage>
+      <StatusPage title={t("title")} description={t("description")}>
+        <Button asChild size="3">
+          <Link href="/">{tCommon("home")}</Link>
+        </Button>
+      </StatusPage>
+    </>
   );
 }

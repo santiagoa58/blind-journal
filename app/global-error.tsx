@@ -21,11 +21,15 @@ export default function GlobalErrorPage({ reset }: GlobalErrorPageProps) {
     typeof requestedLocale === "string" && hasLocale(routing.locales, requestedLocale)
       ? requestedLocale
       : routing.defaultLocale;
+  const messages = getErrorPageMessages(locale);
 
   return (
     <html lang={locale}>
+      <head>
+        <title>{messages["error-page"].unexpected.title}</title>
+      </head>
       <body>
-        <NextIntlClientProvider locale={locale} messages={getErrorPageMessages(locale)}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
           <Theme accentColor="iris" grayColor="slate" radius="large">
             <UnexpectedErrorPage onRetry={reset} />
           </Theme>

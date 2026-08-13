@@ -1,4 +1,4 @@
-import { uint8ArrayToBase64 } from "@/crypto/base64";
+import { toBase64 } from "@/crypto/base64";
 import {
   AES_GCM_AUTH_TAG_BITS,
   AES_GCM_IV_BYTES,
@@ -29,7 +29,7 @@ export async function encrypt(
     rawData,
   );
   return {
-    ciphertextBase64: uint8ArrayToBase64(new Uint8Array(buffer)),
+    ciphertextBase64: toBase64(new Uint8Array(buffer)),
     iv,
   };
 }
@@ -43,7 +43,7 @@ export function generateEncryptionKey() {
 
 export async function wrapKey(key: CryptoKey, wrapperKey: CryptoKey): Promise<Base64> {
   const keyBuffer = await crypto.subtle.wrapKey("raw", key, wrapperKey, "AES-KW");
-  return uint8ArrayToBase64(new Uint8Array(keyBuffer));
+  return toBase64(new Uint8Array(keyBuffer));
 }
 
 export async function unwrapKey(

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { UnexpectedErrorPage } from "@/components/unexpected-error-page";
 
 type ErrorPageProps = {
@@ -7,5 +8,12 @@ type ErrorPageProps = {
 };
 
 export default function ErrorPage({ reset }: ErrorPageProps) {
-  return <UnexpectedErrorPage onRetry={reset} />;
+  const t = useTranslations("error-page.unexpected");
+
+  return (
+    <>
+      <title>{t("title")}</title>
+      <UnexpectedErrorPage onRetry={reset} />
+    </>
+  );
 }

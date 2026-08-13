@@ -2,6 +2,7 @@ import { routing } from "@/i18n/routing";
 import "@radix-ui/themes/styles.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -46,19 +47,20 @@ export async function generateMetadata({
 }
 
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
-  const { locale } = await params;
+  const [{ locale }, requestHeaders] = await Promise.all([params, headers()]);
 
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
   setRequestLocale(locale);
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={inter.variable}>
         <NextIntlClientProvider>
-          <Providers>{children}</Providers>
+          <Providers nonce={nonce}>{children}</Providers>
         </NextIntlClientProvider>
       </body>
     </html>

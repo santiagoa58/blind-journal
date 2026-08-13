@@ -8,7 +8,7 @@ import {
 } from "@/api/auth/auth.constants";
 import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
 import { AUTH_CLIENT_ERROR_CODES, type AuthClientErrorCode } from "@/api/auth/auth-client.error";
-import { AUTH_WORKER_ERROR_CODES, type AuthWorkerErrorCode } from "@/api/auth/auth-worker.error";
+import { AUTH_WORKER_ERROR_CODES, type AuthWorkerErrorCode } from "@/api/auth/worker/auth-worker.error";
 import { API_ERROR_CODES, type ApiErrorCode } from "@/api/error";
 import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/api/journal/journal.error";
 import {
@@ -16,7 +16,7 @@ import {
   type JournalClientErrorCode,
 } from "@/api/journal/journal-client.error";
 import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/api/request.error";
-import type { CodedError, ErrorMessageValues } from "@/client.error";
+import { type ErrorMessageValues, isCodedError } from "@/client.error";
 
 type KnownErrorCode =
   | ApiErrorCode
@@ -39,7 +39,6 @@ export function useErrorMessage() {
     [AUTH_ERROR_CODES.usernameRequired]: (values) => t("auth.errors.usernameRequired", values),
     [AUTH_ERROR_CODES.usernameInvalid]: (values) =>
       t("auth.usernameRequirements", { maxLength: MAX_USERNAME_LENGTH, ...values }),
-    [AUTH_ERROR_CODES.usernameTaken]: (values) => t("auth.errors.usernameTaken", values),
     [AUTH_ERROR_CODES.invalidCredentials]: (values) => t("auth.errors.invalidCredentials", values),
     [AUTH_ERROR_CODES.unauthorized]: (values) => t("auth.errors.unauthorized", values),
     [AUTH_CLIENT_ERROR_CODES.passwordRequired]: (values) =>
@@ -61,6 +60,8 @@ export function useErrorMessage() {
     [AUTH_WORKER_ERROR_CODES.unavailable]: (values) => t("auth.errors.unlockFailed", values),
 
     [JOURNAL_ERROR_CODES.invalidEntry]: (values) => t("journal.errors.invalidEntry", values),
+    [JOURNAL_ERROR_CODES.entryAlreadyExists]: (values) =>
+      t("journal.errors.entryAlreadyExists", values),
     [JOURNAL_ERROR_CODES.entryNotFound]: (values) => t("journal.errors.entryNotFound", values),
     [JOURNAL_CLIENT_ERROR_CODES.documentTooLarge]: (values) =>
       t("journal.errors.documentTooLarge", values),
@@ -78,8 +79,8 @@ export function useErrorMessage() {
       t("request.errors.unsupportedMediaType", values),
   } satisfies Record<KnownErrorCode, ErrorMessageFormatter>;
 
-  return (error: CodedError): string | undefined => {
-    if (!Object.hasOwn(formatters, error.code)) {
+  return (error: unknown): string | undefined => {
+    if (!isCodedError(error) || !Object.hasOwn(formatters, error.code)) {
       return undefined;
     }
 
