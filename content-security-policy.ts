@@ -1,0 +1,39 @@
+export function createContentSecurityPolicy(nonce: string) {
+  const isDevelopment = process.env.NODE_ENV === "development";
+  const directives = [
+    // Allows unspecified resources only from this website.
+    "default-src 'self'",
+    // Allows same-origin and nonce-approved scripts; enables unsafe evaluation in development.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ""}`,
+    // Blocks JavaScript inside HTML attributes, such as onclick.
+    "script-src-attr 'none'",
+    // Allows styles from this website and inline styles with the matching nonce.
+    `style-src 'self' 'nonce-${nonce}'`,
+    // Allows network connections only to this website.
+    "connect-src 'self'",
+    // Allows fonts only from this website.
+    "font-src 'self'",
+    // Allows images from this website, Blob URLs, and data URLs.
+    "img-src 'self' blob: data:",
+    // Allows the web app manifest only from this website.
+    "manifest-src 'self'",
+    // Blocks audio and video files from loading.
+    "media-src 'none'",
+    // Blocks plugins and embedded objects from loading.
+    "object-src 'none'",
+    // Allows web workers only from this website.
+    "worker-src 'self'",
+    // Blocks the page from changing its base URL.
+    "base-uri 'none'",
+    // Allows forms to submit only to this website.
+    "form-action 'self'",
+    // Blocks this page from embedding frames or iframes.
+    "frame-src 'none'",
+    // Blocks other websites from embedding this page in a frame.
+    "frame-ancestors 'none'",
+    // Upgrades HTTP resource URLs to HTTPS in production.
+    ...(isDevelopment ? [] : ["upgrade-insecure-requests"]),
+  ];
+
+  return directives.join("; ");
+}
