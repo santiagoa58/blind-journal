@@ -15,7 +15,7 @@ import type {
   JournalEntryContent,
 } from "@/api/journal/journal.type";
 import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
-import { base64ToUint8Array, uint8ArrayToBase64 } from "@/crypto/base64";
+import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
 import {
   decrypt,
   encrypt,
@@ -69,7 +69,7 @@ export async function encryptJournalEntry(
         version,
         wrappedKeyBase64,
         ciphertextBase64,
-        ivBase64: uint8ArrayToBase64(iv),
+        ivBase64: toBase64(iv),
       },
     };
   } catch (error) {

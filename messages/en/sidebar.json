@@ -1,11 +1,6 @@
 {
   "journalNavigationLabel": "Journal navigation",
-  "primaryLabel": "Primary",
   "newEntry": "New entry",
-  "sections": {
-    "journal": "Journal",
-    "favorites": "Favorites"
-  },
   "privacy": {
     "title": "Private by design.",
     "description": "Your journal is encrypted before it leaves this device."

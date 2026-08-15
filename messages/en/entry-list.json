@@ -2,12 +2,10 @@
   "sectionLabel": "Journal entries",
   "eyebrow": "PERSONAL JOURNAL",
   "title": "Your entries",
-  "searchPlaceholder": "Search your journal",
-  "all": "All",
-  "favorites": "Favorites",
+  "searchPlaceholder": "Search entry titles",
   "entriesCount": "{count, plural, one {# entry} other {# entries}}",
-  "favoriteLabel": "Favorite",
   "openEntryLabel": "Open {title}",
+  "loadMore": "Load more",
   "emptyTitle": "No matching entries",
-  "emptyDescription": "Try a title or a phrase you remember."
+  "emptyDescription": "Try a different entry title."
 }

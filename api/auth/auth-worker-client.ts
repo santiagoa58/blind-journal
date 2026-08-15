@@ -17,7 +17,9 @@ class AuthWorkerClient {
   private closed = false;
 
   constructor() {
-    this._worker = new Worker(new URL("./auth.worker.ts", import.meta.url), { type: "module" });
+    this._worker = new Worker(new URL("./worker/auth.worker.ts", import.meta.url), {
+      type: "module",
+    });
     this._worker.addEventListener("message", this.handleWorkerResponse);
     this._worker.addEventListener("error", this.handleWorkerError);
     this._worker.addEventListener("messageerror", this.handleMessageError);

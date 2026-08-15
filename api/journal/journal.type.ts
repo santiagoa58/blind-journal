@@ -1,5 +1,5 @@
 import type { JOURNAL_ENTRY_UNREADABLE_REASONS } from "@/api/journal/journal.constants";
-import type { Base64 } from "@/types/base64";
+import type { Base64, Base64Url } from "@/types/base64";
 
 export type EncryptedJournalData = {
   version: 1;
@@ -7,11 +7,6 @@ export type EncryptedJournalData = {
   ciphertextBase64: Base64;
   ivBase64: Base64;
 };
-
-// TODO(review-medium-replay-contract): The README says revisions are authenticated, but the
-// envelope has no revision and the AAD cannot detect a replay of an older valid envelope for the
-// same user and entry. Either define and implement rollback protection (including its client trust
-// anchor) or explicitly remove that guarantee from the protocol documentation.
 
 export type EncryptedJournalEntry = {
   id: string;
@@ -23,6 +18,11 @@ export type EncryptedJournalEntry = {
 export type ApiCreateJournalEntryRequest = Pick<EncryptedJournalEntry, "id" | "encryptedData">;
 export type ApiUpdateJournalEntryRequest = Pick<EncryptedJournalEntry, "encryptedData">;
 
+export type ApiJournalEntriesPage = {
+  records: unknown[];
+  nextCursor: Base64Url | null;
+};
+
 export type ApiDeleteJournalEntryResponse = { id: string };
 
 export type JournalEntry = {
@@ -31,11 +31,9 @@ export type JournalEntry = {
   content: string;
   createdAt: string;
   updatedAt: string;
-  favorite: boolean;
-  tags: string[];
 };
 
-export type JournalEntryContent = Pick<JournalEntry, "title" | "content" | "favorite" | "tags">;
+export type JournalEntryContent = Pick<JournalEntry, "title" | "content">;
 
 export type UnreadableJournalEntryReason =
   (typeof JOURNAL_ENTRY_UNREADABLE_REASONS)[keyof typeof JOURNAL_ENTRY_UNREADABLE_REASONS];
@@ -48,6 +46,10 @@ export type UnreadableJournalEntry = {
 export type JournalEntriesResult = {
   entries: JournalEntry[];
   unreadableEntries: UnreadableJournalEntry[];
+};
+
+export type JournalEntriesPage = JournalEntriesResult & {
+  nextCursor: Base64Url | null;
 };
 
 export type ClientCreateJournalEntryRequest = {

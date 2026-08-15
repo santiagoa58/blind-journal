@@ -1,11 +1,6 @@
 {
   "journalNavigationLabel": "Navegación del diario",
-  "primaryLabel": "Principal",
   "newEntry": "Nueva entrada",
-  "sections": {
-    "journal": "Diario",
-    "favorites": "Favoritos"
-  },
   "privacy": {
     "title": "Privado por diseño.",
     "description": "Tu diario se cifra antes de salir de este dispositivo."

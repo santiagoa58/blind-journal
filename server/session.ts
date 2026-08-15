@@ -4,8 +4,22 @@ import { randomBytes } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import { serverStore } from "@/server/store";
 
-const SESSION_COOKIE_NAME = "blind-journal-session";
+const DEVELOPMENT_SESSION_COOKIE_NAME = "blind-journal-session";
+const PRODUCTION_SESSION_COOKIE_NAME = "__Host-blind-journal-session";
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24;
+
+function getSessionCookiePolicy() {
+  const secure = process.env.NODE_ENV === "production";
+
+  return {
+    httpOnly: true,
+    name: secure ? PRODUCTION_SESSION_COOKIE_NAME : DEVELOPMENT_SESSION_COOKIE_NAME,
+    path: "/",
+    priority: "high",
+    sameSite: "lax",
+    secure,
+  } as const;
+}
 
 export function startSession(response: NextResponse, userId: string): void {
   const sessionId = randomBytes(32).toString("base64url");
@@ -18,16 +32,9 @@ export function startSession(response: NextResponse, userId: string): void {
     expiresAt: Date.now() + SESSION_LIFETIME_SECONDS * 1_000,
   });
   response.cookies.set({
-    // TODO(review-medium-session-cookie-prefix): Use a production `__Host-` cookie name so the
-    // browser enforces Secure, Path=/, and no Domain attribute against cookie shadowing.
-    name: SESSION_COOKIE_NAME,
+    ...getSessionCookiePolicy(),
     value: sessionId,
-    httpOnly: true,
     maxAge: SESSION_LIFETIME_SECONDS,
-    path: "/",
-    priority: "high",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
   });
 }
 
@@ -47,24 +54,20 @@ function getSessionUserIdFromSessionId(sessionId: string | undefined): string | 
 }
 
 export function getSessionUserId(request: NextRequest): string | null {
-  return getSessionUserIdFromSessionId(request.cookies.get(SESSION_COOKIE_NAME)?.value);
+  return getSessionUserIdFromSessionId(request.cookies.get(getSessionCookiePolicy().name)?.value);
 }
 
 export function endSession(request: NextRequest, response: NextResponse): void {
-  const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const policy = getSessionCookiePolicy();
+  const sessionId = request.cookies.get(policy.name)?.value;
 
   if (sessionId) {
     serverStore.sessions.delete(sessionId);
   }
 
   response.cookies.set({
-    name: SESSION_COOKIE_NAME,
+    ...policy,
     value: "",
-    httpOnly: true,
     maxAge: 0,
-    path: "/",
-    priority: "high",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
   });
 }

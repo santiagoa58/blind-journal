@@ -1,15 +1,17 @@
+import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
 import type { ApiUser } from "@/api/auth/user.type";
 import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
-import type { Base64 } from "@/types/base64";
+import type { Base64, Base64Url } from "@/types/base64";
 
 export type StoredUser = ApiUser & {
   authKeyHash: Base64;
+  keyScheduleVersion: AuthKeyScheduleVersion;
   salt: Base64;
 };
 
-export type PendingAccountSalt = {
-  expiresAt: number;
-  salt: Base64;
+export type JournalEntriesPageRecord = {
+  entries: EncryptedJournalEntry[];
+  nextCursor: Base64Url | null;
 };
 
 // TODO(review-high-persistence-contract): Redesign this boundary for asynchronous, atomic database
@@ -17,15 +19,17 @@ export type PendingAccountSalt = {
 // uniqueness and create the user/session/journal consistently; journal writes must be owner-scoped
 // and concurrency-safe instead of composing synchronous reads and writes in services.
 export interface ApplicationStore {
+  // Atomically enforces normalized-username uniqueness and initializes the user's journal.
+  createUser(user: StoredUser): boolean;
   deleteJournalEntry(userId: string, entryId: string): boolean;
-  deletePendingAccountSalt(username: string): void;
   findUserById(userId: string): StoredUser | undefined;
   findUserByUsername(username: string): StoredUser | undefined;
   getJournalEntries(userId: string): EncryptedJournalEntry[];
-  getPendingAccountSalt(username: string): PendingAccountSalt | undefined;
-  initializeJournal(userId: string): void;
+  getJournalEntriesPage(
+    userId: string,
+    cursor: Base64Url | undefined,
+    pageSize: number,
+  ): JournalEntriesPageRecord | undefined;
   insertJournalEntry(userId: string, entry: EncryptedJournalEntry): boolean;
-  insertUser(user: StoredUser): void;
   replaceJournalEntry(userId: string, entry: EncryptedJournalEntry): boolean;
-  setPendingAccountSalt(username: string, pendingSalt: PendingAccountSalt): void;
 }

@@ -2,12 +2,10 @@
   "sectionLabel": "Entradas del diario",
   "eyebrow": "DIARIO PERSONAL",
   "title": "Tus entradas",
-  "searchPlaceholder": "Buscar en tu diario",
-  "all": "Todas",
-  "favorites": "Favoritas",
+  "searchPlaceholder": "Buscar títulos de entradas",
   "entriesCount": "{count, plural, one {# entrada} other {# entradas}}",
-  "favoriteLabel": "Favorita",
   "openEntryLabel": "Abrir {title}",
+  "loadMore": "Cargar más",
   "emptyTitle": "No hay entradas coincidentes",
-  "emptyDescription": "Prueba con un título o una frase que recuerdes."
+  "emptyDescription": "Prueba con otro título de entrada."
 }

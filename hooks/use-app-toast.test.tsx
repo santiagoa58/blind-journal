@@ -64,14 +64,14 @@ describe("useAppToast", () => {
     appToast.error(error);
 
     expect(mocks.reportClientError).toHaveBeenCalledExactlyOnceWith(error);
-    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("unexpected");
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("unexpected", undefined);
   });
 
   it("does not report an error with a known message mapping", () => {
     appToast.error(Object.assign(new Error("known"), { code: "KNOWN_ERROR" }));
 
     expect(mocks.reportClientError).not.toHaveBeenCalled();
-    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("mapped message");
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("mapped message", undefined);
   });
 
   it("reports an unexpected API error even though it has a fallback message", () => {
@@ -83,7 +83,7 @@ describe("useAppToast", () => {
     appToast.error(error);
 
     expect(mocks.reportClientError).toHaveBeenCalledExactlyOnceWith(error);
-    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("unexpected message");
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("unexpected message", undefined);
   });
 
   it("passes retry options through and can dismiss the resulting toast", () => {

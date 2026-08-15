@@ -1,12 +1,17 @@
 {
   "encryptedOnDevice": "Encrypted on this device",
-  "removeFromFavorites": "Remove from favorites",
-  "addToFavorites": "Add to favorites",
   "entryActions": "Entry actions",
   "deleteEntry": "Delete entry",
   "deleteDialog": {
     "title": "Delete this entry?",
-    "description": "This permanently removes the entry from your journal. This action cannot be undone."
+    "description": "This permanently removes the entry from your journal. This action cannot be undone.",
+    "descriptionWithUnsavedChanges": "This permanently removes the entry and its unsaved changes. This action cannot be undone."
+  },
+  "unsavedDialog": {
+    "title": "Discard unsaved changes?",
+    "description": "Switching entries will permanently discard the changes you have not saved.",
+    "discard": "Discard changes",
+    "navigationDescription": "You have unsaved changes. Leave your journal and discard them?"
   },
   "entryTitleLabel": "Entry title",
   "entryTitlePlaceholder": "Untitled entry",

@@ -1,9 +1,9 @@
 import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import { MAX_JOURNAL_ENTRY_REQUEST_BYTES } from "@/api/journal/journal.constants";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import type { ApiErrorResponse } from "@/api/response.type";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
 import { getAuthErrorHttpStatus } from "@/server/auth.error";
 import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
 import { createEntry, listEntries } from "@/server/journal";
@@ -24,7 +24,15 @@ function unauthorizedResponse() {
 export function GET(request: NextRequest) {
   const userId = getSessionUserId(request);
 
-  return userId ? jsonResponse(listEntries(userId)) : unauthorizedResponse();
+  if (!userId) {
+    return unauthorizedResponse();
+  }
+
+  const cursor = request.nextUrl.searchParams.get("cursor");
+  const result = listEntries(userId, cursor === null ? {} : { cursor });
+  return result.success
+    ? jsonResponse(result.data)
+    : jsonResponse(result.error, getJournalErrorHttpStatus(result.error.code));
 }
 
 export async function POST(request: NextRequest) {
@@ -38,7 +46,7 @@ export async function POST(request: NextRequest) {
     return unauthorizedResponse();
   }
 
-  const body = await readJsonBody(request, MAX_JOURNAL_ENTRY_REQUEST_BYTES);
+  const body = await readJsonBody(request, MAX_FUNCTION_PAYLOAD_BYTES);
   if ("error" in body) {
     return requestErrorResponse(body.error);
   }

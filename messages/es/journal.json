@@ -24,6 +24,7 @@
     "encryptionFailed": "No se pudo cifrar esta entrada. Inténtalo de nuevo.",
     "decryptionFailed": "No se pudo descifrar esta entrada del diario.",
     "invalidEntry": "Agrega un título antes de guardar esta entrada.",
+    "entryAlreadyExists": "Esa entrada ya existe. Actualiza tu diario e inténtalo de nuevo.",
     "entryNotFound": "Esa entrada ya no está disponible."
   }
 }

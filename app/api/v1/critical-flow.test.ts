@@ -8,10 +8,9 @@ import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import type { ApiCreateJournalEntryRequest } from "@/api/journal/journal.type";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import { POST as createAccount } from "@/app/api/v1/auth/accounts/route";
-import { POST as createAccountSalt } from "@/app/api/v1/auth/accounts/salt/route";
 import { POST as login } from "@/app/api/v1/auth/login/route";
-import { POST as getLoginSalt } from "@/app/api/v1/auth/login/salt/route";
 import { POST as logout } from "@/app/api/v1/auth/logout/route";
+import { POST as getAuthSalt } from "@/app/api/v1/auth/salt/route";
 import { DELETE as deleteEntry, PATCH as updateEntry } from "@/app/api/v1/entries/[entryId]/route";
 import { POST as createEntry, GET as listEntries } from "@/app/api/v1/entries/route";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
@@ -79,10 +78,8 @@ function getSessionCookie(response: Response): string {
 }
 
 async function register(username: string, authKey = AUTH_KEY) {
-  const saltResponse = await createAccountSalt(
-    jsonRequest("/api/v1/auth/accounts/salt", { username }),
-  );
-  expect(saltResponse.status).toBe(201);
+  const saltResponse = await getAuthSalt(jsonRequest("/api/v1/auth/salt", { username }));
+  expect(saltResponse.status).toBe(200);
   const saltData = await saltResponse.json();
 
   const response = await createAccount(
@@ -122,14 +119,13 @@ function resetStore(): void {
 
 function createRejectingJournalStore(): ApplicationStore {
   return {
+    createUser: () => false,
     deleteJournalEntry: () => false,
     findUserById: () => undefined,
     findUserByUsername: () => undefined,
     getJournalEntries: () => [],
     getJournalEntriesPage: () => ({ entries: [], nextCursor: null }),
-    initializeJournal: () => undefined,
     insertJournalEntry: () => false,
-    insertUser: () => undefined,
     replaceJournalEntry: () => false,
   };
 }
@@ -148,8 +144,8 @@ describe("critical authentication routes", () => {
       },
     });
 
-    const unknownSalt = await getLoginSalt(
-      jsonRequest("/api/v1/auth/login/salt", { username: "unknown-user" }),
+    const unknownSalt = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "unknown-user" }),
     );
     const wrongCredentials = await login(
       jsonRequest("/api/v1/auth/login", {
@@ -169,8 +165,8 @@ describe("critical authentication routes", () => {
       code: AUTH_ERROR_CODES.invalidCredentials,
     });
 
-    const saltResponse = await getLoginSalt(
-      jsonRequest("/api/v1/auth/login/salt", { username: "JOURNAL.USER" }),
+    const saltResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "JOURNAL.USER" }),
     );
     const loginResponse = await login(
       jsonRequest("/api/v1/auth/login", {
@@ -186,14 +182,14 @@ describe("critical authentication routes", () => {
   });
 
   it("returns stable decoy metadata for unknown usernames without exposing account existence", async () => {
-    const firstUnknownResponse = await getLoginSalt(
-      jsonRequest("/api/v1/auth/login/salt", { username: "Unknown.User" }),
+    const firstUnknownResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "Unknown.User" }),
     );
-    const normalizedUnknownResponse = await getLoginSalt(
-      jsonRequest("/api/v1/auth/login/salt", { username: "unknown.user" }),
+    const normalizedUnknownResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "unknown.user" }),
     );
-    const differentUnknownResponse = await getLoginSalt(
-      jsonRequest("/api/v1/auth/login/salt", { username: "another-user" }),
+    const differentUnknownResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "another-user" }),
     );
 
     expect(firstUnknownResponse.status).toBe(200);
@@ -211,19 +207,19 @@ describe("critical authentication routes", () => {
       salt: expect.any(String),
     });
 
-    const registrationSaltResponse = await createAccountSalt(
-      jsonRequest("/api/v1/auth/accounts/salt", { username: "unknown.user" }),
+    const repeatedSaltResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "unknown.user" }),
     );
-    await expect(registrationSaltResponse.json()).resolves.toEqual(firstUnknown);
+    await expect(repeatedSaltResponse.json()).resolves.toEqual(firstUnknown);
   });
 
   it("keeps registration stateless and returns generic failures for existing usernames", async () => {
     await register("existing-user");
 
-    const saltResponse = await createAccountSalt(
-      jsonRequest("/api/v1/auth/accounts/salt", { username: "EXISTING-USER" }),
+    const saltResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "EXISTING-USER" }),
     );
-    expect(saltResponse.status).toBe(201);
+    expect(saltResponse.status).toBe(200);
     const saltData = await saltResponse.json();
 
     const duplicateResponse = await createAccount(
@@ -241,12 +237,33 @@ describe("critical authentication routes", () => {
     });
   });
 
+  it("creates only one account when duplicate registrations arrive concurrently", async () => {
+    const username = "concurrent-user";
+    const saltResponse = await getAuthSalt(jsonRequest("/api/v1/auth/salt", { username }));
+    const saltData = await saltResponse.json();
+    const registration = () =>
+      createAccount(
+        jsonRequest("/api/v1/auth/accounts", {
+          username,
+          authKey: AUTH_KEY,
+          keyScheduleVersion: saltData.keyScheduleVersion,
+          salt: saltData.salt,
+        }),
+      );
+
+    const responses = await Promise.all([registration(), registration()]);
+
+    expect(responses.map(({ status }) => status).toSorted()).toEqual([201, 401]);
+    expect(serverStore.users).toHaveLength(1);
+    expect(serverStore.entriesByUserId.size).toBe(1);
+  });
+
   it("stores the verified registration salt only when the account is completed", async () => {
-    const firstSaltResponse = await createAccountSalt(
-      jsonRequest("/api/v1/auth/accounts/salt", { username: "stateless-user" }),
+    const firstSaltResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "stateless-user" }),
     );
-    const secondSaltResponse = await createAccountSalt(
-      jsonRequest("/api/v1/auth/accounts/salt", { username: "stateless-user" }),
+    const secondSaltResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "stateless-user" }),
     );
     const firstSalt = await firstSaltResponse.json();
     const secondSalt = await secondSaltResponse.json();
@@ -269,8 +286,8 @@ describe("critical authentication routes", () => {
   });
 
   it("rejects substituted registration salts without creating a partial account", async () => {
-    const saltResponse = await createAccountSalt(
-      jsonRequest("/api/v1/auth/accounts/salt", { username: "tampered-salt-user" }),
+    const saltResponse = await getAuthSalt(
+      jsonRequest("/api/v1/auth/salt", { username: "tampered-salt-user" }),
     );
     const saltData = await saltResponse.json();
 
@@ -290,16 +307,16 @@ describe("critical authentication routes", () => {
     });
   });
 
-  it("rejects cross-origin and malformed registration requests at the route boundary", async () => {
-    const crossOriginResponse = await createAccountSalt(
+  it("rejects cross-origin and malformed salt requests at the route boundary", async () => {
+    const crossOriginResponse = await getAuthSalt(
       jsonRequest(
-        "/api/v1/auth/accounts/salt",
+        "/api/v1/auth/salt",
         { username: "journal-user" },
         { origin: "https://attacker.test" },
       ),
     );
-    const malformedResponse = await createAccountSalt(
-      routeRequest("/api/v1/auth/accounts/salt", {
+    const malformedResponse = await getAuthSalt(
+      routeRequest("/api/v1/auth/salt", {
         body: "{",
         contentType: "application/json",
         origin: ORIGIN,

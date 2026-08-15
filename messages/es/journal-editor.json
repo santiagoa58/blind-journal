@@ -1,12 +1,17 @@
 {
   "encryptedOnDevice": "Cifrada en este dispositivo",
-  "removeFromFavorites": "Quitar de favoritos",
-  "addToFavorites": "Agregar a favoritos",
   "entryActions": "Acciones de la entrada",
   "deleteEntry": "Eliminar entrada",
   "deleteDialog": {
     "title": "¿Eliminar esta entrada?",
-    "description": "Esto elimina permanentemente la entrada de tu diario. Esta acción no se puede deshacer."
+    "description": "Esto elimina permanentemente la entrada de tu diario. Esta acción no se puede deshacer.",
+    "descriptionWithUnsavedChanges": "Esto elimina permanentemente la entrada y sus cambios sin guardar. Esta acción no se puede deshacer."
+  },
+  "unsavedDialog": {
+    "title": "¿Descartar los cambios sin guardar?",
+    "description": "Cambiar de entrada descartará permanentemente los cambios que no hayas guardado.",
+    "discard": "Descartar cambios",
+    "navigationDescription": "Tienes cambios sin guardar. ¿Salir de tu diario y descartarlos?"
   },
   "entryTitleLabel": "Título de la entrada",
   "entryTitlePlaceholder": "Entrada sin título",

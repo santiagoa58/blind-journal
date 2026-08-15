@@ -1,24 +1,33 @@
 import type { ClientUser } from "@/api/auth/user.type";
 import { api } from "@/api/http";
-import { JOURNAL_ENTRY_UNREADABLE_REASONS } from "@/api/journal/journal.constants";
+import {
+  JOURNAL_ENTRY_UNREADABLE_REASONS,
+  MAX_CONCURRENT_JOURNAL_ENTRY_DECRYPTIONS,
+} from "@/api/journal/journal.constants";
 import { decryptJournalEntry, encryptJournalEntry } from "@/api/journal/journal.crypto";
 import {
   deleteJournalEntryResponseSchema,
-  encryptedJournalEntryRecordsSchema,
   encryptedJournalEntrySchema,
+  journalEntriesPageSchema,
 } from "@/api/journal/journal.schema";
 import type {
   ApiCreateJournalEntryRequest,
   ApiUpdateJournalEntryRequest,
   ClientCreateJournalEntryRequest,
   ClientUpdateJournalEntryRequest,
-  JournalEntriesResult,
+  JournalEntriesPage,
 } from "@/api/journal/journal.type";
 import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
+import type { Base64Url } from "@/types/base64";
 
-async function listEncryptedJournalEntries() {
-  const response = await api.get("entries", { cache: "no-store" }).json<unknown>();
-  return encryptedJournalEntryRecordsSchema.parse(response);
+async function listEncryptedJournalEntries(cursor: Base64Url | null) {
+  const response = await api
+    .get("entries", {
+      cache: "no-store",
+      ...(cursor ? { searchParams: { cursor } } : {}),
+    })
+    .json<unknown>();
+  return journalEntriesPageSchema.parse(response);
 }
 
 async function createEncryptedJournalEntry(input: ApiCreateJournalEntryRequest) {
@@ -38,14 +47,34 @@ export async function deleteJournalEntry(entryId: string) {
   return deleteJournalEntryResponseSchema.parse(response);
 }
 
-export async function listJournalEntries(user: ClientUser | null): Promise<JournalEntriesResult> {
+async function mapWithConcurrency<TInput, TOutput>(
+  inputs: readonly TInput[],
+  concurrency: number,
+  operation: (input: TInput) => Promise<TOutput>,
+): Promise<TOutput[]> {
+  const results: TOutput[] = [];
+
+  for (let index = 0; index < inputs.length; index += concurrency) {
+    const batch = inputs.slice(index, index + concurrency);
+    results.push(...(await Promise.all(batch.map(operation))));
+  }
+
+  return results;
+}
+
+export async function listJournalEntriesPage(
+  user: ClientUser | null,
+  cursor: Base64Url | null,
+): Promise<JournalEntriesPage> {
   if (!user) {
     throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
   }
 
-  const records = await listEncryptedJournalEntries();
-  const results = await Promise.all(
-    records.map(async (record) => {
+  const page = await listEncryptedJournalEntries(cursor);
+  const results = await mapWithConcurrency(
+    page.records,
+    MAX_CONCURRENT_JOURNAL_ENTRY_DECRYPTIONS,
+    async (record) => {
       const parsedEntry = encryptedJournalEntrySchema.safeParse(record);
       if (!parsedEntry.success) {
         return {
@@ -78,11 +107,12 @@ export async function listJournalEntries(user: ClientUser | null): Promise<Journ
           },
         };
       }
-    }),
+    },
   );
-  const journalEntries: JournalEntriesResult = {
+  const journalEntries: JournalEntriesPage = {
     entries: [],
     unreadableEntries: [],
+    nextCursor: page.nextCursor,
   };
 
   for (const result of results) {
@@ -105,11 +135,7 @@ export async function createJournalEntry(
   }
 
   const id = crypto.randomUUID();
-  const encryptedInput = await encryptJournalEntry(user.keyEncryptionKey, user.id, id, {
-    ...input,
-    favorite: false,
-    tags: [],
-  });
+  const encryptedInput = await encryptJournalEntry(user.keyEncryptionKey, user.id, id, input);
   const response = await createEncryptedJournalEntry(encryptedInput);
   return decryptJournalEntry(user.keyEncryptionKey, user.id, response);
 }

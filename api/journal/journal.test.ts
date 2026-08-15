@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientUser } from "@/api/auth/user.type";
-import { listJournalEntries } from "@/api/journal/journal";
+import { listJournalEntriesPage } from "@/api/journal/journal";
 import {
   JOURNAL_ENTRY_ENCRYPTION_VERSION,
   JOURNAL_ENTRY_UNREADABLE_REASONS,
 } from "@/api/journal/journal.constants";
 import { encryptJournalEntry } from "@/api/journal/journal.crypto";
 import type { EncryptedJournalEntry, JournalEntryContent } from "@/api/journal/journal.type";
-import { base64ToUint8Array, uint8ArrayToBase64 } from "@/crypto/base64";
+import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
 
 const apiMocks = vi.hoisted(() => ({
   get: vi.fn(),
@@ -23,15 +23,11 @@ vi.mock("@/api/http", () => ({
 const FIRST_CONTENT = {
   title: "First readable entry",
   content: "<p>First</p>",
-  favorite: false,
-  tags: [],
 } satisfies JournalEntryContent;
 
 const SECOND_CONTENT = {
   title: "Second readable entry",
   content: "<p>Second</p>",
-  favorite: true,
-  tags: ["readable"],
 } satisfies JournalEntryContent;
 
 async function createUser(): Promise<ClientUser> {
@@ -77,7 +73,7 @@ function corruptCiphertext(entry: EncryptedJournalEntry): EncryptedJournalEntry 
     ...entry,
     encryptedData: {
       ...entry.encryptedData,
-      ciphertextBase64: uint8ArrayToBase64(ciphertext),
+      ciphertextBase64: toBase64(ciphertext),
     },
   };
 }
@@ -101,15 +97,12 @@ describe("listJournalEntries", () => {
     };
     const malformedEntry = { id: "not-a-valid-entry" };
     const secondEntry = await createEncryptedEntry(user, SECOND_CONTENT);
-    apiMocks.json.mockResolvedValue([
-      firstEntry,
-      corruptEntry,
-      unsupportedEntry,
-      malformedEntry,
-      secondEntry,
-    ]);
+    apiMocks.json.mockResolvedValue({
+      records: [firstEntry, corruptEntry, unsupportedEntry, malformedEntry, secondEntry],
+      nextCursor: "bmV4dC1wYWdl",
+    });
 
-    const result = await listJournalEntries(user);
+    const result = await listJournalEntriesPage(user, null);
 
     expect(result.entries.map(({ title }) => title)).toEqual([
       FIRST_CONTENT.title,
@@ -129,12 +122,26 @@ describe("listJournalEntries", () => {
         record: malformedEntry,
       },
     ]);
+    expect(result.nextCursor).toBe("bmV4dC1wYWdl");
   });
 
   it("still rejects a response that is not an entry collection", async () => {
     const user = await createUser();
-    apiMocks.json.mockResolvedValue({ entries: [] });
+    apiMocks.json.mockResolvedValue({ records: [] });
 
-    await expect(listJournalEntries(user)).rejects.toMatchObject({ name: "ZodError" });
+    await expect(listJournalEntriesPage(user, null)).rejects.toMatchObject({ name: "ZodError" });
+  });
+
+  it("sends the returned cursor when requesting the next page", async () => {
+    const user = await createUser();
+    const cursor = "bmV4dC1wYWdl";
+    apiMocks.json.mockResolvedValue({ records: [], nextCursor: null });
+
+    await listJournalEntriesPage(user, cursor);
+
+    expect(apiMocks.get).toHaveBeenCalledWith("entries", {
+      cache: "no-store",
+      searchParams: { cursor },
+    });
   });
 });

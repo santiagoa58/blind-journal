@@ -24,6 +24,7 @@
     "encryptionFailed": "This entry could not be encrypted. Try again.",
     "decryptionFailed": "This journal entry could not be decrypted.",
     "invalidEntry": "Add a title before saving this entry.",
+    "entryAlreadyExists": "That entry already exists. Refresh your journal and try again.",
     "entryNotFound": "That entry is no longer available."
   }
 }

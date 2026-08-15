@@ -1,6 +1,6 @@
-import type { Base64 } from "@/types/base64";
+import type { Base64, Base64Url } from "@/types/base64";
 
-function uint8ArrayToBase64(data: Uint8Array): Base64 {
+function bytesToBase64(data: Uint8Array): Base64 {
   let binary = "";
 
   for (const byte of data) {
@@ -10,20 +10,25 @@ function uint8ArrayToBase64(data: Uint8Array): Base64 {
   return btoa(binary);
 }
 
-export function base64ToUint8Array(data: Base64): Uint8Array<ArrayBuffer> {
-  return Uint8Array.from(atob(data), (character) => character.charCodeAt(0));
+export function base64ToUint8Array(data: Base64 | Base64Url): Uint8Array<ArrayBuffer> {
+  const standardBase64 = data.replaceAll("-", "+").replaceAll("_", "/");
+  return Uint8Array.from(atob(standardBase64), (character) => character.charCodeAt(0));
 }
 
-export function toBase64(
-  data: string | Record<never, never> | Uint8Array,
-  toBase64url = false,
-): Base64 {
-  const type = toBase64url ? "base64" : "base64url";
-  if (typeof data === "string") {
-    return Buffer.from(data).toString(type);
+export function base64ToValue(data: Base64 | Base64Url): unknown {
+  const json = new TextDecoder("utf-8", { fatal: true }).decode(base64ToUint8Array(data));
+  return JSON.parse(json) as unknown;
+}
+
+export function toBase64(data: string | Uint8Array): Base64 {
+  return bytesToBase64(typeof data === "string" ? new TextEncoder().encode(data) : data);
+}
+
+export function valueToBase64Url(value: unknown): Base64Url {
+  const json = JSON.stringify(value);
+  if (json === undefined) {
+    throw new TypeError("Value is not JSON-serializable.");
   }
-  if (data instanceof Uint8Array) {
-    return uint8ArrayToBase64(data);
-  }
-  return Buffer.from(JSON.stringify(data)).toString(type);
+
+  return toBase64(json).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
 }

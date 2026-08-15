@@ -31,7 +31,6 @@ export function reportServerError({
   route,
   routeType,
 }: ServerErrorContext): void {
-  
   const event: Record<string, string | undefined> = {
     level: "error",
     event: "server.request.failed",
