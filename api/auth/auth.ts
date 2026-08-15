@@ -33,19 +33,9 @@ function assertValidPassword(password: string): void {
   );
 }
 
-export async function getLoginSalt(input: ApiSaltRequest) {
+export async function getAuthSalt(input: ApiSaltRequest) {
   const response = await api
-    .post("auth/login/salt", {
-      cache: "no-store",
-      json: input,
-    })
-    .json<unknown>();
-  return saltResponseSchema.parse(response);
-}
-
-export async function getCreateAccountSalt(input: ApiSaltRequest) {
-  const response = await api
-    .post("auth/accounts/salt", {
+    .post("auth/salt", {
       cache: "no-store",
       json: input,
     })
@@ -82,7 +72,7 @@ export async function login(input: ClientLoginRequest) {
   assertValidPassword(input.password);
 
   try {
-    const { keyScheduleVersion, salt } = await getLoginSalt({ username: input.username });
+    const { keyScheduleVersion, salt } = await getAuthSalt({ username: input.username });
     const userKeys = await getAuthWorkerClient().getUserKeys(
       input.password,
       salt,
@@ -108,7 +98,7 @@ export async function createAccount(input: ClientCreateAccountRequest) {
     throw new AuthClientError(AUTH_CLIENT_ERROR_CODES.passwordsMismatch);
   }
 
-  const { keyScheduleVersion, salt } = await getCreateAccountSalt({ username: input.username });
+  const { keyScheduleVersion, salt } = await getAuthSalt({ username: input.username });
 
   try {
     const userKeys = await getAuthWorkerClient().getUserKeys(

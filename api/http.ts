@@ -13,23 +13,10 @@ function getApiErrorCode(data: unknown) {
 }
 
 function setErrorCode(error: Error, code: string, requestId?: string): CodedError {
-  Object.defineProperties(error, {
-    code: {
-      configurable: true,
-      enumerable: true,
-      value: code,
-    },
-    ...(requestId === undefined
-      ? {}
-      : {
-          requestId: {
-            configurable: true,
-            enumerable: true,
-            value: requestId,
-          },
-        }),
+  return Object.assign(error, {
+    code,
+    ...(requestId === undefined ? {} : { requestId }),
   });
-  return error as CodedError;
 }
 
 export const api = ky.create({

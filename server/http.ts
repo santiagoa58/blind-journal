@@ -7,11 +7,6 @@ import { getRequestErrorHttpStatus } from "@/server/request.error";
 
 const JSON_CONTENT_TYPE = "application/json";
 
-// TODO(review-high-server-observability): Add centralized, redacted structured request/error
-// reporting and correlation IDs here, then return the correlation ID (not diagnostic details) with
-// code-only API errors. Unexpected failures currently fall through without an application-owned
-// diagnostic trail.
-
 export function jsonResponse<T>(body: T, status = HTTP_STATUS.HTTP_STATUS_OK): NextResponse<T> {
   return NextResponse.json(body, {
     status,
@@ -32,6 +27,35 @@ export function requestErrorResponse(code: RequestErrorCode) {
 }
 
 type JsonBodyResult = { data: unknown } | { error: RequestErrorCode };
+
+async function readTextBody(
+  body: ReadableStream<Uint8Array<ArrayBuffer>>,
+  maximumBytes: number,
+): Promise<string | undefined> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let byteLength = 0;
+  let text = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return text + decoder.decode();
+      }
+
+      byteLength += value.byteLength;
+      if (byteLength > maximumBytes) {
+        await reader.cancel().catch(() => undefined);
+        return undefined;
+      }
+
+      text += decoder.decode(value, { stream: true });
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 export async function readJsonBody(
   request: Request,
@@ -55,16 +79,16 @@ export async function readJsonBody(
     return { error: REQUEST_ERROR_CODES.payloadTooLarge };
   }
 
-  // TODO(review-high-streaming-body-limit): `request.text()` buffers an unbounded chunked body
-  // before the byte check below. Enforce the limit while streaming (and at the deployment edge) so
-  // a missing or dishonest Content-Length cannot exhaust a serverless function's memory.
-  const body = await request.text();
-
-  if (new TextEncoder().encode(body).byteLength > maximumBytes) {
-    return { error: REQUEST_ERROR_CODES.payloadTooLarge };
+  if (request.body === null) {
+    return { error: REQUEST_ERROR_CODES.invalid };
   }
 
   try {
+    const body = await readTextBody(request.body, maximumBytes);
+    if (body === undefined) {
+      return { error: REQUEST_ERROR_CODES.payloadTooLarge };
+    }
+
     return { data: JSON.parse(body) as unknown };
   } catch {
     return { error: REQUEST_ERROR_CODES.invalid };

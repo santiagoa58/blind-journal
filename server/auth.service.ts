@@ -64,7 +64,7 @@ export function createAuthService(store: ApplicationStore) {
       : { keyScheduleVersion: CURRENT_AUTH_KEY_SCHEDULE.version, salt: derivedSalt };
   }
 
-  function getLoginSalt(input: unknown): AuthServiceResult<ApiSaltResponse> {
+  function getAuthSalt(input: unknown): AuthServiceResult<ApiSaltResponse> {
     const result = saltRequestSchema.safeParse(input);
 
     if (!result.success) {
@@ -75,23 +75,6 @@ export function createAuthService(store: ApplicationStore) {
     return { success: true, data: getSaltMetadata(normalizedUsername) };
   }
 
-  // TODO(review-low-auth-salt-endpoint-duplication): Login and account creation now expose the same
-  // stateless salt metadata with the same validation and enumeration behavior, yet two service
-  // methods, routes, browser functions, and tests maintain that contract independently. Collapse
-  // them into one purpose-neutral auth-salt endpoint unless a real protocol distinction returns.
-  function createAccountSalt(input: unknown): AuthServiceResult<ApiSaltResponse> {
-    const result = saltRequestSchema.safeParse(input);
-
-    if (!result.success) {
-      return { success: false, error: { code: getUsernameErrorCode(input) } };
-    }
-
-    return {
-      success: true,
-      data: getSaltMetadata(normalizeUsername(result.data.username)),
-    };
-  }
-
   async function createAccount(input: unknown): Promise<AuthServiceResult<ApiAuthSession>> {
     const result = createAccountRequestSchema.safeParse(input);
     if (!result.success) {
@@ -99,14 +82,6 @@ export function createAuthService(store: ApplicationStore) {
     }
 
     const normalizedUsername = normalizeUsername(result.data.username);
-    // TODO(review-high-registration-atomicity): The existence check, user insert, and journal
-    // initialization must be one transactional operation backed by a unique normalized-username
-    // constraint. Concurrent requests can currently create duplicates or leave a partially
-    // initialized account.
-    if (store.findUserByUsername(normalizedUsername)) {
-      return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
-    }
-
     if (result.data.salt !== deriveAuthSalt(normalizedUsername)) {
       return { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
     }
@@ -122,9 +97,9 @@ export function createAuthService(store: ApplicationStore) {
       salt: result.data.salt,
     };
 
-    store.insertUser(user);
-    store.initializeJournal(user.id);
-    return { success: true, data: { user: toPublicUser(user) } };
+    return store.createUser(user)
+      ? { success: true, data: { user: toPublicUser(user) } }
+      : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
   }
 
   async function verifyCredentials(input: unknown): Promise<AuthServiceResult<ApiAuthSession>> {
@@ -147,5 +122,5 @@ export function createAuthService(store: ApplicationStore) {
       : { success: false, error: { code: AUTH_ERROR_CODES.invalidCredentials } };
   }
 
-  return { createAccount, createAccountSalt, getLoginSalt, verifyCredentials };
+  return { createAccount, getAuthSalt, verifyCredentials };
 }
