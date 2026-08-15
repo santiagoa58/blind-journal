@@ -24,10 +24,8 @@ export function CreateAccountCard() {
   const appToast = useAppToast();
   const logoutUnresolved = useLogoutUnresolved();
 
-  // TODO(review-high-auth-secret-retention): As in the login form, TanStack Mutation retains the
-  // password/confirmation variables and the derived key-encryption CryptoKey result. Keep these
-  // secrets out of MutationCache or guarantee immediate disposal and test that invariant.
   const createAccountMutation = useMutation({
+    gcTime: 0,
     mutationFn: createAccount,
   });
 
@@ -57,6 +55,9 @@ export function CreateAccountCard() {
       router.replace("/journal");
     } catch {
       // The shared MutationCache presents the localized error.
+    } finally {
+      // Credentials and the derived key must not remain in MutationCache after submission.
+      createAccountMutation.reset();
     }
   }
 

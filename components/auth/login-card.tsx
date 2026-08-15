@@ -18,12 +18,8 @@ export function LoginCard() {
   const router = useRouter();
   const appToast = useAppToast();
   const logoutUnresolved = useLogoutUnresolved();
-  // TODO(review-high-auth-secret-retention): This mutation stores the submitted password in
-  // Mutation.state.variables and the derived key-encryption CryptoKey in Mutation.state.data. A
-  // failed attempt remains while this form is mounted, and a successful attempt remains until
-  // garbage collection. Use an authentication submission path that does not cache secret inputs or
-  // outputs, or prove immediate disposal with a regression test.
   const loginMutation = useMutation({
+    gcTime: 0,
     mutationFn: login,
   });
 
@@ -57,6 +53,9 @@ export function LoginCard() {
       router.replace("/journal");
     } catch {
       // The shared MutationCache presents the localized error.
+    } finally {
+      // Credentials and the derived key must not remain in MutationCache after submission.
+      loginMutation.reset();
     }
   }
 

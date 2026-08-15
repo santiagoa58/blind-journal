@@ -1,16 +1,8 @@
 "use client";
 
-import {
-  ChevronDownIcon,
-  ExitIcon,
-  HeartIcon,
-  LockClosedIcon,
-  PlusIcon,
-  ReaderIcon,
-} from "@radix-ui/react-icons";
+import { ChevronDownIcon, ExitIcon, LockClosedIcon, PlusIcon } from "@radix-ui/react-icons";
 import {
   Avatar,
-  Badge,
   Button,
   Callout,
   DropdownMenu,
@@ -20,10 +12,8 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
 import { useLogout } from "@/hooks/use-logout";
-import { useJournalWorkspace } from "@/state/journal-workspace.state";
 import { useUser } from "@/state/user.state";
 import { useCreateJournalEntry } from "./use-create-journal-entry";
 
@@ -37,33 +27,19 @@ function getInitials(displayName: string) {
     .toUpperCase();
 }
 
-export function AppSidebar({ entries }: { entries: JournalEntry[] }) {
+export function AppSidebar() {
   const t = useTranslations("sidebar");
   const currentUser = useUser((state) => state.user);
-  const activeSection = useJournalWorkspace((state) => state.activeSection);
-  const selectSection = useJournalWorkspace((state) => state.selectSection);
-  const { createEntry, isPending: creatingEntry } = useCreateJournalEntry();
-  const { isPending: signingOut, signOut } = useLogout();
+  const {
+    createEntry,
+    isDisabled: createDisabled,
+    isPending: creatingEntry,
+  } = useCreateJournalEntry();
+  const { isDisabled: signOutDisabled, signOut } = useLogout();
 
   if (!currentUser) {
     return null;
   }
-
-  const favoriteCount = entries.filter(({ favorite }) => favorite).length;
-  const navigationItems = [
-    {
-      value: "journal" as const,
-      label: t("sections.journal"),
-      icon: ReaderIcon,
-      count: entries.length,
-    },
-    {
-      value: "favorites" as const,
-      label: t("sections.favorites"),
-      icon: HeartIcon,
-      count: favoriteCount,
-    },
-  ];
 
   return (
     <Flex
@@ -79,38 +55,10 @@ export function AppSidebar({ entries }: { entries: JournalEntry[] }) {
       <aside aria-label={t("journalNavigationLabel")}>
         <BrandMark />
 
-        <Button onClick={createEntry} size="3" loading={creatingEntry}>
+        <Button onClick={createEntry} size="3" loading={creatingEntry} disabled={createDisabled}>
           <PlusIcon aria-hidden width={17} height={17} />
           {t("newEntry")}
         </Button>
-
-        <Grid asChild gap="1">
-          <nav aria-label={t("primaryLabel")}>
-            {navigationItems.map(({ value, label, icon: Icon, count }) => {
-              const active = activeSection === value;
-
-              return (
-                <Button
-                  key={value}
-                  variant={active ? "soft" : "ghost"}
-                  color={active ? "iris" : "gray"}
-                  onClick={() => selectSection(value, entries)}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Grid columns="auto 1fr auto" align="center" gap="2" width="100%">
-                    <Icon aria-hidden width={16} height={16} />
-                    <Text align="left" weight={active ? "medium" : "regular"}>
-                      {label}
-                    </Text>
-                    <Badge color={active ? "iris" : "gray"} variant="soft">
-                      {count}
-                    </Badge>
-                  </Grid>
-                </Button>
-              );
-            })}
-          </nav>
-        </Grid>
 
         <Flex asChild direction="column" gap="4" mt="auto">
           <footer>
@@ -146,7 +94,7 @@ export function AppSidebar({ entries }: { entries: JournalEntry[] }) {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="top">
                 <DropdownMenu.Label>{currentUser.username}</DropdownMenu.Label>
-                <DropdownMenu.Item color="red" onSelect={signOut} disabled={signingOut}>
+                <DropdownMenu.Item color="red" onSelect={signOut} disabled={signOutDisabled}>
                   <ExitIcon aria-hidden width={15} height={15} />
                   {t("account.signOut")}
                 </DropdownMenu.Item>
