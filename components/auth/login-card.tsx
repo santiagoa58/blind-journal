@@ -6,7 +6,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { login } from "@/api/auth/auth";
 import type { ClientLoginRequest } from "@/api/auth/auth.type";
-import { useLogoutUnresolved } from "@/hooks/logout-mutation";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
@@ -17,7 +16,6 @@ export function LoginCard() {
   const t = useTranslations("auth");
   const router = useRouter();
   const appToast = useAppToast();
-  const logoutUnresolved = useLogoutUnresolved();
   const loginMutation = useMutation({
     gcTime: 0,
     mutationFn: login,
@@ -25,7 +23,7 @@ export function LoginCard() {
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loginMutation.isPending || logoutUnresolved) {
+    if (loginMutation.isPending) {
       return;
     }
 
@@ -59,8 +57,6 @@ export function LoginCard() {
     }
   }
 
-  const authenticationDisabled = loginMutation.isPending || logoutUnresolved;
-
   return (
     <Card size="4" variant="classic">
       <Text as="p" size="2" weight="medium" color="iris">
@@ -82,7 +78,7 @@ export function LoginCard() {
             placeholder={t("signIn.usernamePlaceholder")}
             defaultValue={loginMutation.variables?.username ?? ""}
             required
-            disabled={authenticationDisabled}
+            disabled={loginMutation.isPending}
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
@@ -94,7 +90,7 @@ export function LoginCard() {
             placeholder={t("signIn.passwordPlaceholder")}
             type="password"
             required
-            disabled={authenticationDisabled}
+            disabled={loginMutation.isPending}
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
@@ -102,7 +98,7 @@ export function LoginCard() {
             type="submit"
             size="3"
             loading={loginMutation.isPending}
-            disabled={authenticationDisabled}
+            disabled={loginMutation.isPending}
           >
             {t("signIn.submit")}
           </Button>

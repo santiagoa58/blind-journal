@@ -35,7 +35,7 @@ export function AppSidebar() {
     isDisabled: createDisabled,
     isPending: creatingEntry,
   } = useCreateJournalEntry();
-  const { isDisabled: signOutDisabled, signOut } = useLogout();
+  const { signOut } = useLogout();
 
   if (!currentUser) {
     return null;
@@ -94,7 +94,7 @@ export function AppSidebar() {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="top">
                 <DropdownMenu.Label>{currentUser.username}</DropdownMenu.Label>
-                <DropdownMenu.Item color="red" onSelect={signOut} disabled={signOutDisabled}>
+                <DropdownMenu.Item color="red" onSelect={signOut}>
                   <ExitIcon aria-hidden width={15} height={15} />
                   {t("account.signOut")}
                 </DropdownMenu.Item>

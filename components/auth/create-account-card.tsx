@@ -11,7 +11,6 @@ import {
   MIN_PASSWORD_LENGTH,
 } from "@/api/auth/auth.constants";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
-import { useLogoutUnresolved } from "@/hooks/logout-mutation";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
@@ -22,7 +21,6 @@ export function CreateAccountCard() {
   const t = useTranslations("auth");
   const router = useRouter();
   const appToast = useAppToast();
-  const logoutUnresolved = useLogoutUnresolved();
 
   const createAccountMutation = useMutation({
     gcTime: 0,
@@ -31,7 +29,7 @@ export function CreateAccountCard() {
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (createAccountMutation.isPending || logoutUnresolved) {
+    if (createAccountMutation.isPending) {
       return;
     }
 
@@ -61,8 +59,6 @@ export function CreateAccountCard() {
     }
   }
 
-  const authenticationDisabled = createAccountMutation.isPending || logoutUnresolved;
-
   return (
     <Card size="4" variant="classic">
       <Text as="p" size="2" weight="medium" color="iris">
@@ -84,7 +80,7 @@ export function CreateAccountCard() {
             name="username"
             placeholder={t("createAccount.usernamePlaceholder")}
             required
-            disabled={authenticationDisabled}
+            disabled={createAccountMutation.isPending}
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
@@ -99,7 +95,7 @@ export function CreateAccountCard() {
             placeholder={t("createAccount.passwordPlaceholder")}
             type="password"
             required
-            disabled={authenticationDisabled}
+            disabled={createAccountMutation.isPending}
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
@@ -110,7 +106,7 @@ export function CreateAccountCard() {
             placeholder={t("createAccount.confirmPasswordPlaceholder")}
             type="password"
             required
-            disabled={authenticationDisabled}
+            disabled={createAccountMutation.isPending}
           >
             <LockClosedIcon aria-hidden />
           </LabeledInput>
@@ -119,7 +115,7 @@ export function CreateAccountCard() {
             type="submit"
             size="3"
             loading={createAccountMutation.isPending}
-            disabled={authenticationDisabled}
+            disabled={createAccountMutation.isPending}
           >
             {t("createAccount.submit")}
           </Button>
