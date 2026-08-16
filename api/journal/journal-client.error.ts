@@ -4,7 +4,7 @@ export const JOURNAL_CLIENT_ERROR_CODES = {
   documentTooLarge: "JOURNAL_CLIENT_DOCUMENT_TOO_LARGE",
   encryptionFailed: "JOURNAL_CLIENT_ENCRYPTION_FAILED",
   decryptionFailed: "JOURNAL_CLIENT_DECRYPTION_FAILED",
-  encryptionKeyUnavailable: "JOURNAL_CLIENT_ENCRYPTION_KEY_UNAVAILABLE",
+  invalidContent: "JOURNAL_CLIENT_INVALID_CONTENT",
 } as const;
 
 export type JournalClientErrorCode =

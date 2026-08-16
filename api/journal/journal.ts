@@ -20,10 +20,11 @@ import type {
 import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
 import type { Base64Url } from "@/types/base64";
 
-async function listEncryptedJournalEntries(cursor: Base64Url | null) {
+async function listEncryptedJournalEntries(cursor: Base64Url | null, signal?: AbortSignal) {
   const response = await api
     .get("entries", {
       cache: "no-store",
+      ...(signal ? { signal } : {}),
       ...(cursor ? { searchParams: { cursor } } : {}),
     })
     .json<unknown>();
@@ -51,10 +52,12 @@ async function mapWithConcurrency<TInput, TOutput>(
   inputs: readonly TInput[],
   concurrency: number,
   operation: (input: TInput) => Promise<TOutput>,
+  signal?: AbortSignal,
 ): Promise<TOutput[]> {
   const results: TOutput[] = [];
 
   for (let index = 0; index < inputs.length; index += concurrency) {
+    signal?.throwIfAborted();
     const batch = inputs.slice(index, index + concurrency);
     results.push(...(await Promise.all(batch.map(operation))));
   }
@@ -63,18 +66,16 @@ async function mapWithConcurrency<TInput, TOutput>(
 }
 
 export async function listJournalEntriesPage(
-  user: ClientUser | null,
+  user: ClientUser,
   cursor: Base64Url | null,
+  signal?: AbortSignal,
 ): Promise<JournalEntriesPage> {
-  if (!user) {
-    throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
-  }
-
-  const page = await listEncryptedJournalEntries(cursor);
+  const page = await listEncryptedJournalEntries(cursor, signal);
   const results = await mapWithConcurrency(
     page.records,
     MAX_CONCURRENT_JOURNAL_ENTRY_DECRYPTIONS,
     async (record) => {
+      signal?.throwIfAborted();
       const parsedEntry = encryptedJournalEntrySchema.safeParse(record);
       if (!parsedEntry.success) {
         return {
@@ -108,6 +109,7 @@ export async function listJournalEntriesPage(
         };
       }
     },
+    signal,
   );
   const journalEntries: JournalEntriesPage = {
     entries: [],
@@ -126,28 +128,14 @@ export async function listJournalEntriesPage(
   return journalEntries;
 }
 
-export async function createJournalEntry(
-  input: ClientCreateJournalEntryRequest,
-  user: ClientUser | null,
-) {
-  if (!user) {
-    throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
-  }
-
+export async function createJournalEntry(input: ClientCreateJournalEntryRequest, user: ClientUser) {
   const id = crypto.randomUUID();
   const encryptedInput = await encryptJournalEntry(user.keyEncryptionKey, user.id, id, input);
   const response = await createEncryptedJournalEntry(encryptedInput);
   return decryptJournalEntry(user.keyEncryptionKey, user.id, response);
 }
 
-export async function updateJournalEntry(
-  input: ClientUpdateJournalEntryRequest,
-  user: ClientUser | null,
-) {
-  if (!user) {
-    throw new JournalClientError(JOURNAL_CLIENT_ERROR_CODES.encryptionKeyUnavailable);
-  }
-
+export async function updateJournalEntry(input: ClientUpdateJournalEntryRequest, user: ClientUser) {
   const { id, ...content } = input;
   const encryptedInput = await encryptJournalEntry(user.keyEncryptionKey, user.id, id, content);
   const response = await updateEncryptedJournalEntry(id, {

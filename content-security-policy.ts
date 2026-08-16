@@ -7,8 +7,9 @@ export function createContentSecurityPolicy(nonce: string) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ""}`,
     // Blocks JavaScript inside HTML attributes, such as onclick.
     "script-src-attr 'none'",
-    // Allows styles from this website and inline styles with the matching nonce.
-    `style-src 'self' 'nonce-${nonce}'`,
+    // Radix Themes and the notification layer use runtime style elements and attributes.
+    // Script execution remains nonce-restricted independently.
+    "style-src 'self' 'unsafe-inline'",
     // Allows network connections only to this website.
     "connect-src 'self'",
     // Allows fonts only from this website.

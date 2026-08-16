@@ -6,6 +6,8 @@
     "description": "Tu diario se cifra antes de salir de este dispositivo."
   },
   "account": {
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "signingOut": "Cerrando sesión…",
+    "signingOutDescription": "Finalizando tu sesión y bloqueando este diario."
   }
 }

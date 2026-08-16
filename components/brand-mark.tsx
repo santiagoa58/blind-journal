@@ -2,7 +2,7 @@ import { LockClosedIcon } from "@radix-ui/react-icons";
 import { Avatar, Flex, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 
-export function BrandMark({ compact = false }: { compact?: boolean }) {
+export function BrandMark() {
   const t = useTranslations("brand");
 
   return (
@@ -11,13 +11,12 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
         size="2"
         radius="large"
         src="/brand/blind-journal-mark.svg"
+        alt={`${t("name")} logo`}
         fallback={<LockClosedIcon aria-hidden width={16} height={16} strokeWidth={2.25} />}
       />
-      {compact ? null : (
-        <Text size="3" weight="bold">
-          {t("name")}
-        </Text>
-      )}
+      <Text size="3" weight="bold">
+        {t("name")}
+      </Text>
     </Flex>
   );
 }

@@ -56,6 +56,14 @@ describe("API transport retry policy", () => {
     });
     expect(fetch).toHaveBeenCalledOnce();
   });
+
+  it("preserves request cancellation without trying to decorate its read-only code", async () => {
+    const abortError = new DOMException("The operation was aborted.", "AbortError");
+    const fetch = vi.fn<typeof globalThis.fetch>().mockRejectedValue(abortError);
+
+    await expect(api.get("cancelled-request", { fetch })).rejects.toBe(abortError);
+    expect(fetch).toHaveBeenCalledOnce();
+  });
 });
 
 describe("API error observability", () => {

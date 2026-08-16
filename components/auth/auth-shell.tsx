@@ -1,5 +1,5 @@
 import { LockClosedIcon } from "@radix-ui/react-icons";
-import { Box, Callout, Card, Container, Grid, Heading, Section, Text } from "@radix-ui/themes";
+import { Box, Callout, Card, Container, Grid, Section, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
 import { BrandMark } from "@/components/brand-mark";
@@ -26,9 +26,9 @@ export function AuthShell({ children }: AuthShellProps) {
                   <Text as="p" size="2" weight="medium" color="iris">
                     {t("shell.eyebrow")}
                   </Text>
-                  <Heading as="h1" size={{ initial: "8", sm: "9" }} mt="3" wrap="balance">
+                  <Text as="p" size={{ initial: "8", sm: "9" }} weight="bold" mt="3" wrap="balance">
                     {t("shell.title")}
-                  </Heading>
+                  </Text>
                   <Text as="p" size="4" color="gray" mt="4" wrap="pretty">
                     {t("shell.description")}
                   </Text>

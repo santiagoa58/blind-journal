@@ -1,27 +1,25 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { logout } from "@/api/auth/auth";
-import { useAppToast } from "@/hooks/use-app-toast";
+import { useClientSessionActions } from "@/hooks/use-client-session";
 import { useRouter } from "@/i18n/navigation";
-import { useUser } from "@/state/user.state";
 
 export function useLogout() {
-  const queryClient = useQueryClient();
   const router = useRouter();
-  const appToast = useAppToast();
+  const { clearSession } = useClientSessionActions();
+  const logoutMutation = useMutation({
+    gcTime: 0,
+    mutationFn: logout,
+    onSuccess() {
+      clearSession();
+      router.replace("/");
+    },
+  });
 
-  async function signOut() {
-    useUser.getState().setUser(null);
-    queryClient.clear();
-    router.replace("/");
-
-    try {
-      await logout();
-    } catch (error) {
-      appToast.error(error);
-    }
+  function signOut() {
+    logoutMutation.mutate();
   }
 
-  return { signOut };
+  return { signOut, isPending: logoutMutation.isPending };
 }

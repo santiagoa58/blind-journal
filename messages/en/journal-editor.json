@@ -9,9 +9,8 @@
   },
   "unsavedDialog": {
     "title": "Discard unsaved changes?",
-    "description": "Switching entries will permanently discard the changes you have not saved.",
-    "discard": "Discard changes",
-    "navigationDescription": "You have unsaved changes. Leave your journal and discard them?"
+    "description": "Continuing will permanently discard the changes you have not saved.",
+    "discard": "Discard changes"
   },
   "entryTitleLabel": "Entry title",
   "entryTitlePlaceholder": "Untitled entry",

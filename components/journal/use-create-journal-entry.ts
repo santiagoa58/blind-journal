@@ -2,24 +2,20 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useCallback, useRef } from "react";
+import type { ClientUser } from "@/api/auth/user.type";
 import { createJournalEntry } from "@/api/journal/journal";
-import type { JournalEntriesResult } from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
-import { useJournalWorkspace } from "@/state/journal-workspace.state";
-import { useUser } from "@/state/user.state";
+import { isCurrentClientSession } from "@/hooks/use-client-session";
 import { journalEntriesQueryKey } from "./journal-query";
 
-export function useCreateJournalEntry() {
-  const user = useUser((state) => state.user);
+export function useCreateJournalEntry(user: ClientUser, onCreated: (entryId: string) => void) {
   const queryClient = useQueryClient();
   const t = useTranslations("journal");
   const appToast = useAppToast();
-  // TODO(review-medium-shared-create-state): This hook is mounted by the desktop sidebar, mobile
-  // header, and empty state; equal mutation keys do not share `isPending`. Coordinate through
-  // TanStack's mutation cache/state (and serialize if required) so multiple visible controls cannot
-  // start duplicate creates while presenting contradictory progress.
+  const submitting = useRef(false);
   const mutation = useMutation({
-    mutationKey: ["journal", "create"],
+    gcTime: 0,
     mutationFn: () =>
       createJournalEntry(
         {
@@ -28,31 +24,37 @@ export function useCreateJournalEntry() {
         },
         user,
       ),
+    onSuccess: async (entry) => {
+      if (!isCurrentClientSession(user)) {
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: journalEntriesQueryKey(user.id) });
+
+      if (!isCurrentClientSession(user)) {
+        return;
+      }
+
+      onCreated(entry.id);
+      appToast.success(t("success.created"));
+    },
+    onSettled: () => {
+      submitting.current = false;
+    },
   });
 
-  async function createEntry() {
-    try {
-      const entry = await mutation.mutateAsync();
-      if (user) {
-        queryClient.setQueryData<JournalEntriesResult>(
-          journalEntriesQueryKey(user.id),
-          (result) => ({
-            entries: [entry, ...(result?.entries ?? []).filter(({ id }) => id !== entry.id)],
-            unreadableEntries: result?.unreadableEntries ?? [],
-          }),
-        );
-      }
-      const workspace = useJournalWorkspace.getState();
-      workspace.selectSection("journal");
-      workspace.selectEntry(entry.id);
-      appToast.success(t("success.created"));
-    } catch {
-      // The shared MutationCache presents the localized error.
+  const createEntry = useCallback(() => {
+    if (submitting.current) {
+      return;
     }
-  }
 
-  return {
-    createEntry,
-    isPending: mutation.isPending,
-  };
+    submitting.current = true;
+    mutation.mutate(undefined, {
+      onSettled: () => {
+        mutation.reset();
+      },
+    });
+  }, [mutation]);
+
+  return { createEntry, isPending: mutation.isPending || submitting.current };
 }

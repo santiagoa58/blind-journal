@@ -8,15 +8,11 @@ import { useLogout } from "@/hooks/use-logout";
 import { useUser } from "@/state/user.state";
 
 const mocks = vi.hoisted(() => ({
-  error: vi.fn(),
   logout: vi.fn(),
   replace: vi.fn(),
 }));
 
 vi.mock("@/api/auth/auth", () => ({ logout: mocks.logout }));
-vi.mock("@/hooks/use-app-toast", () => ({
-  useAppToast: () => ({ error: mocks.error, success: vi.fn() }),
-}));
 vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }) }));
 
 let container: HTMLDivElement;
@@ -67,25 +63,42 @@ afterEach(async () => {
 });
 
 describe("useLogout", () => {
-  it("clears session-owned client state before remote revocation settles", async () => {
+  it("shows pending state until revocation succeeds, then clears the client session", async () => {
     const remoteRevocation = Promise.withResolvers<null>();
     mocks.logout.mockReturnValueOnce(remoteRevocation.promise);
-    let signOut: Promise<void> | undefined;
 
     await act(async () => {
-      signOut = control.signOut();
+      control.signOut();
       await vi.waitFor(() => expect(mocks.logout).toHaveBeenCalledOnce());
+    });
+
+    expect(control.isPending).toBe(true);
+    expect(useUser.getState().user).not.toBeNull();
+    expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeDefined();
+    expect(mocks.replace).not.toHaveBeenCalled();
+
+    remoteRevocation.resolve(null);
+    await act(async () => {
+      await vi.waitFor(() => expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/"));
     });
 
     expect(useUser.getState().user).toBeNull();
     expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeUndefined();
-    expect(queryClient.getMutationCache().findAll({ mutationKey: ["journal"] })).toHaveLength(0);
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
+    expect(queryClient.getMutationCache().findAll()).toHaveLength(0);
+  });
 
-    const error = new Error("remote logout failed");
-    remoteRevocation.reject(error);
-    await act(async () => signOut);
+  it("keeps the current session when revocation fails", async () => {
+    const remoteRevocation = Promise.withResolvers<null>();
+    mocks.logout.mockReturnValueOnce(remoteRevocation.promise);
 
-    expect(mocks.error).toHaveBeenCalledExactlyOnceWith(error);
+    await act(async () => control.signOut());
+    remoteRevocation.reject(new Error("remote logout failed"));
+    await act(async () => {
+      await vi.waitFor(() => expect(control.isPending).toBe(false));
+    });
+
+    expect(useUser.getState().user).not.toBeNull();
+    expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeDefined();
+    expect(mocks.replace).not.toHaveBeenCalled();
   });
 });

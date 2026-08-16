@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   JOURNAL_ENTRIES_PAGE_SIZE,
   JOURNAL_ENTRY_ENCRYPTION_VERSION,
+  MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
   MAX_JOURNAL_ENTRY_TITLE_CHARACTERS,
   MIN_JOURNAL_ENTRY_TITLE_CHARACTERS,
 } from "@/api/journal/journal.constants";
@@ -13,20 +14,51 @@ import type {
   EncryptedJournalEntry,
   JournalEntryContent,
 } from "@/api/journal/journal.type";
+import {
+  AES_GCM_AUTH_TAG_BYTES,
+  AES_GCM_IV_BYTES,
+  AES_KW_WRAPPED_KEY_BYTES,
+} from "@/crypto/encrypt.constants";
 import type { Base64Url } from "@/types/base64";
 
 export const journalEntryIdSchema = z.uuid();
 
-// TODO(review-medium-encrypted-envelope-bounds): Validate decoded envelope lengths at this shared
-// HTTP boundary: a 12-byte GCM IV, a 40-byte AES-KW-wrapped AES-256 key, and ciphertext bounded by
-// the 3 MiB plaintext contract plus the authentication tag. Base64 syntax alone lets a custom API
-// caller persist malformed or oversized envelopes because the plaintext check runs only in the
-// browser client.
+const BASE64_CHARACTERS_PER_BLOCK = 4;
+const DECODED_BYTES_PER_BASE64_BLOCK = 3;
+const TRAILING_BASE64_PADDING = /=+$/;
+
+// Avoid allocating decoded data when validation only needs its byte length.
+function decodedBase64ByteLength(value: string) {
+  const paddingCharacterCount = value.match(TRAILING_BASE64_PADDING)?.[0].length ?? 0;
+  const blockCount = value.length / BASE64_CHARACTERS_PER_BLOCK;
+  return blockCount * DECODED_BYTES_PER_BASE64_BLOCK - paddingCharacterCount;
+}
+
+const wrappedKeySchema = z
+  .base64()
+  .refine(
+    (value) => decodedBase64ByteLength(value) === AES_KW_WRAPPED_KEY_BYTES,
+    `Expected a ${AES_KW_WRAPPED_KEY_BYTES}-byte wrapped key`,
+  );
+const initializationVectorSchema = z
+  .base64()
+  .refine(
+    (value) => decodedBase64ByteLength(value) === AES_GCM_IV_BYTES,
+    `Expected a ${AES_GCM_IV_BYTES}-byte IV`,
+  );
+const ciphertextSchema = z.base64().refine((value) => {
+  const length = decodedBase64ByteLength(value);
+  return (
+    length >= AES_GCM_AUTH_TAG_BYTES &&
+    length <= MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES + AES_GCM_AUTH_TAG_BYTES
+  );
+}, "Ciphertext is outside the supported size range");
+
 export const encryptedJournalDataSchema = z.strictObject({
   version: z.literal(JOURNAL_ENTRY_ENCRYPTION_VERSION),
-  wrappedKeyBase64: z.base64(),
-  ciphertextBase64: z.base64(),
-  ivBase64: z.base64(),
+  wrappedKeyBase64: wrappedKeySchema,
+  ciphertextBase64: ciphertextSchema,
+  ivBase64: initializationVectorSchema,
 });
 
 export const encryptedJournalEntrySchema: z.ZodType<EncryptedJournalEntry> = z.strictObject({

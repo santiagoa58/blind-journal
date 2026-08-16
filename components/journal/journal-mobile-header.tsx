@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ExitIcon,
-  HamburgerMenuIcon,
-  HeartIcon,
-  PlusIcon,
-  ReaderIcon,
-} from "@radix-ui/react-icons";
+import { ExitIcon, HamburgerMenuIcon, PlusIcon } from "@radix-ui/react-icons";
 import {
   Box,
   Button,
@@ -15,37 +9,42 @@ import {
   Grid,
   IconButton,
   Select,
-  Separator,
   Text,
   Tooltip,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
-import { useLogout } from "@/hooks/use-logout";
-import { useJournalWorkspace } from "@/state/journal-workspace.state";
-import { useUser } from "@/state/user.state";
-import { useCreateJournalEntry } from "./use-create-journal-entry";
 
-export function JournalMobileHeader({ entries }: { entries: JournalEntry[] }) {
+type JournalMobileHeaderProps = {
+  creatingEntry: boolean;
+  currentUser: ClientUser;
+  entries: JournalEntry[];
+  hasMoreEntries: boolean;
+  loadingMoreEntries: boolean;
+  loadMoreEntries: () => void;
+  onCreateEntry: () => void;
+  onSelectEntry: (entryId: string) => void;
+  onSignOut: () => void;
+  selectedEntryId: string | undefined;
+};
+
+export function JournalMobileHeader({
+  creatingEntry,
+  currentUser,
+  entries,
+  hasMoreEntries,
+  loadingMoreEntries,
+  loadMoreEntries,
+  onCreateEntry,
+  onSelectEntry,
+  onSignOut,
+  selectedEntryId,
+}: JournalMobileHeaderProps) {
   const t = useTranslations("sidebar");
   const tEntries = useTranslations("entry-list");
-  const currentUser = useUser((state) => state.user);
-  const activeSection = useJournalWorkspace((state) => state.activeSection);
-  const selectedEntryId = useJournalWorkspace((state) => state.selectedEntryId);
-  const selectEntry = useJournalWorkspace((state) => state.selectEntry);
-  const selectSection = useJournalWorkspace((state) => state.selectSection);
-  const { createEntry, isPending: creatingEntry } = useCreateJournalEntry();
-  const { isPending: signingOut, signOut } = useLogout();
-
-  if (!currentUser) {
-    return null;
-  }
-
-  const sectionEntries =
-    activeSection === "favorites" ? entries.filter(({ favorite }) => favorite) : entries;
-  const selectedEntry =
-    sectionEntries.find(({ id }) => id === selectedEntryId) ?? sectionEntries[0];
+  const selectedEntry = entries.find(({ id }) => id === selectedEntryId) ?? entries[0];
 
   return (
     <Box asChild display={{ initial: "block", lg: "none" }}>
@@ -64,38 +63,9 @@ export function JournalMobileHeader({ entries }: { entries: JournalEntry[] }) {
                 {currentUser.displayName}
               </Dialog.Description>
 
-              <Grid asChild gap="2" mt="5">
-                <nav aria-label={t("primaryLabel")}>
-                  <Dialog.Close>
-                    <Button
-                      variant={activeSection === "journal" ? "soft" : "ghost"}
-                      onClick={() => selectSection("journal", entries)}
-                    >
-                      <Grid columns="auto 1fr" align="center" gap="2" width="100%">
-                        <ReaderIcon aria-hidden />
-                        <Text align="left">{t("sections.journal")}</Text>
-                      </Grid>
-                    </Button>
-                  </Dialog.Close>
-                  <Dialog.Close>
-                    <Button
-                      variant={activeSection === "favorites" ? "soft" : "ghost"}
-                      onClick={() => selectSection("favorites", entries)}
-                    >
-                      <Grid columns="auto 1fr" align="center" gap="2" width="100%">
-                        <HeartIcon aria-hidden />
-                        <Text align="left">{t("sections.favorites")}</Text>
-                      </Grid>
-                    </Button>
-                  </Dialog.Close>
-                </nav>
-              </Grid>
-
-              <Separator size="4" my="4" />
-
-              <Flex direction="column" gap="2">
+              <Flex direction="column" gap="2" mt="5">
                 <Dialog.Close>
-                  <Button variant="ghost" color="red" onClick={signOut} disabled={signingOut}>
+                  <Button variant="ghost" color="red" onClick={onSignOut}>
                     <Grid columns="auto 1fr" align="center" gap="2" width="100%">
                       <ExitIcon aria-hidden />
                       <Text align="left">{t("account.signOut")}</Text>
@@ -106,15 +76,22 @@ export function JournalMobileHeader({ entries }: { entries: JournalEntry[] }) {
             </Dialog.Content>
           </Dialog.Root>
 
-          <Select.Root value={selectedEntry?.id ?? ""} onValueChange={selectEntry}>
-            <Box asChild flexGrow="1" minWidth="0">
+          <Select.Root value={selectedEntry?.id ?? ""} onValueChange={onSelectEntry}>
+            <Box
+              asChild
+              flexGrow="1"
+              width="0"
+              minWidth="0"
+              maxWidth="100%"
+              display={{ initial: "block", md: "none" }}
+            >
               <Select.Trigger
                 aria-label={tEntries("sectionLabel")}
                 placeholder={tEntries("title")}
               />
             </Box>
             <Select.Content>
-              {sectionEntries.map((entry) => (
+              {entries.map((entry) => (
                 <Select.Item key={entry.id} value={entry.id}>
                   {entry.title}
                 </Select.Item>
@@ -122,13 +99,32 @@ export function JournalMobileHeader({ entries }: { entries: JournalEntry[] }) {
             </Select.Content>
           </Select.Root>
 
+          {hasMoreEntries ? (
+            <Box asChild display={{ initial: "block", md: "none" }}>
+              <Button
+                size="1"
+                variant="soft"
+                loading={loadingMoreEntries}
+                disabled={loadingMoreEntries}
+                onClick={loadMoreEntries}
+              >
+                {tEntries("loadMore")}
+              </Button>
+            </Box>
+          ) : null}
+
           <Tooltip content={t("newEntry")}>
-            <IconButton onClick={createEntry} aria-label={t("newEntry")} loading={creatingEntry}>
+            <IconButton
+              onClick={onCreateEntry}
+              aria-label={t("newEntry")}
+              loading={creatingEntry}
+              disabled={creatingEntry}
+              ml={{ initial: "0", md: "auto" }}
+            >
               <PlusIcon aria-hidden />
             </IconButton>
           </Tooltip>
         </Flex>
-        <Separator size="4" />
       </header>
     </Box>
   );

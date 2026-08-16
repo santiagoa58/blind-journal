@@ -5,23 +5,32 @@ import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/th
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { login } from "@/api/auth/auth";
+import {
+  MAX_PASSWORD_LENGTH,
+  MAX_USERNAME_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  USERNAME_PATTERN_SOURCE,
+} from "@/api/auth/auth.constants";
 import type { ClientLoginRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
-import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
-import { useUser } from "@/state/user.state";
+import { useClientSessionActions } from "@/hooks/use-client-session";
+import { Link as NavigationLink } from "@/i18n/navigation";
 import { LabeledInput } from "./labeled-input";
 
 export function LoginCard() {
-  const setUser = useUser((state) => state.setUser);
   const t = useTranslations("auth");
-  const router = useRouter();
   const appToast = useAppToast();
+  const { replaceSession } = useClientSessionActions();
   const loginMutation = useMutation({
     gcTime: 0,
     mutationFn: login,
+    onSuccess(user) {
+      replaceSession(user);
+      appToast.success(t("success.signedIn"));
+    },
   });
 
-  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loginMutation.isPending) {
       return;
@@ -40,21 +49,13 @@ export function LoginCard() {
       return;
     }
 
-    try {
-      const input: ClientLoginRequest = {
-        username,
-        password,
-      };
-      const response = await loginMutation.mutateAsync(input);
-      setUser({ ...response.user, keyEncryptionKey: response.keyEncryptionKey });
-      appToast.success(t("success.signedIn"));
-      router.replace("/journal");
-    } catch {
-      // The shared MutationCache presents the localized error.
-    } finally {
-      // Credentials and the derived key must not remain in MutationCache after submission.
-      loginMutation.reset();
-    }
+    const input: ClientLoginRequest = { username, password };
+    loginMutation.mutate(input, {
+      onSettled() {
+        // Credentials and the derived key must not remain in MutationCache after submission.
+        loginMutation.reset();
+      },
+    });
   }
 
   return (
@@ -62,7 +63,7 @@ export function LoginCard() {
       <Text as="p" size="2" weight="medium" color="iris">
         {t("signIn.eyebrow")}
       </Text>
-      <Heading as="h2" size="7" mt="2">
+      <Heading as="h1" size="7" mt="2">
         {t("signIn.title")}
       </Heading>
       <Text as="p" color="gray" size="2" mt="2">
@@ -77,6 +78,9 @@ export function LoginCard() {
             name="username"
             placeholder={t("signIn.usernamePlaceholder")}
             defaultValue={loginMutation.variables?.username ?? ""}
+            maxLength={MAX_USERNAME_LENGTH}
+            pattern={USERNAME_PATTERN_SOURCE}
+            autoFocus
             required
             disabled={loginMutation.isPending}
           >
@@ -84,10 +88,11 @@ export function LoginCard() {
           </LabeledInput>
           <LabeledInput
             autoComplete="current-password"
-            autoFocus
             label={t("signIn.passwordLabel")}
             name="password"
             placeholder={t("signIn.passwordPlaceholder")}
+            minLength={MIN_PASSWORD_LENGTH}
+            maxLength={MAX_PASSWORD_LENGTH}
             type="password"
             required
             disabled={loginMutation.isPending}
@@ -110,9 +115,17 @@ export function LoginCard() {
         <Text size="2" color="gray">
           {t("signIn.createAccountPrompt")}
         </Text>
-        <Button asChild variant="ghost" size="2">
-          <NavigationLink href="/sign-up">{t("signIn.createAccount")}</NavigationLink>
-        </Button>
+        {loginMutation.isPending ? (
+          <Button variant="ghost" size="2" disabled>
+            {t("signIn.createAccount")}
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" size="2">
+            <NavigationLink href="/sign-up" replace>
+              {t("signIn.createAccount")}
+            </NavigationLink>
+          </Button>
+        )}
       </Flex>
     </Card>
   );

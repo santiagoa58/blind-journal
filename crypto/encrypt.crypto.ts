@@ -21,7 +21,7 @@ export async function encrypt(
   const buffer = await crypto.subtle.encrypt(
     {
       name: "AES-GCM",
-      iv: iv,
+      iv,
       additionalData,
       tagLength: AES_GCM_AUTH_TAG_BITS,
     },

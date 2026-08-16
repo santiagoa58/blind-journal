@@ -38,15 +38,21 @@ async function deriveUserKeys(
   rawMasterKey: Uint8Array,
   keySchedule: ReturnType<typeof getAuthKeySchedule>,
 ): Promise<AuthUserKeys> {
-  const masterKey = await crypto.subtle.importKey(
-    "raw",
-    new Uint8Array(rawMasterKey),
-    { name: keySchedule.keyDerivation.algorithm },
-    false,
-    ["deriveBits", "deriveKey"],
-  );
+  const importableMasterKey = new Uint8Array(rawMasterKey);
+  let masterKey: CryptoKey;
+  try {
+    masterKey = await crypto.subtle.importKey(
+      "raw",
+      importableMasterKey,
+      { name: keySchedule.keyDerivation.algorithm },
+      false,
+      ["deriveBits", "deriveKey"],
+    );
+  } finally {
+    sodium.memzero(importableMasterKey);
+  }
 
-  const authKey = await crypto.subtle.deriveBits(
+  const authenticationKeyBits = await crypto.subtle.deriveBits(
     {
       name: keySchedule.keyDerivation.algorithm,
       hash: keySchedule.keyDerivation.hash,
@@ -56,6 +62,13 @@ async function deriveUserKeys(
     masterKey,
     keySchedule.authenticationKey.outputLengthBytes * BITS_PER_BYTE,
   );
+  const authenticationKeyBytes = new Uint8Array(authenticationKeyBits);
+  let authKey: Base64;
+  try {
+    authKey = toBase64(authenticationKeyBytes);
+  } finally {
+    sodium.memzero(authenticationKeyBytes);
+  }
 
   const keyEncryptionKey = await crypto.subtle.deriveKey(
     {
@@ -74,7 +87,7 @@ async function deriveUserKeys(
   );
 
   return {
-    authKey: toBase64(new Uint8Array(authKey)),
+    authKey,
     keyEncryptionKey,
   };
 }

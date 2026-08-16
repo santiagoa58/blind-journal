@@ -20,7 +20,6 @@
   },
   "errors": {
     "documentTooLarge": "Esta entrada es demasiado grande. Debe ocupar {maxSize, number} MiB o menos.",
-    "encryptionKeyUnavailable": "Vuelve a desbloquear tu diario para continuar.",
     "encryptionFailed": "No se pudo cifrar esta entrada. Inténtalo de nuevo.",
     "decryptionFailed": "No se pudo descifrar esta entrada del diario.",
     "invalidEntry": "Agrega un título antes de guardar esta entrada.",

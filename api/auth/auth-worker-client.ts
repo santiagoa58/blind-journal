@@ -1,130 +1,77 @@
+import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "@/api/auth/auth.type";
 import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
 import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/api/auth/worker/auth-worker.error";
 import type { Base64 } from "@/types/base64";
-import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "./auth.type";
-
-type PendingRequest = {
-  resolve: (keys: AuthUserKeys) => void;
-  reject: (reason: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
-};
 
 const AUTH_WORKER_REQUEST_TIMEOUT_MS = 60_000;
 
-class AuthWorkerClient {
-  private readonly _worker: Worker;
-  private readonly _pending = new Map<string, PendingRequest>();
-  private closed = false;
-
-  constructor() {
-    this._worker = new Worker(new URL("./worker/auth.worker.ts", import.meta.url), {
-      type: "module",
-    });
-    this._worker.addEventListener("message", this.handleWorkerResponse);
-    this._worker.addEventListener("error", this.handleWorkerError);
-    this._worker.addEventListener("messageerror", this.handleMessageError);
-  }
-
-  private takePendingRequest(requestId: string): PendingRequest | undefined {
-    const request = this._pending.get(requestId);
-    if (request) {
-      clearTimeout(request.timeout);
-      this._pending.delete(requestId);
-    }
-    return request;
-  }
-
-  private rejectAll = (err: Error) => {
-    this._pending.forEach((req) => {
-      clearTimeout(req.timeout);
-      req.reject(err);
-    });
-    this._pending.clear();
-  };
-
-  private closeWithError(error: AuthWorkerError): void {
-    if (this.closed) {
+export function deriveAuthUserKeysInWorker(
+  password: string,
+  salt: Base64,
+  keyScheduleVersion: AuthKeyScheduleVersion,
+): Promise<AuthUserKeys> {
+  return new Promise((resolve, reject) => {
+    let worker: Worker;
+    try {
+      worker = new Worker(new URL("./worker/auth.worker.ts", import.meta.url), { type: "module" });
+    } catch (error) {
+      reject(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: error }));
       return;
     }
 
-    this.closed = true;
-    this._worker.removeEventListener("message", this.handleWorkerResponse);
-    this._worker.removeEventListener("error", this.handleWorkerError);
-    this._worker.removeEventListener("messageerror", this.handleMessageError);
-    this._worker.terminate();
-    this.rejectAll(error);
-  }
-
-  private handleWorkerError = (event: ErrorEvent) => {
-    this.closeWithError(
-      new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, {
-        cause: event.error ?? event,
-      }),
+    let settled = false;
+    const timeout = setTimeout(
+      () => rejectUnavailable(new Error("Authentication worker timed out.")),
+      AUTH_WORKER_REQUEST_TIMEOUT_MS,
     );
-  };
 
-  private handleMessageError = (event: MessageEvent) => {
-    this.closeWithError(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: event }));
-  };
-
-  private handleWorkerResponse = (e: MessageEvent<AuthWorkerResponse>) => {
-    const request = this.takePendingRequest(e.data.requestId);
-    if (!request) {
-      return;
-    }
-    if ("error" in e.data) {
-      request.reject(
-        new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: e.data.error }),
-      );
-    } else {
-      request.resolve(e.data.data);
-    }
-  };
-
-  getUserKeys = (password: string, salt: Base64, keyScheduleVersion: AuthKeyScheduleVersion) => {
-    if (this.closed) {
-      return Promise.reject(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
-    }
-    return new Promise<AuthUserKeys>((resolve, reject) => {
-      const payload = {
-        password,
-        salt,
-        keyScheduleVersion,
-        requestId: crypto.randomUUID(),
-      } satisfies AuthWorkerPayload;
-
-      const timeout = setTimeout(() => {
-        this.closeWithError(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
-      }, AUTH_WORKER_REQUEST_TIMEOUT_MS);
-      this._pending.set(payload.requestId, { resolve, reject, timeout });
-
-      try {
-        this._worker.postMessage(payload);
-      } catch (error) {
-        this.closeWithError(
-          new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause: error }),
-        );
+    function settle(callback: VoidFunction) {
+      if (settled) {
+        return;
       }
-    });
-  };
 
-  terminate = () => {
-    this.closeWithError(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable));
-  };
-}
+      // cleanup
+      settled = true;
+      clearTimeout(timeout);
+      worker.removeEventListener("message", handleMessage);
+      worker.removeEventListener("error", handleWorkerError);
+      worker.removeEventListener("messageerror", handleMessageError);
+      worker.terminate();
 
-let authWorkerClientSingleton: AuthWorkerClient | null = null;
+      callback();
+    }
 
-export function getAuthWorkerClient(): AuthWorkerClient {
-  if (authWorkerClientSingleton == null) {
-    authWorkerClientSingleton = new AuthWorkerClient();
-  }
-  return authWorkerClientSingleton;
-}
+    function rejectUnavailable(cause: unknown) {
+      settle(() => reject(new AuthWorkerError(AUTH_WORKER_ERROR_CODES.unavailable, { cause })));
+    }
 
-export function terminateAuthWorkerClient(): void {
-  if (authWorkerClientSingleton != null) {
-    authWorkerClientSingleton.terminate();
-    authWorkerClientSingleton = null;
-  }
+    function handleMessage(event: MessageEvent<AuthWorkerResponse>) {
+      const response = event.data;
+      if ("error" in response) {
+        rejectUnavailable(response.error);
+        return;
+      }
+
+      settle(() => resolve(response.data));
+    }
+
+    function handleWorkerError(event: ErrorEvent) {
+      rejectUnavailable(event.error ?? event);
+    }
+
+    function handleMessageError(event: MessageEvent) {
+      rejectUnavailable(event);
+    }
+
+    worker.addEventListener("message", handleMessage);
+    worker.addEventListener("error", handleWorkerError);
+    worker.addEventListener("messageerror", handleMessageError);
+
+    const payload = { password, salt, keyScheduleVersion } satisfies AuthWorkerPayload;
+    try {
+      worker.postMessage(payload);
+    } catch (error) {
+      rejectUnavailable(error);
+    }
+  });
 }

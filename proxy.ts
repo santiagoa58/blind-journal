@@ -48,8 +48,11 @@ export const config = {
     // Every API path needs a server-generated ID for client-to-server error correlation.
     "/api/:path*",
     {
-      // This pattern selects application pages, excluding API, Next.js/Vercel internals, and files.
-      source: "/((?!api|_next|_vercel|.*\\..*).*)",
+      // Exclude only the static assets this application actually serves. A blanket file-extension
+      // exclusion also skips valid dynamic document URLs such as `/en/missing.page`, leaving those
+      // rendered responses without the document CSP.
+      source:
+        "/((?!api/|_next/|_vercel/|brand/|icons/|favicon\\.ico$|apple-icon\\.png$|icon\\.svg$|manifest\\.webmanifest$).*)",
       // Exclude requests that Next.js marks as router prefetches.
       missing: [
         // Prefetches do not render a document, so locale routing and CSP work are unnecessary.

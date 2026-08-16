@@ -4,8 +4,10 @@
   "title": "Your entries",
   "searchPlaceholder": "Search entry titles",
   "entriesCount": "{count, plural, one {# entry} other {# entries}}",
+  "loadedEntriesCount": "{count, plural, one {# loaded entry} other {# loaded entries}}",
   "openEntryLabel": "Open {title}",
   "loadMore": "Load more",
   "emptyTitle": "No matching entries",
-  "emptyDescription": "Try a different entry title."
+  "emptyDescription": "Try a different entry title.",
+  "emptyLoadedDescription": "No match in the loaded entries yet. Load more to keep searching."
 }

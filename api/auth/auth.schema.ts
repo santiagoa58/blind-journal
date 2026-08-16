@@ -3,6 +3,7 @@ import {
   MAX_PASSWORD_LENGTH,
   MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
+  USERNAME_PATTERN_SOURCE,
 } from "@/api/auth/auth.constants";
 import type {
   ApiAuthSession,
@@ -18,7 +19,7 @@ import { base64ToUint8Array } from "@/crypto/base64";
 // Authentication request bodies contain only a username and a fixed-size encoded key.
 export const MAX_AUTH_REQUEST_BODY_BYTES = 1_024;
 
-const USERNAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+const USERNAME_PATTERN = new RegExp(`^${USERNAME_PATTERN_SOURCE}$`);
 
 export const requiredUsernameSchema = z.string().trim().min(1);
 export const usernameSchema = requiredUsernameSchema

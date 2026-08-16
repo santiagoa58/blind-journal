@@ -1,11 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   JOURNAL_ENTRY_ENCRYPTION_VERSION,
   MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
   MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES,
 } from "@/api/journal/journal.constants";
 import { decryptJournalEntry, encryptJournalEntry } from "@/api/journal/journal.crypto";
-import { journalEntryContentSchema } from "@/api/journal/journal.schema";
+import {
+  encryptedJournalDataSchema,
+  encryptedJournalEntrySchema,
+  journalEntryContentSchema,
+} from "@/api/journal/journal.schema";
 import type {
   ApiCreateJournalEntryRequest,
   EncryptedJournalEntry,
@@ -14,6 +18,11 @@ import type {
 import { JOURNAL_CLIENT_ERROR_CODES } from "@/api/journal/journal-client.error";
 import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
 import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
+import {
+  AES_GCM_AUTH_TAG_BYTES,
+  AES_GCM_IV_BYTES,
+  AES_KW_WRAPPED_KEY_BYTES,
+} from "@/crypto/encrypt.constants";
 import { encrypt, generateEncryptionKey, wrapKey } from "@/crypto/encrypt.crypto";
 import type { Base64 } from "@/types/base64";
 
@@ -72,12 +81,12 @@ async function createAuthenticatedEntry(
   wrapperKey: CryptoKey,
   userId: string,
   entryId: string,
-  plaintext: string,
+  plaintext: string | Uint8Array<ArrayBuffer>,
 ): Promise<EncryptedJournalEntry> {
   const encryptionKey = await generateEncryptionKey();
   const { ciphertextBase64, iv } = await encrypt(
     encryptionKey,
-    encoder.encode(plaintext),
+    typeof plaintext === "string" ? encoder.encode(plaintext) : plaintext,
     getAdditionalData(userId, entryId),
   );
   const wrappedKeyBase64 = await wrapKey(encryptionKey, wrapperKey);
@@ -111,6 +120,25 @@ async function expectDecryptionFailure(result: Promise<unknown>) {
 }
 
 describe("journal encryption", () => {
+  it.each([
+    ["wrappedKeyBase64", AES_KW_WRAPPED_KEY_BYTES - 1],
+    ["wrappedKeyBase64", AES_KW_WRAPPED_KEY_BYTES + 1],
+    ["ivBase64", AES_GCM_IV_BYTES - 1],
+    ["ivBase64", AES_GCM_IV_BYTES + 1],
+    ["ciphertextBase64", AES_GCM_AUTH_TAG_BYTES - 1],
+    ["ciphertextBase64", MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES + AES_GCM_AUTH_TAG_BYTES + 1],
+  ] as const)("rejects a %s envelope with %i decoded bytes", (field, byteLength) => {
+    const envelope = {
+      version: JOURNAL_ENTRY_ENCRYPTION_VERSION,
+      wrappedKeyBase64: toBase64(new Uint8Array(AES_KW_WRAPPED_KEY_BYTES)),
+      ciphertextBase64: toBase64(new Uint8Array(AES_GCM_AUTH_TAG_BYTES)),
+      ivBase64: toBase64(new Uint8Array(AES_GCM_IV_BYTES)),
+      [field]: toBase64(new Uint8Array(byteLength)),
+    };
+
+    expect(encryptedJournalDataSchema.safeParse(envelope).success).toBe(false);
+  });
+
   it("rejects tag metadata outside the journal payload contract", () => {
     expect(
       journalEntryContentSchema.safeParse({
@@ -240,10 +268,7 @@ describe("journal encryption", () => {
       },
     } as unknown as EncryptedJournalEntry;
 
-    await expect(decryptJournalEntry(wrapperKey, userId, unsupportedEntry)).rejects.toMatchObject({
-      code: JOURNAL_CLIENT_ERROR_CODES.decryptionFailed,
-      cause: { name: "ZodError" },
-    });
+    expect(encryptedJournalEntrySchema.safeParse(unsupportedEntry).success).toBe(false);
   });
 
   it.each(["ivBase64", "ciphertextBase64", "wrappedKeyBase64"] as const)(
@@ -266,10 +291,7 @@ describe("journal encryption", () => {
         },
       } as EncryptedJournalEntry;
 
-      await expect(decryptJournalEntry(wrapperKey, userId, malformedEntry)).rejects.toMatchObject({
-        code: JOURNAL_CLIENT_ERROR_CODES.decryptionFailed,
-        cause: { name: "ZodError" },
-      });
+      expect(encryptedJournalEntrySchema.safeParse(malformedEntry).success).toBe(false);
     },
   );
 
@@ -281,6 +303,28 @@ describe("journal encryption", () => {
     await expect(decryptJournalEntry(wrapperKey, userId, entry)).rejects.toMatchObject({
       code: JOURNAL_CLIENT_ERROR_CODES.decryptionFailed,
       cause: { name: "SyntaxError" },
+    });
+  });
+
+  it("rejects authenticated JSON bytes that are not valid UTF-8", async () => {
+    const wrapperKey = await createWrapperKey();
+    const userId = crypto.randomUUID();
+    const prefix = encoder.encode('{"title":"Invalid bytes","content":"');
+    const suffix = encoder.encode('"}');
+    const plaintext = new Uint8Array(prefix.byteLength + 1 + suffix.byteLength);
+    plaintext.set(prefix);
+    plaintext[prefix.byteLength] = 0xff;
+    plaintext.set(suffix, prefix.byteLength + 1);
+    const entry = await createAuthenticatedEntry(
+      wrapperKey,
+      userId,
+      crypto.randomUUID(),
+      plaintext,
+    );
+
+    await expect(decryptJournalEntry(wrapperKey, userId, entry)).rejects.toMatchObject({
+      code: JOURNAL_CLIENT_ERROR_CODES.decryptionFailed,
+      cause: { name: "TypeError" },
     });
   });
 
@@ -356,11 +400,28 @@ describe("journal encryption", () => {
       content: "x".repeat(MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES - jsonOverhead + 1),
     };
 
+    const generateKey = vi.spyOn(crypto.subtle, "generateKey");
+    try {
+      await expect(
+        encryptJournalEntry(wrapperKey, crypto.randomUUID(), crypto.randomUUID(), content),
+      ).rejects.toMatchObject({
+        code: JOURNAL_CLIENT_ERROR_CODES.documentTooLarge,
+        values: { maxSize: MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES },
+      });
+      expect(generateKey).not.toHaveBeenCalled();
+    } finally {
+      generateKey.mockRestore();
+    }
+  });
+
+  it("reports invalid content separately from cryptographic failures", async () => {
+    const wrapperKey = await createWrapperKey();
+
     await expect(
-      encryptJournalEntry(wrapperKey, crypto.randomUUID(), crypto.randomUUID(), content),
-    ).rejects.toMatchObject({
-      code: JOURNAL_CLIENT_ERROR_CODES.documentTooLarge,
-      values: { maxSize: MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES },
-    });
+      encryptJournalEntry(wrapperKey, crypto.randomUUID(), crypto.randomUUID(), {
+        title: "x".repeat(121),
+        content: "",
+      }),
+    ).rejects.toMatchObject({ code: JOURNAL_CLIENT_ERROR_CODES.invalidContent });
   });
 });

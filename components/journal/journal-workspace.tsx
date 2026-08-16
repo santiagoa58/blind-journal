@@ -2,14 +2,18 @@
 
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Button, Callout, Container, Flex, Spinner, Text } from "@radix-ui/themes";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import type { ClientUser } from "@/api/auth/user.type";
-import { listJournalEntries } from "@/api/journal/journal";
+import { API_ERROR_CODES } from "@/api/error";
+import { listJournalEntriesPage } from "@/api/journal/journal";
+import type { JournalEntriesPage } from "@/api/journal/journal.type";
+import { isCodedError, reportClientError } from "@/client.error";
 import { useErrorMessage } from "@/i18n/error-message";
 import { useRouter } from "@/i18n/navigation";
 import { useUser } from "@/state/user.state";
+import type { Base64Url } from "@/types/base64";
 import { JournalContent } from "./journal-content";
 import { journalEntriesQueryKey } from "./journal-query";
 
@@ -25,66 +29,91 @@ export function JournalWorkspace() {
 
 function LockedJournalWorkspace() {
   const router = useRouter();
-  const tCommon = useTranslations("common");
 
   useEffect(() => {
     router.replace("/");
   }, [router]);
 
+  return <JournalWorkspaceLoading />;
+}
+
+function JournalWorkspaceLoading() {
+  const tCommon = useTranslations("common");
+
   return (
-    <Flex align="center" justify="center" gap="3" height="100dvh">
-      <Spinner aria-label={tCommon("labels.loading")} />
+    <Flex role="status" align="center" justify="center" gap="3" height="100dvh">
+      <Spinner aria-hidden />
       <Text color="gray">{tCommon("labels.loading")}</Text>
     </Flex>
   );
 }
 
-function UnlockedJournalWorkspace({ user }: { user: ClientUser }) {
+function JournalWorkspaceError({ error, retry }: { error: Error; retry: () => void }) {
   const tCommon = useTranslations("common");
   const tApiError = useTranslations("api.errors");
   const getErrorMessage = useErrorMessage();
-  const entriesQuery = useQuery({
+  const mappedErrorMessage = getErrorMessage(error);
+  const reportable =
+    mappedErrorMessage === undefined ||
+    (isCodedError(error) && error.code === API_ERROR_CODES.unexpected);
+
+  useEffect(() => {
+    if (reportable) {
+      reportClientError(error);
+    }
+  }, [error, reportable]);
+
+  return (
+    <Container size="1" py="9" px="4">
+      <Callout.Root color="red" role="alert">
+        <Callout.Icon>
+          <ExclamationTriangleIcon aria-hidden />
+        </Callout.Icon>
+        <Callout.Text>{mappedErrorMessage ?? tApiError("unexpected")}</Callout.Text>
+      </Callout.Root>
+      <Button mt="4" onClick={() => retry()}>
+        {tCommon("actions.retry")}
+      </Button>
+    </Container>
+  );
+}
+
+function UnlockedJournalWorkspace({ user }: { user: ClientUser }) {
+  const entriesQuery = useInfiniteQuery<
+    JournalEntriesPage,
+    Error,
+    { pages: JournalEntriesPage[]; pageParams: Array<Base64Url | null> },
+    ReturnType<typeof journalEntriesQueryKey>,
+    Base64Url | null
+  >({
     queryKey: journalEntriesQueryKey(user.id),
-    queryFn: () => listJournalEntries(user),
-    // TODO(review-medium-query-retry-policy): Retry only transport failures that may succeed
-    // unchanged. Authentication, validation, unsupported envelope versions, and AES-GCM
-    // decryption failures are deterministic and should immediately enter their recovery UI.
-    retry: 1,
+    queryFn: ({ pageParam, signal }) => listJournalEntriesPage(user, pageParam, signal),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    // Ky retries the GET transport once. Query-level retries would also repeat deterministic
+    // response validation and client-side decryption failures.
+    retry: false,
   });
 
   if (entriesQuery.isPending) {
-    return (
-      <Flex align="center" justify="center" gap="3" height="100dvh">
-        <Spinner aria-label={tCommon("labels.loading")} />
-        <Text color="gray">{tCommon("labels.loading")}</Text>
-      </Flex>
-    );
+    return <JournalWorkspaceLoading />;
   }
 
-  if (entriesQuery.isError) {
-    // TODO(review-medium-unmapped-query-code): Report an unmapped code before using the explicit
-    // generic fallback so a broken API/client contract remains diagnosable.
-    const errorMessage = getErrorMessage(entriesQuery.error) ?? tApiError("unexpected");
-
-    return (
-      <Container size="1" py="9" px="4">
-        <Callout.Root color="red" role="alert">
-          <Callout.Icon>
-            <ExclamationTriangleIcon />
-          </Callout.Icon>
-          <Callout.Text>{errorMessage}</Callout.Text>
-        </Callout.Root>
-        <Button mt="4" onClick={() => entriesQuery.refetch()}>
-          {tCommon("actions.retry")}
-        </Button>
-      </Container>
-    );
+  if (entriesQuery.isError && !entriesQuery.data) {
+    return <JournalWorkspaceError error={entriesQuery.error} retry={entriesQuery.refetch} />;
   }
+
+  const entries = entriesQuery.data.pages.flatMap((page) => page.entries);
+  const unreadableEntries = entriesQuery.data.pages.flatMap((page) => page.unreadableEntries);
 
   return (
     <JournalContent
-      entries={entriesQuery.data.entries}
-      unreadableEntries={entriesQuery.data.unreadableEntries}
+      entries={entries}
+      user={user}
+      unreadableEntries={unreadableEntries}
+      hasMoreEntries={entriesQuery.hasNextPage}
+      loadingMoreEntries={entriesQuery.isFetchingNextPage}
+      loadMoreEntries={() => entriesQuery.fetchNextPage({ cancelRefetch: false })}
     />
   );
 }

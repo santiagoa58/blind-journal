@@ -9,25 +9,29 @@ import {
   MAX_PASSWORD_LENGTH,
   MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
+  USERNAME_PATTERN_SOURCE,
 } from "@/api/auth/auth.constants";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
-import { Link as NavigationLink, useRouter } from "@/i18n/navigation";
-import { useUser } from "@/state/user.state";
+import { useClientSessionActions } from "@/hooks/use-client-session";
+import { Link as NavigationLink } from "@/i18n/navigation";
 import { LabeledInput } from "./labeled-input";
 
 export function CreateAccountCard() {
-  const setUser = useUser((state) => state.setUser);
   const t = useTranslations("auth");
-  const router = useRouter();
   const appToast = useAppToast();
+  const { replaceSession } = useClientSessionActions();
 
   const createAccountMutation = useMutation({
     gcTime: 0,
     mutationFn: createAccount,
+    onSuccess(user) {
+      replaceSession(user);
+      appToast.success(t("success.accountCreated"));
+    },
   });
 
-  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createAccountMutation.isPending) {
       return;
@@ -46,17 +50,12 @@ export function CreateAccountCard() {
       return;
     }
     const input: ClientCreateAccountRequest = { username, password, confirmPassword };
-    try {
-      const response = await createAccountMutation.mutateAsync(input);
-      setUser({ ...response.user, keyEncryptionKey: response.keyEncryptionKey });
-      appToast.success(t("success.accountCreated"));
-      router.replace("/journal");
-    } catch {
-      // The shared MutationCache presents the localized error.
-    } finally {
-      // Credentials and the derived key must not remain in MutationCache after submission.
-      createAccountMutation.reset();
-    }
+    createAccountMutation.mutate(input, {
+      onSettled() {
+        // Credentials and the derived key must not remain in MutationCache after submission.
+        createAccountMutation.reset();
+      },
+    });
   }
 
   return (
@@ -64,7 +63,7 @@ export function CreateAccountCard() {
       <Text as="p" size="2" weight="medium" color="iris">
         {t("createAccount.eyebrow")}
       </Text>
-      <Heading as="h2" size="7" mt="2">
+      <Heading as="h1" size="7" mt="2">
         {t("createAccount.title")}
       </Heading>
       <Text as="p" color="gray" size="2" mt="2">
@@ -79,6 +78,9 @@ export function CreateAccountCard() {
             label={t("createAccount.usernameLabel")}
             name="username"
             placeholder={t("createAccount.usernamePlaceholder")}
+            maxLength={MAX_USERNAME_LENGTH}
+            pattern={USERNAME_PATTERN_SOURCE}
+            autoFocus
             required
             disabled={createAccountMutation.isPending}
           >
@@ -94,6 +96,8 @@ export function CreateAccountCard() {
             name="password"
             placeholder={t("createAccount.passwordPlaceholder")}
             type="password"
+            minLength={MIN_PASSWORD_LENGTH}
+            maxLength={MAX_PASSWORD_LENGTH}
             required
             disabled={createAccountMutation.isPending}
           >
@@ -105,6 +109,8 @@ export function CreateAccountCard() {
             name="confirmPassword"
             placeholder={t("createAccount.confirmPasswordPlaceholder")}
             type="password"
+            minLength={MIN_PASSWORD_LENGTH}
+            maxLength={MAX_PASSWORD_LENGTH}
             required
             disabled={createAccountMutation.isPending}
           >
@@ -127,9 +133,17 @@ export function CreateAccountCard() {
         <Text size="2" color="gray">
           {t("createAccount.signInPrompt")}
         </Text>
-        <Button asChild variant="ghost" size="2">
-          <NavigationLink href="/">{t("createAccount.signIn")}</NavigationLink>
-        </Button>
+        {createAccountMutation.isPending ? (
+          <Button variant="ghost" size="2" disabled>
+            {t("createAccount.signIn")}
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" size="2">
+            <NavigationLink href="/" replace>
+              {t("createAccount.signIn")}
+            </NavigationLink>
+          </Button>
+        )}
       </Flex>
     </Card>
   );

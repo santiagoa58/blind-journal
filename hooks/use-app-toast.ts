@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { type ExternalToast, toast } from "sonner";
+import { useCallback, useMemo } from "react";
+import { toast } from "sonner";
 import { API_ERROR_CODES } from "@/api/error";
 import { isCodedError, reportClientError } from "@/client.error";
 import { useErrorMessage } from "@/i18n/error-message";
@@ -10,8 +11,8 @@ export function useAppToast() {
   const t = useTranslations("api.errors");
   const getErrorMessage = useErrorMessage();
 
-  return {
-    error(error: unknown, options?: ExternalToast) {
+  const error = useCallback(
+    (error: unknown) => {
       const message = getErrorMessage(error);
 
       if (
@@ -21,13 +22,11 @@ export function useAppToast() {
         reportClientError(error);
       }
 
-      return toast.error(message ?? t("unexpected"), options);
+      toast.error(message ?? t("unexpected"));
     },
-    dismiss(toastId: string | number) {
-      toast.dismiss(toastId);
-    },
-    success(message: string) {
-      toast.success(message);
-    },
-  };
+    [getErrorMessage, t],
+  );
+  const success = useCallback((message: string) => toast.success(message), []);
+
+  return useMemo(() => ({ error, success }), [error, success]);
 }

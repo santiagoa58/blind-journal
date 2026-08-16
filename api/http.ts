@@ -28,6 +28,13 @@ export const api = ky.create({
   hooks: {
     beforeError: [
       ({ error }) => {
+        // Cancellation belongs to the query lifecycle. DOMException.code is also read-only, so
+        // attempting to decorate an AbortError would replace an expected cancellation with a
+        // TypeError.
+        if (error.name === "AbortError") {
+          return error;
+        }
+
         if (isHTTPError(error)) {
           return setErrorCode(
             error,

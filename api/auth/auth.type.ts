@@ -39,7 +39,6 @@ export interface ClientCreateAccountRequest {
 }
 
 export interface AuthWorkerPayload {
-  requestId: string;
   password: string;
   salt: Base64;
   keyScheduleVersion: AuthKeyScheduleVersion;
@@ -52,10 +51,8 @@ export interface AuthUserKeys {
 
 export type AuthWorkerResponse =
   | {
-      requestId: string;
       data: AuthUserKeys;
     }
   | {
-      requestId: string;
       error: Error;
     };

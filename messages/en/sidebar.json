@@ -6,6 +6,8 @@
     "description": "Your journal is encrypted before it leaves this device."
   },
   "account": {
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "signingOutDescription": "Ending your session and locking this journal."
   }
 }

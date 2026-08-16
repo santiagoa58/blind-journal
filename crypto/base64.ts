@@ -1,10 +1,11 @@
 import type { Base64, Base64Url } from "@/types/base64";
 
 function bytesToBase64(data: Uint8Array): Base64 {
+  const chunkSize = 32_768;
   let binary = "";
 
-  for (const byte of data) {
-    binary += String.fromCharCode(byte);
+  for (let offset = 0; offset < data.length; offset += chunkSize) {
+    binary += String.fromCharCode(...data.subarray(offset, offset + chunkSize));
   }
 
   return btoa(binary);

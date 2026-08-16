@@ -12,10 +12,15 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
+import type { ClientUser } from "@/api/auth/user.type";
 import { BrandMark } from "@/components/brand-mark";
-import { useLogout } from "@/hooks/use-logout";
-import { useUser } from "@/state/user.state";
-import { useCreateJournalEntry } from "./use-create-journal-entry";
+
+type AppSidebarProps = {
+  creatingEntry: boolean;
+  currentUser: ClientUser;
+  onCreateEntry: () => void;
+  onSignOut: () => void;
+};
 
 function getInitials(displayName: string) {
   return displayName
@@ -27,19 +32,13 @@ function getInitials(displayName: string) {
     .toUpperCase();
 }
 
-export function AppSidebar() {
+export function AppSidebar({
+  creatingEntry,
+  currentUser,
+  onCreateEntry,
+  onSignOut,
+}: AppSidebarProps) {
   const t = useTranslations("sidebar");
-  const currentUser = useUser((state) => state.user);
-  const {
-    createEntry,
-    isDisabled: createDisabled,
-    isPending: creatingEntry,
-  } = useCreateJournalEntry();
-  const { signOut } = useLogout();
-
-  if (!currentUser) {
-    return null;
-  }
 
   return (
     <Flex
@@ -55,7 +54,7 @@ export function AppSidebar() {
       <aside aria-label={t("journalNavigationLabel")}>
         <BrandMark />
 
-        <Button onClick={createEntry} size="3" loading={creatingEntry} disabled={createDisabled}>
+        <Button onClick={onCreateEntry} size="3" loading={creatingEntry} disabled={creatingEntry}>
           <PlusIcon aria-hidden width={17} height={17} />
           {t("newEntry")}
         </Button>
@@ -83,7 +82,7 @@ export function AppSidebar() {
                     <Grid columns="auto minmax(0, 1fr) auto" align="center" gap="2" width="100%">
                       <Avatar
                         size="1"
-                        fallback={getInitials(currentUser.displayName)}
+                        fallback={<span aria-hidden>{getInitials(currentUser.displayName)}</span>}
                         color="iris"
                       />
                       <Text truncate>{currentUser.displayName}</Text>
@@ -94,7 +93,7 @@ export function AppSidebar() {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content align="start" side="top">
                 <DropdownMenu.Label>{currentUser.username}</DropdownMenu.Label>
-                <DropdownMenu.Item color="red" onSelect={signOut}>
+                <DropdownMenu.Item color="red" onSelect={onSignOut}>
                   <ExitIcon aria-hidden width={15} height={15} />
                   {t("account.signOut")}
                 </DropdownMenu.Item>

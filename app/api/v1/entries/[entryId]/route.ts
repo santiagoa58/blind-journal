@@ -1,31 +1,21 @@
 import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { journalEntryIdSchema } from "@/api/journal/journal.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import type { ApiErrorResponse } from "@/api/response.type";
 import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
-import { getAuthErrorHttpStatus } from "@/server/auth.error";
 import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
 import { deleteEntry, updateEntry } from "@/server/journal";
 import { getJournalErrorHttpStatus } from "@/server/journal.error";
 import { getSessionUserId } from "@/server/session";
+import { unauthorizedResponse } from "../../api-response";
 
 export const runtime = "nodejs";
 
 type RouteContext = {
   params: Promise<{ entryId: string }>;
 };
-
-function unauthorizedResponse() {
-  return jsonResponse(
-    { code: AUTH_ERROR_CODES.unauthorized } satisfies ApiErrorResponse<
-      (typeof AUTH_ERROR_CODES)["unauthorized"]
-    >,
-    getAuthErrorHttpStatus(AUTH_ERROR_CODES.unauthorized),
-  );
-}
 
 function entryNotFoundResponse() {
   return jsonResponse(

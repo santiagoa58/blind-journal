@@ -1,54 +1,187 @@
 "use client";
 
-import { Box, Flex, Separator } from "@radix-ui/themes";
+import { Box, Dialog, Flex, Heading, Separator, Spinner, VisuallyHidden } from "@radix-ui/themes";
+import { useTranslations } from "next-intl";
+import { useCallback, useState } from "react";
+import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry, UnreadableJournalEntry } from "@/api/journal/journal.type";
-import { useJournalWorkspace } from "@/state/journal-workspace.state";
+import { useLogout } from "@/hooks/use-logout";
 import { AppSidebar } from "./app-sidebar";
 import { EntryList } from "./entry-list";
+import { JournalDraftGuard } from "./journal-draft-guard";
 import { JournalEditor } from "./journal-editor";
 import { JournalEmptyCard } from "./journal-empty-card";
 import { JournalMobileHeader } from "./journal-mobile-header";
 import { UnreadableEntriesNotice } from "./unreadable-entries-notice";
+import { useCreateJournalEntry } from "./use-create-journal-entry";
 
 type JournalContentProps = {
   entries: JournalEntry[];
+  hasMoreEntries: boolean;
+  loadingMoreEntries: boolean;
+  loadMoreEntries: () => void;
   unreadableEntries: UnreadableJournalEntry[];
+  user: ClientUser;
 };
 
-export function JournalContent({ entries, unreadableEntries }: JournalContentProps) {
-  const activeSection = useJournalWorkspace((state) => state.activeSection);
-  const selectedEntryId = useJournalWorkspace((state) => state.selectedEntryId);
-  const sectionEntries =
-    activeSection === "favorites" ? entries.filter(({ favorite }) => favorite) : entries;
-  const selectedEntry =
-    sectionEntries.find(({ id }) => id === selectedEntryId) ?? sectionEntries[0];
+type PendingIntent = { type: "create" } | { type: "logout" } | { type: "select"; entryId: string };
 
-  // TODO(review-medium-main-landmark): Give the journal route one stable `main` landmark whether an
-  // entry is selected or the empty state is shown, and make the editor a section/article within it.
-  // The current landmark appears only because JournalEditor renders `<main>`.
+function preventDismiss(event: Event) {
+  event.preventDefault();
+}
+
+function LogoutProgressDialog({ open }: { open: boolean }) {
+  const t = useTranslations("sidebar.account");
+
   return (
-    <Flex direction="column" height="100dvh" overflow="hidden">
-      <JournalMobileHeader entries={entries} />
-      <UnreadableEntriesNotice entries={unreadableEntries} />
+    <Dialog.Root open={open}>
+      <Dialog.Content
+        maxWidth="360px"
+        onEscapeKeyDown={preventDismiss}
+        onPointerDownOutside={preventDismiss}
+      >
+        <Flex align="center" gap="3">
+          <Spinner size="3" aria-hidden />
+          <Box>
+            <Dialog.Title mb="1">{t("signingOut")}</Dialog.Title>
+            <Dialog.Description size="2">{t("signingOutDescription")}</Dialog.Description>
+          </Box>
+        </Flex>
+      </Dialog.Content>
+    </Dialog.Root>
+  );
+}
 
-      <Flex flexGrow="1" minHeight="0" overflow="hidden">
-        <AppSidebar entries={entries} />
-        <Box asChild display={{ initial: "none", lg: "block" }}>
-          <Separator orientation="vertical" size="4" />
-        </Box>
-        <EntryList entries={entries} />
-        <Box asChild display={{ initial: "none", md: "block" }}>
-          <Separator orientation="vertical" size="4" />
-        </Box>
+export function JournalContent({
+  entries,
+  hasMoreEntries,
+  loadingMoreEntries,
+  loadMoreEntries,
+  unreadableEntries,
+  user,
+}: JournalContentProps) {
+  const tEntries = useTranslations("entry-list");
+  const [selectedEntryId, setSelectedEntryId] = useState<string>();
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [editorVersion, setEditorVersion] = useState(0);
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent | null>(null);
+  const { signOut, isPending: loggingOut } = useLogout();
+  const handleCreated = useCallback((entryId: string) => {
+    setDraftDirty(false);
+    setSelectedEntryId(entryId);
+  }, []);
+  const { createEntry, isPending: creatingEntry } = useCreateJournalEntry(user, handleCreated);
+  const selectedEntry = entries.find(({ id }) => id === selectedEntryId) ?? entries.at(0);
+  const effectiveSelectedEntryId = selectedEntry?.id;
 
-        {selectedEntry ? (
-          <JournalEditor key={selectedEntry.id} entry={selectedEntry} />
-        ) : (
-          <Flex align="center" justify="center" flexGrow="1" p="5">
-            <JournalEmptyCard />
-          </Flex>
-        )}
+  const executeIntent = useCallback(
+    (intent: PendingIntent) => {
+      if (intent.type === "select") {
+        setSelectedEntryId(intent.entryId);
+      } else if (intent.type === "create") {
+        createEntry();
+      } else {
+        signOut();
+      }
+    },
+    [createEntry, signOut],
+  );
+
+  function requestIntent(intent: PendingIntent) {
+    if (intent.type === "select" && intent.entryId === effectiveSelectedEntryId) {
+      return;
+    }
+
+    if (draftDirty) {
+      setPendingIntent(intent);
+    } else {
+      executeIntent(intent);
+    }
+  }
+
+  const requestCreate = () => requestIntent({ type: "create" });
+  const requestSignOut = () => requestIntent({ type: "logout" });
+  const requestSelection = (entryId: string) => requestIntent({ type: "select", entryId });
+
+  function discardDraftAndContinue() {
+    const intent = pendingIntent;
+    setPendingIntent(null);
+    setDraftDirty(false);
+    setEditorVersion((version) => version + 1);
+    if (intent) {
+      executeIntent(intent);
+    }
+  }
+
+  return (
+    <>
+      <Flex direction="column" height="100dvh" overflow="hidden">
+        <VisuallyHidden asChild>
+          <Heading as="h1">{tEntries("title")}</Heading>
+        </VisuallyHidden>
+        <JournalDraftGuard
+          dirty={draftDirty}
+          open={pendingIntent !== null}
+          onCancel={() => setPendingIntent(null)}
+          onDiscard={discardDraftAndContinue}
+        />
+        <JournalMobileHeader
+          creatingEntry={creatingEntry}
+          currentUser={user}
+          entries={entries}
+          hasMoreEntries={hasMoreEntries}
+          loadingMoreEntries={loadingMoreEntries}
+          loadMoreEntries={loadMoreEntries}
+          onCreateEntry={requestCreate}
+          onSelectEntry={requestSelection}
+          onSignOut={requestSignOut}
+          selectedEntryId={effectiveSelectedEntryId}
+        />
+        <UnreadableEntriesNotice entries={unreadableEntries} />
+
+        <Flex flexGrow="1" minHeight="0" overflow="hidden">
+          <AppSidebar
+            creatingEntry={creatingEntry}
+            currentUser={user}
+            onCreateEntry={requestCreate}
+            onSignOut={requestSignOut}
+          />
+          <Box asChild display={{ initial: "none", lg: "block" }}>
+            <Separator orientation="vertical" size="4" />
+          </Box>
+          <EntryList
+            entries={entries}
+            hasMoreEntries={hasMoreEntries}
+            loadingMoreEntries={loadingMoreEntries}
+            loadMoreEntries={loadMoreEntries}
+            onSelectEntry={requestSelection}
+            selectedEntryId={effectiveSelectedEntryId}
+          />
+          <Box asChild display={{ initial: "none", md: "block" }}>
+            <Separator orientation="vertical" size="4" />
+          </Box>
+
+          {selectedEntry ? (
+            <JournalEditor
+              key={`${selectedEntry.id}:${editorVersion}`}
+              draftDirty={draftDirty}
+              entry={selectedEntry}
+              user={user}
+              onDeleted={() => {
+                setDraftDirty(false);
+                setPendingIntent(null);
+                setSelectedEntryId(undefined);
+              }}
+              onDraftChange={setDraftDirty}
+            />
+          ) : (
+            <Flex align="center" justify="center" flexGrow="1" p="5">
+              <JournalEmptyCard creatingEntry={creatingEntry} onCreateEntry={requestCreate} />
+            </Flex>
+          )}
+        </Flex>
       </Flex>
-    </Flex>
+      <LogoutProgressDialog open={loggingOut} />
+    </>
   );
 }

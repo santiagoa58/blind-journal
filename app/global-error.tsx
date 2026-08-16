@@ -6,15 +6,18 @@ import "./globals.css";
 import { Theme } from "@radix-ui/themes";
 import { useParams } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { useEffect } from "react";
+import { reportClientError } from "@/client.error";
 import { UnexpectedErrorPage } from "@/components/unexpected-error-page";
 import { getErrorPageMessages } from "@/i18n/error-page-messages";
 import { routing } from "@/i18n/routing";
 
 type GlobalErrorPageProps = {
-  reset: () => void;
+  error: Error & { digest?: string };
+  retry: () => void;
 };
 
-export default function GlobalErrorPage({ reset }: GlobalErrorPageProps) {
+export default function GlobalErrorPage({ error, retry }: GlobalErrorPageProps) {
   const params = useParams<{ locale?: string | string[] }>();
   const requestedLocale = params.locale;
   const locale =
@@ -22,6 +25,8 @@ export default function GlobalErrorPage({ reset }: GlobalErrorPageProps) {
       ? requestedLocale
       : routing.defaultLocale;
   const messages = getErrorPageMessages(locale);
+
+  useEffect(() => reportClientError(error), [error]);
 
   return (
     <html lang={locale}>
@@ -31,7 +36,7 @@ export default function GlobalErrorPage({ reset }: GlobalErrorPageProps) {
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Theme accentColor="iris" grayColor="slate" radius="large">
-            <UnexpectedErrorPage onRetry={reset} />
+            <UnexpectedErrorPage onRetry={retry} />
           </Theme>
         </NextIntlClientProvider>
       </body>

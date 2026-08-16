@@ -9,9 +9,8 @@
   },
   "unsavedDialog": {
     "title": "¿Descartar los cambios sin guardar?",
-    "description": "Cambiar de entrada descartará permanentemente los cambios que no hayas guardado.",
-    "discard": "Descartar cambios",
-    "navigationDescription": "Tienes cambios sin guardar. ¿Salir de tu diario y descartarlos?"
+    "description": "Continuar descartará permanentemente los cambios que no hayas guardado.",
+    "discard": "Descartar cambios"
   },
   "entryTitleLabel": "Título de la entrada",
   "entryTitlePlaceholder": "Entrada sin título",

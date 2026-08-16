@@ -28,11 +28,9 @@ import { type Editor, useEditorState } from "@tiptap/react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { NumberedListIcon } from "../numbered-list-icon";
-import styles from "./journal-editor.module.css";
-
-const css = styles as Record<"toolbar" | "toolbarGroup", string>;
 
 type JournalEditorToolbarProps = {
+  disabled: boolean;
   editor: Editor | null;
 };
 
@@ -60,7 +58,7 @@ function ToolbarButton({ children, label, active, ...props }: ToolbarButtonProps
 }
 
 function ToolbarGroup(props: FlexProps) {
-  return <Flex align="center" gap="3" {...props} />;
+  return <Flex align="center" gap="3" flexShrink="0" {...props} />;
 }
 function BlockStyleLabel(props: {
   activeState: { heading1?: boolean; heading2?: boolean; heading3?: boolean };
@@ -98,7 +96,7 @@ function BlockStyleLabel(props: {
   );
 }
 
-export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
+export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarProps) {
   const t = useTranslations("journal-editor.formatting");
   const state = useEditorState({
     editor,
@@ -133,28 +131,31 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
     strike: false,
     underline: false,
   };
+  const controlsDisabled = disabled || !editor;
 
   return (
     <Flex
-      className={css.toolbar}
       align="center"
       gap="2"
+      width="max-content"
+      minWidth="100%"
+      minHeight="var(--space-8)"
       px="3"
       py="2"
-      role="toolbar"
+      role="group"
       aria-label={t("toolbarLabel")}
     >
-      <ToolbarGroup className={css.toolbarGroup}>
+      <ToolbarGroup>
         <ToolbarButton
           label={t("undo")}
-          disabled={!activeState.canUndo}
+          disabled={disabled || !activeState.canUndo}
           onClick={() => editor?.chain().focus().undo().run()}
         >
           <CounterClockwiseClockIcon aria-hidden width={17} height={17} />
         </ToolbarButton>
         <ToolbarButton
           label={t("redo")}
-          disabled={!activeState.canRedo}
+          disabled={disabled || !activeState.canRedo}
           onClick={() => editor?.chain().focus().redo().run()}
         >
           <UpdateIcon aria-hidden width={17} height={17} />
@@ -165,18 +166,28 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
 
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <Button size="2" variant="ghost" color="gray" aria-label={t("textStyle")}>
+          <Button
+            size="2"
+            variant="ghost"
+            color="gray"
+            aria-label={t("textStyle")}
+            disabled={controlsDisabled}
+          >
             <BlockStyleLabel activeState={activeState} />
             <ChevronDownIcon aria-hidden width={14} height={14} />
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start">
-          <DropdownMenu.Item onSelect={() => editor?.chain().focus().setParagraph().run()}>
+          <DropdownMenu.Item
+            disabled={controlsDisabled}
+            onSelect={() => editor?.chain().focus().setParagraph().run()}
+          >
             {t("paragraph")}
           </DropdownMenu.Item>
           {([1, 2, 3] as const).map((level) => (
             <DropdownMenu.Item
               key={level}
+              disabled={controlsDisabled}
               onSelect={() => editor?.chain().focus().toggleHeading({ level }).run()}
             >
               {t(`heading${level}`)}
@@ -187,11 +198,11 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
 
       <Separator orientation="vertical" size="1" />
 
-      <ToolbarGroup className={css.toolbarGroup}>
+      <ToolbarGroup>
         <ToolbarButton
           label={t("bold")}
           active={activeState.bold}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleBold().run()}
         >
           <FontBoldIcon aria-hidden width={17} height={17} />
@@ -199,7 +210,7 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
         <ToolbarButton
           label={t("italic")}
           active={activeState.italic}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleItalic().run()}
         >
           <FontItalicIcon aria-hidden width={17} height={17} />
@@ -207,7 +218,7 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
         <ToolbarButton
           label={t("underline")}
           active={activeState.underline}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleUnderline().run()}
         >
           <UnderlineIcon aria-hidden width={17} height={17} />
@@ -215,7 +226,7 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
         <ToolbarButton
           label={t("strike")}
           active={activeState.strike}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleStrike().run()}
         >
           <StrikethroughIcon aria-hidden width={17} height={17} />
@@ -223,7 +234,7 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
         <ToolbarButton
           label={t("code")}
           active={activeState.code}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleCode().run()}
         >
           <CodeIcon aria-hidden width={17} height={17} />
@@ -232,11 +243,11 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
 
       <Separator orientation="vertical" size="1" />
 
-      <ToolbarGroup className={css.toolbarGroup}>
+      <ToolbarGroup>
         <ToolbarButton
           label={t("bulletedList")}
           active={activeState.bulletList}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleBulletList().run()}
         >
           <ListBulletIcon aria-hidden width={17} height={17} />
@@ -244,7 +255,7 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
         <ToolbarButton
           label={t("numberedList")}
           active={activeState.orderedList}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleOrderedList().run()}
         >
           <NumberedListIcon aria-hidden width={17} height={17} />
@@ -252,7 +263,7 @@ export function JournalEditorToolbar({ editor }: JournalEditorToolbarProps) {
         <ToolbarButton
           label={t("quote")}
           active={activeState.blockquote}
-          disabled={!editor}
+          disabled={controlsDisabled}
           onClick={() => editor?.chain().focus().toggleBlockquote().run()}
         >
           <QuoteIcon aria-hidden width={17} height={17} />

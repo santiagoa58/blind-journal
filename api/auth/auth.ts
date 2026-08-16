@@ -12,7 +12,7 @@ import type {
   ClientLoginRequest,
 } from "@/api/auth/auth.type";
 import { AUTH_CLIENT_ERROR_CODES, AuthClientError } from "@/api/auth/auth-client.error";
-import { getAuthWorkerClient, terminateAuthWorkerClient } from "@/api/auth/auth-worker-client";
+import { deriveAuthUserKeysInWorker } from "@/api/auth/auth-worker-client";
 import { api } from "@/api/http";
 
 function assertValidPassword(password: string): void {
@@ -71,24 +71,16 @@ export async function logout() {
 export async function login(input: ClientLoginRequest) {
   assertValidPassword(input.password);
 
-  try {
-    const { keyScheduleVersion, salt } = await getAuthSalt({ username: input.username });
-    const userKeys = await getAuthWorkerClient().getUserKeys(
-      input.password,
-      salt,
-      keyScheduleVersion,
-    );
-    const request = {
-      username: input.username,
-      authKey: userKeys.authKey,
-      keyScheduleVersion,
-    } satisfies ApiVerifyCredentialsRequest;
-    const response = await verifyCredentials(request);
+  const { keyScheduleVersion, salt } = await getAuthSalt({ username: input.username });
+  const userKeys = await deriveAuthUserKeysInWorker(input.password, salt, keyScheduleVersion);
+  const request = {
+    username: input.username,
+    authKey: userKeys.authKey,
+    keyScheduleVersion,
+  } satisfies ApiVerifyCredentialsRequest;
+  const response = await verifyCredentials(request);
 
-    return { ...response, keyEncryptionKey: userKeys.keyEncryptionKey };
-  } finally {
-    terminateAuthWorkerClient();
-  }
+  return { ...response.user, keyEncryptionKey: userKeys.keyEncryptionKey };
 }
 
 export async function createAccount(input: ClientCreateAccountRequest) {
@@ -100,22 +92,14 @@ export async function createAccount(input: ClientCreateAccountRequest) {
 
   const { keyScheduleVersion, salt } = await getAuthSalt({ username: input.username });
 
-  try {
-    const userKeys = await getAuthWorkerClient().getUserKeys(
-      input.password,
-      salt,
-      keyScheduleVersion,
-    );
-    const request = {
-      username: input.username,
-      authKey: userKeys.authKey,
-      keyScheduleVersion,
-      salt,
-    } satisfies ApiCreateAccountRequest;
-    const response = await submitAccount(request);
+  const userKeys = await deriveAuthUserKeysInWorker(input.password, salt, keyScheduleVersion);
+  const request = {
+    username: input.username,
+    authKey: userKeys.authKey,
+    keyScheduleVersion,
+    salt,
+  } satisfies ApiCreateAccountRequest;
+  const response = await submitAccount(request);
 
-    return { ...response, keyEncryptionKey: userKeys.keyEncryptionKey };
-  } finally {
-    terminateAuthWorkerClient();
-  }
+  return { ...response.user, keyEncryptionKey: userKeys.keyEncryptionKey };
 }

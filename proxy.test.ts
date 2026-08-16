@@ -1,8 +1,9 @@
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { NextRequest, NextResponse } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { REQUEST_ID_HEADER } from "@/api/observability";
 import { createContentSecurityPolicy } from "@/content-security-policy";
-import proxy from "@/proxy";
+import proxy, { config } from "@/proxy";
 
 const middlewareMocks = vi.hoisted(() => ({ request: undefined as NextRequest | undefined }));
 
@@ -27,6 +28,7 @@ describe("nonce-based content security policy", () => {
     expect(policy).toContain("script-src-attr 'none'");
     expect(policy).not.toContain("'unsafe-eval'");
     expect(policy).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    expect(policy).toContain("style-src 'self' 'unsafe-inline'");
     expect(policy).toContain("worker-src 'self'");
     expect(policy).toContain("frame-ancestors 'none'");
     expect(policy).toContain("upgrade-insecure-requests");
@@ -70,5 +72,21 @@ describe("nonce-based content security policy", () => {
     expect(requestId).not.toBe("untrusted-client-value");
     expect(middlewareMocks.request).toBeUndefined();
     expect(response.headers.get("content-security-policy")).toBeNull();
+  });
+
+  it("covers dotted document routes without intercepting public assets", () => {
+    expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: "/en/missing.page" })).toBe(
+      true,
+    );
+    expect(
+      unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: "/icons/icon-192x192.png" }),
+    ).toBe(false);
+    expect(
+      unstable_doesMiddlewareMatch({
+        config,
+        nextConfig: {},
+        url: "/brand/blind-journal-mark.svg",
+      }),
+    ).toBe(false);
   });
 });
