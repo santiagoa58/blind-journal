@@ -6,14 +6,15 @@ import { useCallback, useState } from "react";
 import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry, UnreadableJournalEntry } from "@/api/journal/journal.type";
 import { useLogout } from "@/hooks/use-logout";
-import { AppSidebar } from "./app-sidebar";
-import { EntryList } from "./entry-list";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
+import { JournalDesktopSidebar } from "./journal-desktop-sidebar";
 import { JournalDraftGuard } from "./journal-draft-guard";
 import { JournalEditor } from "./journal-editor";
 import { JournalEmptyCard } from "./journal-empty-card";
-import { JournalMobileHeader } from "./journal-mobile-header";
+import { JournalEntryDeleteDialog } from "./journal-entry-delete-dialog";
+import { JournalMobileHeader } from "./mobile/journal-mobile-header";
 import { UnreadableEntriesNotice } from "./unreadable-entries-notice";
-import { useCreateJournalEntry } from "./use-create-journal-entry";
 
 type JournalContentProps = {
   entries: JournalEntry[];
@@ -24,7 +25,11 @@ type JournalContentProps = {
   user: ClientUser;
 };
 
-type PendingIntent = { type: "create" } | { type: "logout" } | { type: "select"; entryId: string };
+type PendingIntent =
+  | { type: "create" }
+  | { type: "locale"; locale: Locale }
+  | { type: "logout" }
+  | { type: "select"; entryId: string };
 
 function preventDismiss(event: Event) {
   event.preventDefault();
@@ -61,30 +66,34 @@ export function JournalContent({
   user,
 }: JournalContentProps) {
   const tEntries = useTranslations("entry-list");
+  const pathname = usePathname();
+  const router = useRouter();
   const [selectedEntryId, setSelectedEntryId] = useState<string>();
   const [draftDirty, setDraftDirty] = useState(false);
   const [editorVersion, setEditorVersion] = useState(0);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [newEntryOpen, setNewEntryOpen] = useState(false);
   const [pendingIntent, setPendingIntent] = useState<PendingIntent | null>(null);
+  const [entryPendingDeletion, setEntryPendingDeletion] = useState<JournalEntry>();
   const { signOut, isPending: loggingOut } = useLogout();
-  const handleCreated = useCallback((entryId: string) => {
-    setDraftDirty(false);
-    setSelectedEntryId(entryId);
-  }, []);
-  const { createEntry, isPending: creatingEntry } = useCreateJournalEntry(user, handleCreated);
   const selectedEntry = entries.find(({ id }) => id === selectedEntryId) ?? entries.at(0);
-  const effectiveSelectedEntryId = selectedEntry?.id;
+  const effectiveSelectedEntryId = newEntryOpen ? undefined : selectedEntry?.id;
 
   const executeIntent = useCallback(
     (intent: PendingIntent) => {
       if (intent.type === "select") {
+        setNewEntryOpen(false);
         setSelectedEntryId(intent.entryId);
       } else if (intent.type === "create") {
-        createEntry();
+        setNewEntryOpen(true);
+        setDraftDirty(true);
+      } else if (intent.type === "locale") {
+        router.replace(pathname, { locale: intent.locale });
       } else {
         signOut();
       }
     },
-    [createEntry, signOut],
+    [pathname, router, signOut],
   );
 
   function requestIntent(intent: PendingIntent) {
@@ -100,6 +109,8 @@ export function JournalContent({
   }
 
   const requestCreate = () => requestIntent({ type: "create" });
+  const requestLocaleChange = (nextLocale: Locale) =>
+    requestIntent({ type: "locale", locale: nextLocale });
   const requestSignOut = () => requestIntent({ type: "logout" });
   const requestSelection = (entryId: string) => requestIntent({ type: "select", entryId });
 
@@ -125,14 +136,37 @@ export function JournalContent({
           onCancel={() => setPendingIntent(null)}
           onDiscard={discardDraftAndContinue}
         />
+        {entryPendingDeletion ? (
+          <JournalEntryDeleteDialog
+            entry={entryPendingDeletion}
+            includesUnsavedChanges={
+              draftDirty && entryPendingDeletion.id === effectiveSelectedEntryId
+            }
+            open
+            user={user}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEntryPendingDeletion(undefined);
+              }
+            }}
+            onDeleted={(entryId) => {
+              if (entryId === effectiveSelectedEntryId) {
+                setDraftDirty(false);
+                setNewEntryOpen(false);
+                setPendingIntent(null);
+                setSelectedEntryId(undefined);
+              }
+            }}
+          />
+        ) : null}
         <JournalMobileHeader
-          creatingEntry={creatingEntry}
           currentUser={user}
           entries={entries}
           hasMoreEntries={hasMoreEntries}
           loadingMoreEntries={loadingMoreEntries}
           loadMoreEntries={loadMoreEntries}
           onCreateEntry={requestCreate}
+          onLocaleChange={requestLocaleChange}
           onSelectEntry={requestSelection}
           onSignOut={requestSignOut}
           selectedEntryId={effectiveSelectedEntryId}
@@ -140,43 +174,53 @@ export function JournalContent({
         <UnreadableEntriesNotice entries={unreadableEntries} />
 
         <Flex flexGrow="1" minHeight="0" overflow="hidden">
-          <AppSidebar
-            creatingEntry={creatingEntry}
-            currentUser={user}
-            onCreateEntry={requestCreate}
-            onSignOut={requestSignOut}
-          />
-          <Box asChild display={{ initial: "none", lg: "block" }}>
-            <Separator orientation="vertical" size="4" />
-          </Box>
-          <EntryList
-            entries={entries}
-            hasMoreEntries={hasMoreEntries}
-            loadingMoreEntries={loadingMoreEntries}
-            loadMoreEntries={loadMoreEntries}
-            onSelectEntry={requestSelection}
-            selectedEntryId={effectiveSelectedEntryId}
-          />
-          <Box asChild display={{ initial: "none", md: "block" }}>
-            <Separator orientation="vertical" size="4" />
-          </Box>
+          {desktopSidebarOpen ? (
+            <>
+              <JournalDesktopSidebar
+                currentUser={user}
+                entries={entries}
+                hasMoreEntries={hasMoreEntries}
+                loadingMoreEntries={loadingMoreEntries}
+                loadMoreEntries={loadMoreEntries}
+                onCollapse={() => setDesktopSidebarOpen(false)}
+                onCreateEntry={requestCreate}
+                onLocaleChange={requestLocaleChange}
+                onDeleteEntry={setEntryPendingDeletion}
+                onSelectEntry={requestSelection}
+                onSignOut={requestSignOut}
+                selectedEntryId={effectiveSelectedEntryId}
+              />
+              <Box asChild display={{ initial: "none", lg: "block" }}>
+                <Separator orientation="vertical" size="4" />
+              </Box>
+            </>
+          ) : null}
 
-          {selectedEntry ? (
+          {newEntryOpen || selectedEntry ? (
             <JournalEditor
-              key={`${selectedEntry.id}:${editorVersion}`}
+              key={`${newEntryOpen ? "new" : selectedEntry?.id}:${editorVersion}`}
               draftDirty={draftDirty}
-              entry={selectedEntry}
+              entry={newEntryOpen ? undefined : selectedEntry}
+              navigationOpen={desktopSidebarOpen}
               user={user}
               onDeleted={() => {
                 setDraftDirty(false);
+                setDesktopSidebarOpen(true);
+                setNewEntryOpen(false);
                 setPendingIntent(null);
                 setSelectedEntryId(undefined);
               }}
               onDraftChange={setDraftDirty}
+              onSaved={(savedEntry) => {
+                setDraftDirty(false);
+                setNewEntryOpen(false);
+                setSelectedEntryId(savedEntry.id);
+              }}
+              onShowNavigation={() => setDesktopSidebarOpen(true)}
             />
           ) : (
             <Flex align="center" justify="center" flexGrow="1" p="5">
-              <JournalEmptyCard creatingEntry={creatingEntry} onCreateEntry={requestCreate} />
+              <JournalEmptyCard onCreateEntry={requestCreate} />
             </Flex>
           )}
         </Flex>

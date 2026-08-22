@@ -26,7 +26,7 @@ import {
 } from "@radix-ui/themes";
 import { type Editor, useEditorState } from "@tiptap/react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import type { PointerEvent, ReactNode } from "react";
 import { NumberedListIcon } from "../numbered-list-icon";
 
 type JournalEditorToolbarProps = {
@@ -41,6 +41,10 @@ interface ToolbarButtonProps extends ButtonProps {
 }
 
 function ToolbarButton({ children, label, active, ...props }: ToolbarButtonProps) {
+  function preserveEditorFocus(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+  }
+
   return (
     <Tooltip content={label}>
       <IconButton
@@ -50,6 +54,7 @@ function ToolbarButton({ children, label, active, ...props }: ToolbarButtonProps
         aria-label={label}
         aria-pressed={active}
         {...props}
+        onPointerDown={preserveEditorFocus}
       >
         {children}
       </IconButton>
@@ -177,7 +182,13 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
             <ChevronDownIcon aria-hidden width={14} height={14} />
           </Button>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="start">
+        <DropdownMenu.Content
+          align="start"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            editor?.commands.focus();
+          }}
+        >
           <DropdownMenu.Item
             disabled={controlsDisabled}
             onSelect={() => editor?.chain().focus().setParagraph().run()}

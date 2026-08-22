@@ -1,22 +1,27 @@
 "use client";
 
-import { CheckIcon, DotsHorizontalIcon, TrashIcon } from "@radix-ui/react-icons";
-import { AlertDialog, Box, Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
+import { CheckIcon, TrashIcon } from "@radix-ui/react-icons";
+import { AlertDialog, Box, Button, Flex, IconButton, Tooltip } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { ClientUser } from "@/api/auth/user.type";
-import { deleteJournalEntry, updateJournalEntry } from "@/api/journal/journal";
-import type { ClientUpdateJournalEntryRequest, JournalEntry } from "@/api/journal/journal.type";
+import { createJournalEntry, deleteJournalEntry, updateJournalEntry } from "@/api/journal/journal";
+import type {
+  ClientCreateJournalEntryRequest,
+  ClientUpdateJournalEntryRequest,
+  JournalEntry,
+} from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { isCurrentClientSession } from "@/hooks/use-client-session";
 import { journalEntriesQueryKey } from "./journal-query";
 
 type JournalEditorActionsProps = {
+  defaultTitle: string;
   draftDirty: boolean;
   editor: Editor | null;
-  entry: JournalEntry;
+  entry: JournalEntry | undefined;
   onDeleted: () => void;
   onSaved: (entry: JournalEntry) => void;
   onSavingChange: (saving: boolean) => void;
@@ -25,6 +30,7 @@ type JournalEditorActionsProps = {
 };
 
 export function JournalEditorActions({
+  defaultTitle,
   draftDirty,
   editor,
   entry,
@@ -42,7 +48,8 @@ export function JournalEditorActions({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const saveMutation = useMutation({
     gcTime: 0,
-    mutationFn: (input: ClientUpdateJournalEntryRequest) => updateJournalEntry(input, user),
+    mutationFn: (input: ClientCreateJournalEntryRequest | ClientUpdateJournalEntryRequest) =>
+      "id" in input ? updateJournalEntry(input, user) : createJournalEntry(input, user),
     onSuccess: async (savedEntry) => {
       if (!isCurrentClientSession(user)) {
         return;
@@ -55,7 +62,7 @@ export function JournalEditorActions({
       }
 
       onSaved(savedEntry);
-      appToast.success(tJournal("success.saved"));
+      appToast.success(tJournal(entry ? "success.saved" : "success.created"));
     },
     onSettled: () => {
       onSavingChange(false);
@@ -63,7 +70,7 @@ export function JournalEditorActions({
   });
   const deleteMutation = useMutation({
     gcTime: 0,
-    mutationFn: () => deleteJournalEntry(entry.id),
+    mutationFn: (entryId: string) => deleteJournalEntry(entryId),
     onSuccess: async () => {
       if (!isCurrentClientSession(user)) {
         return;
@@ -88,18 +95,18 @@ export function JournalEditorActions({
     }
 
     onSavingChange(true);
-    saveMutation.mutate(
-      {
-        id: entry.id,
-        title: title.trim(),
-        content: editor.getHTML(),
-      },
-      { onSettled: () => saveMutation.reset() },
-    );
+    const content = {
+      title: title.trim() || defaultTitle,
+      content: editor.getHTML(),
+    };
+    const input = entry ? { id: entry.id, ...content } : content;
+    saveMutation.mutate(input, { onSettled: () => saveMutation.reset() });
   }
 
   function deleteEntry() {
-    deleteMutation.mutate(undefined, { onSettled: () => deleteMutation.reset() });
+    if (entry) {
+      deleteMutation.mutate(entry.id, { onSettled: () => deleteMutation.reset() });
+    }
   }
 
   return (
@@ -117,37 +124,28 @@ export function JournalEditorActions({
           aria-label={tActions("save")}
           onClick={saveEntry}
           loading={saveMutation.isPending}
-          disabled={!editor || !draftDirty || writeDisabled || title.trim().length === 0}
+          disabled={!editor || (entry !== undefined && !draftDirty) || writeDisabled}
         >
           <CheckIcon aria-hidden width={16} height={16} />
-          <Box asChild display={{ initial: "none", sm: "inline" }}>
-            <span>{tActions("save")}</span>
+          <Box as="span" display={{ initial: "none", sm: "inline" }}>
+            {tActions("save")}
           </Box>
         </Button>
 
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger>
+        {entry ? (
+          <Tooltip content={t("deleteEntry")}>
             <IconButton
               size="2"
               variant="ghost"
-              color="gray"
-              aria-label={t("entryActions")}
-              disabled={writeDisabled}
-            >
-              <DotsHorizontalIcon aria-hidden width={17} height={17} />
-            </IconButton>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Item
               color="red"
-              onSelect={() => setDeleteDialogOpen(true)}
+              aria-label={t("deleteEntry")}
               disabled={writeDisabled}
+              onClick={() => setDeleteDialogOpen(true)}
             >
-              <TrashIcon aria-hidden width={15} height={15} />
-              {t("deleteEntry")}
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+              <TrashIcon aria-hidden width={17} height={17} />
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </Flex>
 
       <AlertDialog.Content maxWidth="440px">

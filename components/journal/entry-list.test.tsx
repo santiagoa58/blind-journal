@@ -30,11 +30,13 @@ function renderEntryList({
   hasMoreEntries = false,
   loadingMoreEntries = false,
   loadMoreEntries = vi.fn(),
+  onDeleteEntry = vi.fn(),
   onSelectEntry = vi.fn(),
 }: {
   hasMoreEntries?: boolean;
   loadingMoreEntries?: boolean;
   loadMoreEntries?: () => void;
+  onDeleteEntry?: (entry: JournalEntry) => void;
   onSelectEntry?: (entryId: string) => void;
 } = {}) {
   root.render(
@@ -49,6 +51,7 @@ function renderEntryList({
           hasMoreEntries={hasMoreEntries}
           loadingMoreEntries={loadingMoreEntries}
           loadMoreEntries={loadMoreEntries}
+          onDeleteEntry={onDeleteEntry}
           onSelectEntry={onSelectEntry}
           selectedEntryId={firstEntry.id}
         />
@@ -73,7 +76,14 @@ function changeSearch(search: HTMLInputElement, value: string) {
 }
 
 beforeEach(() => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  Object.assign(globalThis, {
+    IS_REACT_ACT_ENVIRONMENT: true,
+    ResizeObserver: class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  });
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -93,17 +103,21 @@ describe("EntryList", () => {
       "Journal entries",
     );
     expect(container.querySelectorAll("[role='radio']")).toHaveLength(2);
-    expect(getButton("Open First entry").getAttribute("aria-checked")).toBe("true");
-    expect(getButton("Open Second entry").getAttribute("aria-checked")).toBe("false");
+    const firstEntryButton = getButton("Open First entry");
+    const secondEntryButton = getButton("Open Second entry");
+    expect(firstEntryButton.getAttribute("aria-checked")).toBe("true");
+    expect(firstEntryButton.dataset["state"]).toBe("checked");
+    expect(secondEntryButton.getAttribute("aria-checked")).toBe("false");
+    expect(secondEntryButton.dataset["state"]).toBe("unchecked");
 
-    await act(async () => getButton("Open Second entry").click());
+    await act(async () => secondEntryButton.click());
     expect(onSelectEntry).toHaveBeenCalledWith(secondEntry.id);
   });
 
   it("filters loaded entries and explains an empty result", async () => {
     await act(async () => renderEntryList());
     const search = container.querySelector<HTMLInputElement>(
-      "input[aria-label='Search entry titles']",
+      "input[aria-label='Search loaded entry titles']",
     );
     if (!search) throw new Error("Missing entry search field");
 
@@ -125,7 +139,7 @@ describe("EntryList", () => {
     const loadMoreEntries = vi.fn();
     await act(async () => renderEntryList({ hasMoreEntries: true, loadMoreEntries }));
     const search = container.querySelector<HTMLInputElement>(
-      "input[aria-label='Search entry titles']",
+      "input[aria-label='Search loaded entry titles']",
     );
     if (!search) throw new Error("Missing entry search field");
 
@@ -136,5 +150,23 @@ describe("EntryList", () => {
 
     await act(async () => getButton("Load more").click());
     expect(loadMoreEntries).toHaveBeenCalledOnce();
+  });
+
+  it("offers deletion from an entry context menu", async () => {
+    const onDeleteEntry = vi.fn();
+    await act(async () => renderEntryList({ onDeleteEntry }));
+
+    await act(async () => {
+      getButton("Open Second entry").dispatchEvent(
+        new MouseEvent("contextmenu", { bubbles: true, clientX: 20, clientY: 20 }),
+      );
+    });
+
+    const deleteItem = document.querySelector<HTMLElement>("[role='menuitem']");
+    if (!deleteItem) throw new Error("Missing context-menu delete item");
+    expect(deleteItem.textContent).toContain("Delete entry");
+
+    await act(async () => deleteItem.click());
+    expect(onDeleteEntry).toHaveBeenCalledWith(secondEntry);
   });
 });

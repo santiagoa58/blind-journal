@@ -1,5 +1,9 @@
 {
-  "encryptedOnDevice": "Cifrada en este dispositivo",
+  "documentStatus": {
+    "saved": "Guardada y cifrada",
+    "unsaved": "Cambios sin guardar",
+    "saving": "Cifrando y guardando…"
+  },
   "entryActions": "Acciones de la entrada",
   "deleteEntry": "Eliminar entrada",
   "deleteDialog": {
@@ -13,8 +17,8 @@
     "discard": "Descartar cambios"
   },
   "entryTitleLabel": "Título de la entrada",
-  "entryTitlePlaceholder": "Entrada sin título",
   "entryBodyLabel": "Entrada del diario",
+  "entryBodyPlaceholder": "Empieza a escribir…",
   "lastSaved": "Último guardado {time}",
   "formatting": {
     "toolbarLabel": "Formato de texto",

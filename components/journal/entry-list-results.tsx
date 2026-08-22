@@ -9,6 +9,7 @@ type EntryListResultsProps = {
   hasMoreEntries: boolean;
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
+  onDeleteEntry: (entry: JournalEntry) => void;
   onSelectEntry: (entryId: string) => void;
   selectedEntryId: string | undefined;
 };
@@ -18,6 +19,7 @@ export function EntryListResults({
   hasMoreEntries,
   loadingMoreEntries,
   loadMoreEntries,
+  onDeleteEntry,
   onSelectEntry,
   selectedEntryId,
 }: EntryListResultsProps) {
@@ -37,7 +39,12 @@ export function EntryListResults({
             variant="surface"
           >
             {entries.map((entry) => (
-              <EntryListItem key={entry.id} entry={entry} />
+              <EntryListItem
+                key={entry.id}
+                entry={entry}
+                onDeleteEntry={onDeleteEntry}
+                selected={entry.id === selectedEntryId}
+              />
             ))}
           </RadioCards.Root>
 

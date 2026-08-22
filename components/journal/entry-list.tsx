@@ -11,6 +11,7 @@ type EntryListProps = {
   hasMoreEntries: boolean;
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
+  onDeleteEntry: (entry: JournalEntry) => void;
   onSelectEntry: (entryId: string) => void;
   selectedEntryId: string | undefined;
 };
@@ -20,6 +21,7 @@ export function EntryList({
   hasMoreEntries,
   loadingMoreEntries,
   loadMoreEntries,
+  onDeleteEntry,
   onSelectEntry,
   selectedEntryId,
 }: EntryListProps) {
@@ -31,14 +33,7 @@ export function EntryList({
   );
 
   return (
-    <Flex
-      asChild
-      direction="column"
-      width="360px"
-      height="100%"
-      flexShrink="0"
-      display={{ initial: "none", md: "flex" }}
-    >
+    <Flex asChild direction="column" width="100%" height="100%" minHeight="0">
       <section aria-labelledby={headingId}>
         <EntryListHeader
           headingId={headingId}
@@ -52,6 +47,7 @@ export function EntryList({
           hasMoreEntries={hasMoreEntries}
           loadingMoreEntries={loadingMoreEntries}
           loadMoreEntries={loadMoreEntries}
+          onDeleteEntry={onDeleteEntry}
           onSelectEntry={onSelectEntry}
           selectedEntryId={selectedEntryId}
         />

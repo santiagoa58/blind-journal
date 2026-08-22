@@ -7,3 +7,6 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@eloqnt/cli@0.6.3'
   - '@eloqnt/sdk@0.6.3'
+# Remove when https://github.com/pacocoursey/next-themes/pull/386 is released.
+patchedDependencies:
+  next-themes@0.4.6: patches/next-themes@0.4.6.patch

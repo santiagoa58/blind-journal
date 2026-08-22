@@ -1,11 +1,10 @@
 {
   "journalNavigationLabel": "Navegación del diario",
+  "hideEntries": "Ocultar entradas",
   "newEntry": "Nueva entrada",
-  "privacy": {
-    "title": "Privado por diseño.",
-    "description": "Tu diario se cifra antes de salir de este dispositivo."
-  },
+  "showEntries": "Mostrar entradas",
   "account": {
+    "menuLabel": "Menú de la cuenta",
     "signOut": "Cerrar sesión",
     "signingOut": "Cerrando sesión…",
     "signingOutDescription": "Finalizando tu sesión y bloqueando este diario."

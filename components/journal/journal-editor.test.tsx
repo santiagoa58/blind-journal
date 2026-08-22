@@ -14,6 +14,8 @@ type EditorActions = {
   onSavingChange: (saving: boolean) => void;
 };
 
+const onSaved = vi.fn();
+
 const mocks = vi.hoisted(() => ({
   actions: undefined as EditorActions | undefined,
   editor: null as Editor | null,
@@ -65,16 +67,19 @@ const entry = {
 let container: HTMLDivElement;
 let root: Root;
 
-function TestEditor() {
+function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
   const [draftDirty, setDraftDirty] = useState(false);
 
   return (
     <Theme>
       <JournalEditor
         draftDirty={draftDirty}
-        entry={entry}
+        entry={newEntry ? undefined : entry}
+        navigationOpen
         onDeleted={vi.fn()}
         onDraftChange={setDraftDirty}
+        onSaved={onSaved}
+        onShowNavigation={vi.fn()}
         user={user}
       />
     </Theme>
@@ -82,7 +87,7 @@ function TestEditor() {
 }
 
 function changeTitle(value: string) {
-  const title = container.querySelector<HTMLInputElement>("input[type='text']");
+  const title = container.querySelector<HTMLInputElement>(".rt-TextFieldInput");
   const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
   if (!title || !setValue) throw new Error("Missing title field");
   setValue.call(title, value);
@@ -93,7 +98,12 @@ function expectDirty(dirty: boolean) {
   expect(container.querySelector("output")?.getAttribute("data-dirty")).toBe(String(dirty));
 }
 
+function expectDocumentStatus(status: "saved" | "saving" | "unsaved") {
+  expect(container.querySelector("[role='status']")?.textContent).toBe(`documentStatus.${status}`);
+}
+
 beforeEach(async () => {
+  vi.clearAllMocks();
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   mocks.actions = undefined;
   mocks.editor = null;
@@ -113,6 +123,28 @@ afterEach(async () => {
 });
 
 describe("JournalEditor draft state", () => {
+  it("uses a labeled Radix title field and focuses the editor from the document surface", async () => {
+    const title = container.querySelector<HTMLInputElement>(".rt-TextFieldInput");
+    const article = container.querySelector<HTMLElement>("article");
+    if (!title || !article || !mocks.editor) throw new Error("Missing document controls");
+
+    expect(title.closest(".rt-TextFieldRoot")).not.toBeNull();
+    expect(container.querySelector(`label[for='${title.id}']`)?.textContent).toBe(
+      "entryTitleLabel",
+    );
+
+    await act(async () => {
+      article.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+    });
+    await vi.waitFor(() => expect(mocks.editor?.isFocused).toBe(true));
+
+    await act(async () => {
+      title.focus();
+      title.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+    });
+    expect(document.activeElement).toBe(title);
+  });
+
   it("compares title and body changes with the saved Tiptap document", async () => {
     await act(async () => changeTitle("Changed title"));
     expectDirty(true);
@@ -129,6 +161,37 @@ describe("JournalEditor draft state", () => {
       mocks.editor?.commands.undo();
     });
     expectDirty(false);
+  });
+
+  it("normalizes a blank title to the journal default on blur", async () => {
+    const title = container.querySelector<HTMLInputElement>(".rt-TextFieldInput");
+    if (!title) throw new Error("Missing title field");
+
+    await act(async () => changeTitle("   "));
+    expectDirty(true);
+
+    await act(async () => {
+      title.focus();
+      title.blur();
+    });
+    expect(title.value).toBe("newEntry.title");
+    expectDirty(true);
+  });
+
+  it("distinguishes saved, unsaved, and saving document states", async () => {
+    expectDocumentStatus("saved");
+
+    await act(async () => changeTitle("Changed title"));
+    expectDocumentStatus("unsaved");
+
+    await act(async () => mocks.actions?.onSavingChange(true));
+    expectDocumentStatus("saving");
+
+    await act(async () => mocks.actions?.onSavingChange(false));
+    expectDocumentStatus("unsaved");
+
+    await act(async () => changeTitle(entry.title));
+    expectDocumentStatus("saved");
   });
 
   it("uses a successful save as the next document checkpoint", async () => {
@@ -156,5 +219,18 @@ describe("JournalEditor draft state", () => {
       mocks.editor?.commands.insertContent(" changed again");
     });
     expectDirty(true);
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ id: entry.id, updatedAt: "2026-01-02T00:00:00.000Z" }),
+    );
+  });
+
+  it("presents a new entry as an unsaved local document", async () => {
+    await act(async () => root.render(<TestEditor key="new" newEntry />));
+    await act(async () => vi.waitFor(() => expect(mocks.editor).not.toBeNull()));
+
+    expect(container.querySelector<HTMLInputElement>(".rt-TextFieldInput")?.value).toBe(
+      "newEntry.title",
+    );
+    expectDocumentStatus("unsaved");
   });
 });

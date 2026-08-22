@@ -2,129 +2,186 @@
 
 Blind Journal is a private, zero-knowledge, end-to-end encrypted personal journal.
 
-Users can create an account, sign in, and manage journal entries without giving the server the
-password, encryption keys, or plaintext needed to read them. The browser owns key derivation and
-encryption; the Next.js API owns authentication, authorization, sessions, validation, and storage.
+Users create an account, sign in, and manage journal entries through a real server-backed
+application. The browser derives encryption keys and encrypts journal content before sending it.
+The server authenticates users, enforces authorization, manages sessions, and stores durable
+encrypted records, but it never receives the password or the keys needed to decrypt the journal.
 
-## Why this project exists
+## Product goal
 
-End-to-end encryption is only useful when the surrounding application protocol preserves its
-guarantees. Blind Journal brings those responsibilities together:
+Blind Journal provides a complete, secure journaling experience:
 
-- How registration and username-first login work without sending the master password to the
-  server.
-- How password-derived material is separated into independent keys.
-- How a server authenticates a client without gaining the journal decryption key.
-- How journal data is encrypted before crossing the client boundary.
-- How opaque sessions, authorization, validation, and browser security controls fit around the
-  cryptography.
-- How a stable HTTP boundary keeps React components independent from server implementation details.
+- Explicit create-account and sign-in flows. An unknown sign-in never creates an account.
+- Multiple dated journal entries with title search and rich-text editing.
+- End-to-end encrypted create, read, update, and delete operations.
+- Durable server storage that preserves accounts and entries across deployments.
+- Opaque, expiring, revocable browser sessions.
+- Strict isolation between users at the API, service, and database layers.
+- A portable encrypted export of the authenticated user's journal.
+- Responsive desktop and mobile layouts.
+- English and Spanish interfaces with locale-aware routes, messages, dates, times, and metadata.
+- Installable PWA branding and light and dark themes.
 
-This is the product-security meaning of “zero knowledge”: the server cannot decrypt journal
-contents or obtain the client’s secret keys. It is not a mathematical zero-knowledge-proof system
-and does not use zk-SNARKs or similar proof protocols.
+There are no built-in accounts or default credentials. Every user begins with **Create account**.
 
-## Product behavior
+## How it works
 
-Blind Journal is designed to provide:
+Blind Journal separates authentication from decryption:
 
-- Explicit create-account and sign-in flows; an unknown login never silently creates an account.
-- A login flow that retrieves the account’s password KDF salt before deriving credentials locally.
-- A responsive journal workspace with multiple dated entries, search, favorites, tags, and a
-  Tiptap rich-text editor.
-- Create, read, update, and delete operations through an ordinary HTTP client boundary.
-- English and Spanish interfaces with locale-aware routing, metadata, plurals, dates, and times.
-- Installable PWA branding and a theme-aware interface.
+1. The browser derives independent authentication and encryption keys from the user's password.
+2. The authentication key proves that the user knows the password, but it cannot decrypt the
+   journal.
+3. The key-encryption key stays in browser memory and unwraps entry keys locally.
+4. Journal titles and bodies are encrypted before they cross the client boundary.
+5. The server stores ciphertext and authenticates future requests with an opaque session cookie.
 
-There are no built-in accounts or credentials. Every account begins with the create-account flow.
+This separation allows the server to identify and authorize a user without gaining access to their
+journal content.
 
-## Trust model
+## Security model
 
-The intended deployment model has four logical boundaries:
+In this project, **zero knowledge** means that the server cannot decrypt journal entries or obtain
+the client's journal-encryption keys. It does not mean that the server learns nothing about the
+user, and it does not refer to mathematical zero-knowledge proof systems such as zk-SNARKs.
 
-1. **Client UI** — collects credentials, displays decrypted journal data while unlocked, and owns
-   all user-facing text.
-2. **Client crypto boundary** — derives and owns keys, encrypts outgoing journal payloads, and
-   decrypts incoming ciphertext.
-3. **HTTPS API** — transports agreed request and response contracts and authenticates requests
-   through an opaque session.
-4. **Server** — validates requests, authenticates and authorizes users, and persists authentication
-   verifiers, sessions, wrapped entry keys, and encrypted journal records.
+The design has four trust boundaries:
 
-The browser communicates with versioned Next.js Route Handlers through ordinary same-origin HTTP
-requests. React components and TanStack Query hooks depend only on the endpoint functions under
-`api/`, so storage and server implementation details never leak into the interface.
+1. **Client UI** — collects credentials and displays decrypted journal content while the journal is
+   unlocked.
+2. **Client cryptography** — derives and owns keys, encrypts outgoing content, and decrypts incoming
+   ciphertext.
+3. **HTTPS API** — transports versioned contracts and authenticates requests with an opaque session
+   cookie.
+4. **Server application and database** — validate requests, authenticate and authorize users, and
+   persist authentication verifiers, sessions, wrapped keys, metadata, and encrypted records.
 
-### What the server may know
+### What the server can observe
 
-A practical encrypted service still observes some metadata, including:
+End-to-end encryption protects content, not all metadata. The server can observe:
 
-- The pseudonymous username and opaque user identifier.
-- Account KDF salt.
-- Authentication verifier material.
-- Opaque session records.
-- Entry creation and update timestamps, ciphertext sizes, record counts, request timing, and access
-  patterns.
+- The normalized username, display name, and opaque user identifier.
+- Password-derivation salt and key-schedule version.
+- Authentication-verifier material and hashed session records.
+- Entry identifiers, creation and update times, ciphertext sizes, and record counts.
+- Request timing, IP-derived operational data, and access patterns.
 
-The journal payload—including its title, body, favorite status, and tags—must be encrypted before it
-crosses the client boundary.
+The server also receives a derived authentication key during account creation and sign-in. That key
+can authenticate the user but is cryptographically separated from journal-decryption material.
 
 ### What the server must never receive
 
 - The master password.
 - The password-derived master key.
 - The password-derived key-encryption key.
-- An unwrapped journal entry key.
-- Decrypted journal content.
+- An unwrapped journal-entry key.
+- A plaintext journal title or body.
 
-## Authentication and key hierarchy
+### Browser boundary
 
-Blind Journal uses established cryptographic primitives and a custom, versioned application
-protocol. The application defines how keys and envelopes are organized; audited libraries perform
-the cryptographic operations.
+An unlocked journal exists as plaintext in browser memory so the user can read and edit it. No web
+application can protect that plaintext from arbitrary code already executing in the same origin.
+XSS prevention, dependency control, minimal third-party code, and a restrictive Content Security
+Policy are therefore part of the cryptographic boundary.
 
-### Create account
+## Authentication and encryption protocol
 
-1. The client submits a normalized username to the account-salt endpoint.
-2. The server rejects an existing username or generates a cryptographically random per-account
-   salt.
-3. The client derives a 256-bit master key from the password and salt using Argon2id.
-4. HKDF-SHA-256 derives independent, domain-separated authentication and key-encryption material.
-5. Over HTTPS, the client sends the username and derived authentication key—not the password or
-   journal decryption key.
-6. The server hashes the received authentication key before storing its verifier and completes
-   registration with an opaque session.
-7. The client keeps the derived key-encryption key in memory while the journal is unlocked.
+Blind Journal combines established cryptographic primitives in a versioned application protocol.
+Audited libraries and browser APIs perform the cryptographic operations; application code defines
+how keys, versions, and encrypted envelopes fit together.
+
+### Terminology
+
+| Term | Meaning |
+| --- | --- |
+| **Key schedule** | Versioned recipe defining the password KDF, its parameters, derived-key purposes, and encodings. |
+| **Salt** | Public input to password derivation that makes the same password produce different keys for different accounts. |
+| **Master key** | Short-lived 256-bit value derived from the password and salt with Argon2id. |
+| **Authentication key** | HKDF-derived value sent over HTTPS to authenticate the account. It cannot decrypt journal content. |
+| **Key-encryption key** | Non-extractable AES-KW key derived with HKDF and retained only in browser memory while unlocked. |
+| **Entry key** | Random AES-GCM key created independently for one journal entry. |
+| **Verifier** | One-way digest of the authentication key stored by the server for sign-in comparison. |
+| **Wrapped key** | Entry key encrypted with the key-encryption key before server storage. |
+| **IV** | Fresh, non-secret initialization vector required for each AES-GCM encryption. |
+| **Authenticated additional data (AAD)** | Unencrypted context authenticated with the ciphertext so an envelope cannot be moved to another user or entry. |
+| **Opaque session** | Random cookie value whose meaning, lifetime, and revocation state exist only on the server. |
+
+### Create an account
+
+1. The browser sends the username to the shared authentication-salt endpoint.
+2. The server normalizes the username and returns a key-schedule version and salt metadata. Existing
+   and unknown usernames receive the same response shape.
+3. In a Web Worker, the browser derives a 256-bit master key with Argon2id.
+4. HKDF-SHA-256 derives independent, domain-separated authentication and key-encryption keys.
+5. Over HTTPS, the browser sends the username, salt metadata, and authentication key to the account
+   endpoint. It does not send the password, master key, or key-encryption key.
+6. The server validates the request, stores a one-way verifier, creates the account atomically, and
+   starts an opaque session.
+7. The browser keeps the non-extractable key-encryption key in memory while the journal is unlocked.
 
 ### Sign in
 
-1. The client submits the username.
-2. The server retrieves the account’s salt.
-3. The client accepts the password and derives the same master, authentication, and key-encryption
-   material locally.
-4. The client sends the derived authentication key over HTTPS.
-5. The server hashes the candidate and compares it with the stored verifier using a constant-time
-   byte comparison.
-6. On success, the server creates an opaque, expiring, revocable session and delivers its
-   identifier in a `Secure`, `HttpOnly`, appropriately `SameSite` cookie.
-7. The client keeps the rederived key-encryption key in memory and uses it to unwrap each journal
-   entry key locally.
+1. The browser requests salt metadata for the supplied username.
+2. For an existing account, the server returns its stored metadata. For an unknown username, it
+   returns deterministic decoy metadata with the same response shape.
+3. The browser derives the same master, authentication, and key-encryption keys locally.
+4. The browser sends the derived authentication key over HTTPS.
+5. The server hashes the candidate and compares it with the stored verifier using timing-resistant
+   verification work.
+6. On success, the server creates an expiring, revocable session and sends its identifier in a
+   `Secure`, `HttpOnly`, appropriately `SameSite` cookie.
+7. The browser uses the rederived key-encryption key to unwrap each entry key locally.
 
-Blind Journal deliberately does not use JWTs for browser sessions. A random opaque session ID keeps
-authorization state revocable and avoids putting unnecessary claims in a client-held token.
+Salt lookup, account creation, and sign-in are protected by distributed rate limits. Credential
+failures remain generic so the API does not reveal whether a username or password was incorrect.
 
-### Journal encryption
+Blind Journal uses opaque sessions instead of JWTs. This keeps authorization state revocable and
+avoids placing unnecessary claims in a client-held token. The database stores only a one-way hash of
+each bearer session identifier.
 
-- Journal payloads use authenticated encryption with AES-256-GCM.
+### Encrypt a journal entry
+
+- The title and rich-text body are serialized and encrypted with AES-256-GCM before transmission.
+- Each entry has a random 256-bit AES-GCM key.
 - Every encryption uses a fresh, unpredictable 96-bit IV.
-- Every journal entry has a random encryption key wrapped by the password-derived key-encryption
-  key. Its ciphertext, IV, and wrapped key are stored together.
-- Authenticated additional data binds the ciphertext to versioned context such as the account,
-  entry, and revision.
-- Ciphertext envelopes include only the fields required to select the protocol version and perform
-  authenticated decryption.
-- Passwords, raw keys, plaintext payloads, and session identifiers never enter logs, URLs, query
-  keys, or analytics.
+- The entry key is wrapped with the user's AES-KW key-encryption key.
+- AAD binds the ciphertext to the envelope version, user identifier, and entry identifier.
+- The server stores the ciphertext, IV, wrapped key, protocol version, and minimum record metadata
+  in a single authorized transaction.
+- Title search decrypts eligible entries in the browser and filters them while the journal is
+  unlocked; plaintext titles are not stored in a server index.
+
+Passwords, raw keys, plaintext content, and bearer session identifiers never enter logs, URLs,
+query keys, analytics, or server persistence.
+
+### Sign out and lock
+
+Signing out immediately removes the unlocked user, key-encryption key, decrypted query data, editor
+drafts, and other private state from the browser as far as browser APIs allow. The browser also asks
+the server to revoke the opaque session and clears the session cookie.
+
+Local private state is cleared even if the revocation request fails. Reloading the application
+always requires the password again before encrypted entries can be opened.
+
+JavaScript cannot guarantee that garbage-collected memory is overwritten immediately. Blind Journal
+minimizes the lifetime and number of copies of passwords, plaintext, and raw key bytes instead of
+claiming perfect memory erasure.
+
+## Encrypted export
+
+An authenticated user can export their journal as a single versioned `.blind-journal` archive. The
+export contains only that user's encrypted entries, wrapped keys, public key-schedule parameters,
+and the minimum metadata required to interpret the archive. Titles and bodies remain encrypted.
+
+The export flow:
+
+1. Requests an ownership-scoped, consistent snapshot of the user's encrypted records.
+2. Validates every record against the supported export schema.
+3. Builds the archive without decrypting journal content on the server.
+4. Uses a neutral filename that does not reveal journal titles or usernames.
+5. Offers the completed archive for download only after validation succeeds.
+
+An export is portable but still sensitive. Anyone who obtains it can attempt to guess the user's
+password offline, so strong passwords and careful backup storage remain essential.
 
 ## Architecture
 
@@ -132,146 +189,131 @@ authorization state revocable and avoids putting unnecessary claims in a client-
 flowchart LR
     UI["React and Radix UI"] --> State["Feature logic and TanStack Query"]
     State --> API["Typed API modules and Ky"]
-    API --> Fetch["Browser fetch"]
-    Fetch --> Routes["Next.js Route Handlers"]
-    Routes --> Server["Server-only application logic"]
-    Server --> Store["Persistent server storage"]
+    API --> Routes["Next.js Route Handlers"]
+    Routes --> Services["Server-only services"]
+    Services --> Database["Durable transactional database"]
 
-    State --> Crypto["Client crypto boundary"]
+    State --> Crypto["Client cryptography"]
     Crypto --> Sodium["Argon2id via libsodium"]
-    Crypto --> WebCrypto["HKDF and AES-GCM via Web Crypto"]
-
+    Crypto --> WebCrypto["HKDF, AES-KW, and AES-GCM via Web Crypto"]
+    State --> Export["Encrypted export"]
 ```
 
 ### Boundary rules
 
-- UI code calls endpoint functions under `api/`; it never imports Route Handlers, server services,
-  test handlers, or persistence code.
-- `api/` owns browser endpoint functions and the shared request, response, error-code, and domain
-  types for each API area.
-- The Ky client is intentionally thin: base URL, credentials, stable headers, and transport
-  defaults. It does not hide requests behind a generic abstraction or normalize a contract the
-  project controls.
-- `app/api/v1/` contains thin Route Handlers. They apply HTTP concerns, call server services, and
-  return the agreed response shape.
-- `server/` contains server-only authentication, session, journal, and persistence logic. It
-  validates untrusted input with the Zod schemas colocated with each API area.
-- Storage belongs behind the server boundary. Client code never imports its implementation.
+- UI components call endpoint functions under `api/`. They never import Route Handlers, server
+  services, or persistence code.
+- `api/` owns browser endpoint functions and types or schemas shared across the HTTP boundary.
+- Ky provides a thin, same-origin transport layer with credentials and stable headers.
+- `app/api/v1/` contains thin Route Handlers that apply HTTP concerns and call server services.
+- `server/` owns authentication, authorization, sessions, journal services, export orchestration,
+  and persistence.
+- Untrusted API bodies and database rows are validated at their trust boundaries.
+- The database implementation stays behind the server boundary.
 
 ### API response contract
 
-A successful endpoint returns its data directly. Any error uses an appropriate non-2xx HTTP status
-and a body containing only its stable, domain-namespaced code:
+Successful endpoints return their data directly. Failures use an appropriate non-2xx status and a
+body containing one stable, domain-namespaced code:
 
 ```ts
 type ApiError<TCode extends string> = { code: TCode };
 ```
 
-Ky preserves its native HTTP, network, and timeout error classes while attaching that code for the
-UI. A compile-time exhaustive mapping keeps stable codes independent from the locale catalog, and
-callers intentionally choose the fallback for unknown codes. Diagnostic details remain on the
-server rather than crossing the API boundary.
+Ky retains its native HTTP, network, timeout, and cancellation behavior while attaching recognized
+domain codes. The UI maps known codes exhaustively to localized messages and deliberately chooses a
+fallback for unknown codes. Stack traces and diagnostic details remain on the server.
 
 ### State ownership
 
-| State                                                              | Owner                   |
-| ------------------------------------------------------------------ | ----------------------- |
-| Requests, mutations, and unlocked journal query data               | TanStack Query          |
-| Form fields, editor drafts, and local display controls             | React component state   |
-| Password-derived and unwrapped entry-key material                  | Client crypto boundary  |
-| Accounts, verifiers, sessions, wrapped entry keys, and ciphertext  | Server persistence      |
+| State | Owner |
+| --- | --- |
+| Requests, mutations, and decrypted journal query data | TanStack Query |
+| Form fields, editor drafts, search input, and display controls | Local React state |
+| Unlocked user and non-extractable key-encryption key | In-memory Zustand store |
+| Accounts, verifiers, hashed sessions, wrapped keys, metadata, and ciphertext | Server database |
+| Downloaded encrypted archives | User-selected file-system location |
 
-TanStack Query is used directly rather than hidden behind a generic `useApi` abstraction. Local
-React state remains local.
+Unlocked keys and decrypted journal data are never persisted to browser storage. Signing out clears
+both the unlocked-user state and all private query data.
 
-## Technology choices
+## Server database
 
-| Responsibility                            | Technology                   | Reason                                                                             |
-| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| Application framework                     | Next.js App Router and React | Server/Client Component composition, routing, metadata, and production builds      |
-| Language                                  | TypeScript in strict mode    | Compile-time contracts and aggressive detection of unsafe or unused code           |
-| UI system                                 | Radix Themes and Radix Icons | Accessible primitives, coherent tokens, and responsive component APIs              |
-| Rich-text editor                          | Tiptap                       | A maintained editor framework instead of a custom `contenteditable` implementation |
-| HTTP client                               | Ky                           | A small standards-based client over `fetch`                                        |
-| Async state                               | TanStack Query               | Explicit request, mutation, caching, and invalidation behavior                     |
-| Runtime validation                        | Zod                          | Validation of data entering server and persistence boundaries                      |
-| Password KDF and constant-time operations | libsodium                    | Audited Argon2id, secure randomness, encodings, and byte comparison                |
-| Key derivation and encryption             | Web Crypto API               | Native HKDF-SHA-256 and AES-256-GCM                                                |
-| Localization                              | next-intl and Eloqnt         | Next.js-native routing and formatting with typed, synchronized message catalogs    |
-| Unit tests                                | Vitest                       | Fast focused tests for cryptographic and domain behavior                           |
-| Formatting and linting                    | Biome                        | One deterministic code-quality and formatting tool                                 |
+The server uses a durable transactional database as the authoritative store. It persists:
 
-Exact installed versions and the package-manager version are pinned in `package.json` and
-`pnpm-lock.yaml`.
+- User identifiers, normalized usernames, and display names.
+- Key-schedule versions and KDF salts.
+- Authentication verifiers.
+- Hashed opaque sessions and expiration times.
+- Encrypted journal envelopes and ownership metadata.
 
-## Project structure
+The schema enforces username uniqueness, user-entry ownership, bounded values, and referential
+integrity. Every journal query is scoped by the authenticated user ID, and multi-step writes are
+atomic. Process memory is never used as a persistence fallback.
+
+The database still cannot decrypt journal content because it never receives the key-encryption key
+or an unwrapped entry key.
+
+## Technology
+
+| Responsibility | Technology | Why it is used |
+| --- | --- | --- |
+| Application framework | Next.js App Router and React | Routing, rendering, metadata, Route Handlers, and production builds |
+| Language | TypeScript in strict mode | Explicit contracts and detection of unsafe or unused code |
+| UI system | Radix Themes and Radix Icons | Accessible primitives, coherent tokens, and responsive APIs |
+| Rich-text editor | Tiptap | Maintained document editing instead of a custom `contenteditable` implementation |
+| HTTP client | Ky | Small standards-based layer over `fetch` |
+| Server-state management | TanStack Query | Requests, caching, mutations, and invalidation |
+| Shared unlocked state | Zustand | Small in-memory user and key state shared across the interface |
+| Runtime validation | Zod | Validation at API and database boundaries |
+| Password derivation | libsodium | Audited Argon2id, secure randomness, encodings, and constant-time operations |
+| Key derivation and encryption | Web Crypto | Native HKDF-SHA-256, AES-KW, and AES-256-GCM |
+| Localization | next-intl and Eloqnt | Locale routing, formatting, and synchronized message catalogs |
+| Tests | Vitest | Focused protocol, service, persistence, component, and critical-flow tests |
+| Formatting and linting | Biome | Deterministic formatting and static checks |
+
+The selected database and deployment provider must support durable transactions, uniqueness and
+foreign-key constraints, backups, and a no-overage configuration. Exact dependency and
+package-manager versions are pinned in `package.json` and `pnpm-lock.yaml`.
+
+## Repository map
 
 ```text
-api/                    Client endpoint functions, shared request types, and Zod schemas
-app/                    Next.js pages, layouts, providers, and versioned API Route Handlers
-components/             React UI grouped by owning domain
-  auth/                 Authentication screens and auth-only form composition
-  journal/              Journal workspace and its editor, navigation, and dialogs
-  brand-mark.tsx        The small cross-domain brand component
-crypto/                 Cryptographic helpers and client/server protocol boundaries
+api/                    Browser endpoint functions and shared API contracts
+app/                    Pages, layouts, providers, metadata, and v1 Route Handlers
+components/             UI grouped by product domain
+crypto/                 Low-level encryption and encoding adapters
 hooks/                  Small reusable React hooks
-i18n/                   Locale routing, navigation, message loading, and type integration
-messages/               Translation catalogs as messages/{locale}/{feature}.json
-public/                 Brand assets and install icons
-server/                 Server-only auth, session, journal, and persistence logic
+i18n/                   Locale routing, message loading, navigation, and error mapping
+messages/               Translation catalogs under messages/{locale}/{feature}.json
+public/                 Brand and install assets
+server/                 Server-only services, HTTP helpers, sessions, export, and persistence
+state/                  Small in-memory Zustand stores
+types/                  Cross-cutting TypeScript declarations and branded types
 ```
 
-Directories express concrete ownership. Avoid generic dumping grounds, duplicate contract folders,
-and multiple unrelated locations for the same API area.
+Directories express ownership. Avoid generic dumping grounds, duplicate contract folders, and
+multiple sources of truth for one domain.
 
-## Internationalization
+## Internationalization and UI
 
-All user-facing interface text—including labels, placeholders, errors, success messages, metadata,
-tooltips, and accessibility labels—belongs in the message catalogs. User content, protocol values,
-error codes, identifiers, and developer diagnostics are not translations.
+All user-facing text—including labels, placeholders, errors, success messages, metadata, tooltips,
+and accessibility labels—belongs in the locale catalogs. User content, protocol values, identifiers,
+error codes, code comments, and developer diagnostics are not translations.
 
-```text
-messages/
-  en/
-    auth.json
-    common.json
-    journal.json
-    ...
-  es/
-    auth.json
-    common.json
-    journal.json
-    ...
-```
+English defines the TypeScript catalog shape; Spanish mirrors it. Components request the smallest
+useful namespace with `useTranslations`, server code uses `getTranslations`, and
+`pnpm i18n:check` validates catalog usage and consistency in strict mode.
 
-Each component requests the smallest useful namespace directly through `useTranslations`. Async
-Server Components and metadata use `getTranslations`. Locale-aware navigation comes from the
-wrappers in `i18n/navigation.ts`, and ICU messages handle interpolation and plurals without string
-concatenation.
-
-English defines the TypeScript message shape. Spanish mirrors it. `pnpm i18n:check` runs Eloqnt in
-strict mode so missing, unused, malformed, or inconsistent messages fail validation.
-
-## UI and styling policy
-
-Radix Themes is the application design system.
-
-- Prefer the semantic Radix Themes component that matches the job.
-- Use component variants, responsive props, spacing props, layout primitives, and theme tokens.
-- Compose Radix primitives according to their documented semantics and accessibility behavior.
-- Use Radix Icons for interface iconography.
-- Do not add Tailwind, a second design system, custom UI primitives, or application-specific CSS
-  classes to reproduce behavior Radix already provides.
-- Global CSS is limited to documented library setup and true document-level integration that
-  cannot be expressed through the Radix Themes API.
+Radix Themes is the design system. Prefer its semantic components, responsive properties, variants,
+layout primitives, and tokens. Custom CSS is reserved for document-level integration or behavior
+the design system cannot express, such as the rich-text editing canvas.
 
 ## PWA behavior
 
-Blind Journal is designed as an installable, theme-aware web application with vector branding,
-browser icons, Apple touch artwork, and maskable install icons.
-
-Installation does not imply offline support. Offline caching and background synchronization must be
-introduced deliberately so private data is never cached outside the encrypted storage protocol.
+Blind Journal includes installable, theme-aware metadata and branded icons. Installation does not
+imply offline journal access. Offline caching and background synchronization require a separate
+security design so decrypted data is never placed outside the encrypted storage protocol.
 
 ## Getting started
 
@@ -279,6 +321,7 @@ introduced deliberately so private data is never cached outside the encrypted st
 
 - Node.js 24 or newer
 - Corepack
+- A supported durable database
 - A modern browser with Web Crypto and Web Worker support
 
 Corepack selects the PNPM version pinned by the repository.
@@ -290,35 +333,37 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The locale router directs the browser to the
-appropriate English or Spanish route.
+Open [http://localhost:3000](http://localhost:3000). Locale routing directs the browser to the
+appropriate English or Spanish route. Browsers treat `localhost` as a secure development context;
+every deployed environment must use HTTPS.
 
-`localhost` is treated as a secure development context by browsers. Any deployed version must use
-HTTPS.
+### Environment configuration
 
-### Environment
+| Variable | Purpose |
+| --- | --- |
+| `AUTH_SALT_SECRET` | Base64URL-encoded server secret of at least 32 decoded bytes, used to derive enumeration-resistant salt metadata. |
+| `DATABASE_URL` | Server-only connection string for the durable application database. |
 
-| Variable                   | Purpose                                        | Example   |
-| -------------------------- | ---------------------------------------------- | --------- |
-| `NEXT_PUBLIC_API_BASE_URL` | Browser-visible base URL used by the HTTP layer | `/api/v1` |
+Production fails fast when required configuration is missing or malformed. Generate independent
+secrets for each environment, keep `AUTH_SALT_SECRET` stable for the lifetime of stored accounts,
+and never expose either value to the browser.
 
-The application validates required environment variables at startup and fails fast when they are
-missing or malformed. `NEXT_PUBLIC_` values are always visible in the browser and must never contain
-secrets.
+The browser calls the built-in `/api/v1` Route Handlers on the same origin. A separately deployed
+browser API is not part of this architecture.
 
 ## Commands
 
-| Command           | Purpose                                                     |
-| ----------------- | ----------------------------------------------------------- |
-| `pnpm dev`        | Start the Next.js development server                        |
-| `pnpm build`      | Compile and validate a production build                     |
-| `pnpm start`      | Serve a completed production build                          |
-| `pnpm check`      | Run Biome, localization, TypeScript, and unit-test checks   |
-| `pnpm check:fix`  | Apply safe Biome formatting, lint, and import fixes         |
-| `pnpm i18n:check` | Strictly validate translation usage and catalog consistency |
-| `pnpm typecheck`  | Run TypeScript without emitting files                       |
-| `pnpm test`       | Run the focused Vitest suite once                           |
-| `pnpm test:watch` | Run Vitest in watch mode                                    |
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the Next.js development server |
+| `pnpm build` | Compile and validate a production build |
+| `pnpm start` | Serve a completed production build |
+| `pnpm check` | Run Biome, localization checks, TypeScript, and the test suite |
+| `pnpm check:fix` | Apply safe Biome formatting, lint, and import fixes |
+| `pnpm i18n:check` | Validate message usage and catalog consistency in strict mode |
+| `pnpm typecheck` | Run TypeScript without emitting files |
+| `pnpm test` | Run the Vitest suite once |
+| `pnpm test:watch` | Run Vitest in watch mode |
 
 Before handing off a change, run:
 
@@ -327,44 +372,33 @@ pnpm check
 pnpm build
 ```
 
-## Testing strategy
+## Testing approach
 
-Tests cover the cryptographic protocol, validation and authorization rules, and critical account and
-journal flows against the real application boundaries. Test code does not maintain a parallel local
-server implementation. Focused tests and production builds keep the suite fast while protecting the
-security-sensitive behavior.
+Tests cover cryptographic round trips and tampering, key-schedule behavior, authentication and
+session lifecycle, request validation, database constraints, per-user authorization, cross-user
+isolation, query-cache cleanup, encrypted export, and critical account and journal flows through the
+real application boundaries.
 
-## Security requirements
-
-The implementation must preserve these rules:
-
-- Use cryptographically secure randomness for salts, IVs, keys, session identifiers, and CSRF
-  material.
-- Version encrypted envelopes and authenticated metadata.
-- Keep passwords and unlocked keys short-lived and outside persistent React and Query state.
-- Clear private query data and key material on lock or logout.
-- Validate untrusted request and persisted data at the server boundary.
-- Authorize every journal operation against the authenticated user.
-- Use generic credential failures, rate limiting, and decoy KDF parameters where appropriate to
-  reduce account enumeration.
-- Use opaque, expiring, revocable sessions with origin and CSRF protection for authenticated
-  mutations.
-- Enforce HTTPS, a restrictive Content Security Policy, and appropriate browser security headers in
-  every deployment.
-- Keep server secrets and private persistence exclusively in server-only modules and infrastructure.
-
-No browser application can protect unlocked plaintext from arbitrary code already executing in the
-same origin. Preventing XSS and limiting third-party script execution are therefore part of the
-cryptographic security boundary, not merely UI concerns.
+Test code does not maintain a separate fake API implementation. Persistence tests use the real
+database contract, and production builds verify the framework boundary.
 
 ## Scope
 
-Blind Journal focuses on a personal journal and its security protocol. Sharing, multi-user
-collaboration, attachments, third-party authentication providers, and claims of hiding all traffic
-metadata are outside the project’s scope.
+Blind Journal focuses on private personal journaling with remote accounts, server persistence, and
+client-side encryption. Encrypted export is included for data portability.
 
-## References
+The following are outside its scope:
 
+- Sharing and multi-user collaboration
+- Attachments
+- Third-party identity providers
+- Password recovery that gives the server decryption access
+- Automatic offline editing or background synchronization
+- Claims of hiding all network and traffic metadata
+
+## Further reading
+
+- [Engineering standards](./ENGINEERING_STANDARDS.md)
 - [Next.js documentation](https://nextjs.org/docs)
 - [next-intl documentation](https://next-intl.dev/docs/getting-started/app-router)
 - [Radix Themes documentation](https://www.radix-ui.com/themes/docs/overview/getting-started)

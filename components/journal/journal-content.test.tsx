@@ -8,8 +8,8 @@ import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalContent } from "@/components/journal/journal-content";
 
 const mocks = vi.hoisted(() => ({
-  createEntry: vi.fn(),
   loggingOut: false,
+  replaceRoute: vi.fn(),
   signOut: vi.fn(),
 }));
 
@@ -33,24 +33,53 @@ vi.mock("@radix-ui/themes", async () => {
     VisuallyHidden: Wrapper,
   };
 });
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useLocale: () => "en",
+  useTranslations: () => (key: string) => key,
+}));
+vi.mock("@/i18n/navigation", () => ({
+  usePathname: () => "/journal",
+  useRouter: () => ({ replace: mocks.replaceRoute }),
+}));
 
 vi.mock("@/hooks/use-logout", () => ({
   useLogout: () => ({ signOut: mocks.signOut, isPending: mocks.loggingOut }),
 }));
-vi.mock("@/components/journal/use-create-journal-entry", () => ({
-  useCreateJournalEntry: () => ({ createEntry: mocks.createEntry, isPending: false }),
-}));
-vi.mock("@/components/journal/app-sidebar", () => ({
-  AppSidebar: ({ onCreateEntry, onSignOut }: { onCreateEntry(): void; onSignOut(): void }) => (
-    <>
+vi.mock("@/components/journal/journal-desktop-sidebar", () => ({
+  JournalDesktopSidebar: ({
+    entries,
+    onCollapse,
+    onCreateEntry,
+    onLocaleChange,
+    onSelectEntry,
+    onSignOut,
+  }: {
+    entries: JournalEntry[];
+    onCollapse(): void;
+    onCreateEntry(): void;
+    onLocaleChange(locale: "en" | "es"): void;
+    onSelectEntry(id: string): void;
+    onSignOut(): void;
+  }) => (
+    <div data-testid="desktop-sidebar">
+      <button type="button" onClick={onCollapse}>
+        {"hide-navigation"}
+      </button>
+      {entries.map((entry) => (
+        <button key={entry.id} type="button" onClick={() => onSelectEntry(entry.id)}>
+          {entry.id}
+        </button>
+      ))}
       <button type="button" onClick={onCreateEntry}>
         {"create"}
+      </button>
+      <button type="button" onClick={() => onLocaleChange("es")}>
+        {"change-locale"}
       </button>
       <button type="button" onClick={onSignOut}>
         {"logout"}
       </button>
-    </>
+    </div>
   ),
 }));
 vi.mock("@/components/journal/entry-list", () => ({
@@ -98,7 +127,9 @@ vi.mock("@/components/journal/journal-draft-guard", () => ({
     ) : null,
 }));
 vi.mock("@/components/journal/journal-empty-card", () => ({ JournalEmptyCard: () => null }));
-vi.mock("@/components/journal/journal-mobile-header", () => ({ JournalMobileHeader: () => null }));
+vi.mock("@/components/journal/mobile/journal-mobile-header", () => ({
+  JournalMobileHeader: () => null,
+}));
 vi.mock("@/components/journal/unreadable-entries-notice", () => ({
   UnreadableEntriesNotice: () => null,
 }));
@@ -109,14 +140,16 @@ vi.mock("@/components/journal/journal-editor", async () => {
     JournalEditor: ({
       entry,
       onDraftChange,
+      onShowNavigation,
     }: {
-      entry: JournalEntry;
+      entry: JournalEntry | undefined;
       onDraftChange(dirty: boolean): void;
+      onShowNavigation(): void;
     }) => {
       const [edited, setEdited] = React.useState(false);
 
       return (
-        <div data-testid="editor" data-entry-id={entry.id} data-edited={String(edited)}>
+        <div data-testid="editor" data-entry-id={entry?.id ?? "new"} data-edited={String(edited)}>
           <button
             type="button"
             onClick={() => {
@@ -125,6 +158,9 @@ vi.mock("@/components/journal/journal-editor", async () => {
             }}
           >
             {"make-dirty"}
+          </button>
+          <button type="button" onClick={onShowNavigation}>
+            {"show-navigation"}
           </button>
         </div>
       );
@@ -202,7 +238,7 @@ describe("JournalContent", () => {
   });
 
   it.each([
-    ["create", mocks.createEntry],
+    ["change-locale", mocks.replaceRoute],
     ["logout", mocks.signOut],
   ] as const)("guards %s with the same draft owner", async (action, expected) => {
     await act(async () => click("make-dirty"));
@@ -225,7 +261,20 @@ describe("JournalContent", () => {
     expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-edited")).toBe(
       "false",
     );
-    expect(mocks.createEntry).toHaveBeenCalledOnce();
+    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-entry-id")).toBe(
+      "new",
+    );
+  });
+
+  it("opens a new entry locally without adding it to the persisted list", async () => {
+    expect(container.querySelectorAll("[data-testid='desktop-sidebar'] button")).toHaveLength(6);
+
+    await act(async () => click("create"));
+
+    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-entry-id")).toBe(
+      "new",
+    );
+    expect(container.querySelectorAll("[data-testid='desktop-sidebar'] button")).toHaveLength(6);
   });
 
   it("overlays signing-out feedback without unmounting the journal", async () => {
@@ -235,5 +284,17 @@ describe("JournalContent", () => {
     expect(container.textContent).toContain("signingOut");
     expect(container.querySelector("[data-testid='logout-dialog']")).not.toBeNull();
     expect(container.querySelector("[data-testid='editor']")).not.toBeNull();
+  });
+
+  it("lets the editor reclaim the desktop navigation space", async () => {
+    expect(container.querySelector("[data-testid='desktop-sidebar']")).not.toBeNull();
+
+    await act(async () => click("hide-navigation"));
+
+    expect(container.querySelector("[data-testid='desktop-sidebar']")).toBeNull();
+    expect(container.querySelector("[data-testid='editor']")).not.toBeNull();
+
+    await act(async () => click("show-navigation"));
+    expect(container.querySelector("[data-testid='desktop-sidebar']")).not.toBeNull();
   });
 });

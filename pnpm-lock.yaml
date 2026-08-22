@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: false
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  next-themes@0.4.6: d5d3f6fccf19abc9f9510e0cb05b04476717842b72830eba0b1ee95507014317
+
 importers:
 
   .:
@@ -17,6 +20,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.4)
+      '@tiptap/extensions':
+        specifier: 3.29.2
+        version: 3.29.2(@tiptap/core@3.29.2(@tiptap/pm@3.29.2))(@tiptap/pm@3.29.2)
       '@tiptap/pm':
         specifier: ^3.29.2
         version: 3.29.2
@@ -40,7 +46,7 @@ importers:
         version: 4.13.4(@swc/helpers@0.5.23)(next@16.3.1(@types/node@24.13.3)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       next-themes:
         specifier: ^0.4.6
-        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 0.4.6(patch_hash=d5d3f6fccf19abc9f9510e0cb05b04476717842b72830eba0b1ee95507014317)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -4277,7 +4283,7 @@ snapshots:
     transitivePeerDependencies:
       - '@swc/helpers'
 
-  next-themes@0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next-themes@0.4.6(patch_hash=d5d3f6fccf19abc9f9510e0cb05b04476717842b72830eba0b1ee95507014317)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)

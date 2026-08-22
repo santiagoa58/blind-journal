@@ -1,5 +1,5 @@
 .shell {
-  background: var(--color-background);
+  background: var(--gray-a2);
 }
 
 .toolbarFrame {
@@ -7,47 +7,50 @@
   background: var(--color-panel-solid);
 }
 
-.titleInput {
-  display: block;
-  width: 100%;
-  margin: 0 0 var(--space-5);
-  padding: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: var(--gray-12);
-  font: inherit;
-  font-size: var(--font-size-8);
-  font-weight: 700;
-  line-height: var(--line-height-8);
-  letter-spacing: var(--letter-spacing-8);
+.documentSurface {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: 72ch;
+  min-height: 100%;
+  margin-inline: auto;
+  cursor: text;
 }
 
-.titleInput::placeholder {
-  color: var(--gray-a8);
-}
-
-.titleInput::selection,
+.documentSurface input::selection,
 .proseMirror ::selection {
   background: var(--accent-a5);
 }
 
-.editorBody,
-.editorBody > div,
-.proseMirror {
-  min-height: 50vh;
-}
-
 .editorBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin-block-start: var(--space-5);
   cursor: text;
 }
 
+.editorBody > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
 .proseMirror {
+  flex: 1;
+  min-height: 50vh;
   outline: none;
   color: var(--gray-12);
-  caret-color: var(--accent-10);
+  caret-color: var(--accent-9);
   font-size: var(--font-size-3);
   line-height: 1.75;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Override Tiptap's later `.ProseMirror` rule, which can hide an empty editor's caret in WebKit. */
+.editorBody .proseMirror {
+  position: static;
 }
 
 .proseMirror > :first-child {
@@ -56,6 +59,14 @@
 
 .proseMirror > :last-child {
   margin-bottom: 0;
+}
+
+.emptyEditor:first-child::before {
+  float: left;
+  height: 0;
+  color: var(--gray-a8);
+  content: attr(data-placeholder);
+  pointer-events: none;
 }
 
 .proseMirror p {

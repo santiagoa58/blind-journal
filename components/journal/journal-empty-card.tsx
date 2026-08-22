@@ -5,11 +5,10 @@ import { Avatar, Button, Card, Container, Flex, Heading, Text } from "@radix-ui/
 import { useTranslations } from "next-intl";
 
 type JournalEmptyCardProps = {
-  creatingEntry: boolean;
   onCreateEntry: () => void;
 };
 
-export function JournalEmptyCard({ creatingEntry, onCreateEntry }: JournalEmptyCardProps) {
+export function JournalEmptyCard({ onCreateEntry }: JournalEmptyCardProps) {
   const t = useTranslations("journal");
 
   return (
@@ -24,7 +23,7 @@ export function JournalEmptyCard({ creatingEntry, onCreateEntry }: JournalEmptyC
             {t("empty.description")}
           </Text>
         </Container>
-        <Button onClick={onCreateEntry} loading={creatingEntry} disabled={creatingEntry}>
+        <Button onClick={onCreateEntry}>
           <PlusIcon aria-hidden />
           {t("empty.action")}
         </Button>

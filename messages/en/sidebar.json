@@ -1,11 +1,10 @@
 {
   "journalNavigationLabel": "Journal navigation",
+  "hideEntries": "Hide entries",
   "newEntry": "New entry",
-  "privacy": {
-    "title": "Private by design.",
-    "description": "Your journal is encrypted before it leaves this device."
-  },
+  "showEntries": "Show entries",
   "account": {
+    "menuLabel": "Account menu",
     "signOut": "Sign out",
     "signingOut": "Signing out…",
     "signingOutDescription": "Ending your session and locking this journal."

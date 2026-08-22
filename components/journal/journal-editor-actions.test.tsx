@@ -12,12 +12,14 @@ import { journalEntriesQueryKey } from "@/components/journal/journal-query";
 import { useUser } from "@/state/user.state";
 
 const mocks = vi.hoisted(() => ({
+  createJournalEntry: vi.fn(),
   deleteJournalEntry: vi.fn(),
   updateJournalEntry: vi.fn(),
   success: vi.fn(),
 }));
 
 vi.mock("@/api/journal/journal", () => ({
+  createJournalEntry: mocks.createJournalEntry,
   deleteJournalEntry: mocks.deleteJournalEntry,
   updateJournalEntry: mocks.updateJournalEntry,
 }));
@@ -56,22 +58,9 @@ vi.mock("@radix-ui/themes", async () => {
     }: ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) => (
       <TestButton {...props} />
     ),
-    DropdownMenu: {
-      Content: Wrapper,
-      Item: ({
-        children,
-        disabled,
-        onSelect,
-      }: PropsWithChildren<{ disabled?: boolean; onSelect?(): void }>) => (
-        <button type="button" disabled={disabled} onClick={onSelect}>
-          {children}
-        </button>
-      ),
-      Root: Wrapper,
-      Trigger: Wrapper,
-    },
     Flex: Wrapper,
     IconButton: TestButton,
+    Tooltip: Wrapper,
   };
 });
 
@@ -99,7 +88,7 @@ const onSavingChange = vi.fn();
 
 function getButton(text: string) {
   const button = Array.from(container.querySelectorAll("button")).find(
-    (candidate) => candidate.textContent === text,
+    (candidate) => candidate.getAttribute("aria-label") === text || candidate.textContent === text,
   );
   if (!button) throw new Error(`Missing ${text} button`);
   return button;
@@ -111,17 +100,22 @@ function getDialog() {
   return dialog;
 }
 
-function renderActions(draftDirty = true) {
+function renderActions(
+  draftDirty = true,
+  title = entry.title,
+  currentEntry: JournalEntry | null = entry,
+) {
   root.render(
     <QueryClientProvider client={queryClient}>
       <JournalEditorActions
+        defaultTitle="Untitled entry"
         draftDirty={draftDirty}
         editor={editor}
-        entry={entry}
+        entry={currentEntry ?? undefined}
         onDeleted={onDeleted}
         onSaved={onSaved}
         onSavingChange={onSavingChange}
-        title={entry.title}
+        title={title}
         user={user}
       />
     </QueryClientProvider>,
@@ -129,6 +123,7 @@ function renderActions(draftDirty = true) {
 }
 
 beforeEach(async () => {
+  vi.clearAllMocks();
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   useUser.getState().setUser(user);
   container = document.createElement("div");
@@ -193,6 +188,47 @@ describe("journal entry writes", () => {
   it("disables save for a clean draft", async () => {
     await act(async () => renderActions(false));
     expect(getButton("save").disabled).toBe(true);
+  });
+
+  it("normalizes a blank title before saving", async () => {
+    const savedEntry = { ...entry, title: "Untitled entry" };
+    mocks.updateJournalEntry.mockResolvedValueOnce(savedEntry);
+
+    await act(async () => {
+      renderActions(true, "   ");
+    });
+    expect(getButton("save").disabled).toBe(false);
+
+    await act(async () => {
+      getButton("save").click();
+      await vi.waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
+    });
+    expect(mocks.updateJournalEntry).toHaveBeenCalledWith(
+      { id: entry.id, title: "Untitled entry", content: entry.content },
+      user,
+    );
+  });
+
+  it("creates a new entry only when its local draft is saved", async () => {
+    const createdEntry = { ...entry, id: "created-entry", title: "Untitled entry" };
+    mocks.createJournalEntry.mockResolvedValueOnce(createdEntry);
+
+    await act(async () => renderActions(true, "   ", null));
+    expect(getButton("save").disabled).toBe(false);
+    expect(mocks.createJournalEntry).not.toHaveBeenCalled();
+
+    await act(async () => {
+      getButton("save").click();
+      await vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith(createdEntry));
+    });
+
+    expect(mocks.createJournalEntry).toHaveBeenCalledWith(
+      { title: "Untitled entry", content: entry.content },
+      user,
+    );
+    expect(mocks.updateJournalEntry).not.toHaveBeenCalled();
+    expect(mocks.success).toHaveBeenCalledWith("success.created");
+    expect(container.textContent).not.toContain("deleteEntry");
   });
 });
 

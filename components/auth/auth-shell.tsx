@@ -1,8 +1,9 @@
 import { LockClosedIcon } from "@radix-ui/react-icons";
-import { Box, Callout, Card, Container, Grid, Section, Text } from "@radix-ui/themes";
+import { Box, Callout, Card, Container, Flex, Grid, Section, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
 import { BrandMark } from "@/components/brand-mark";
+import { LanguageSelector } from "@/components/language-selector";
 
 type AuthShellProps = PropsWithChildren;
 
@@ -12,6 +13,9 @@ export function AuthShell({ children }: AuthShellProps) {
   return (
     <Section size={{ initial: "2", md: "3" }} minHeight="100dvh">
       <Container size="4" px={{ initial: "4", sm: "6" }}>
+        <Flex justify="end" mb={{ initial: "4", md: "5" }}>
+          <LanguageSelector />
+        </Flex>
         <Grid
           columns={{ initial: "1", md: "minmax(0, 1fr) minmax(0, 1fr)" }}
           gap={{ initial: "6", md: "8" }}

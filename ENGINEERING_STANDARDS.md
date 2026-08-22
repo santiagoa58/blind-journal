@@ -1,153 +1,210 @@
 # Blind Journal engineering standards
 
-These are the review standards for the intended production application. They are intentionally
-small and decision-oriented: tooling enforces mechanical rules, while this document and code
-review cover architecture, security, and product behavior that a linter cannot understand.
+This document defines the acceptance criteria for Blind Journal. Tooling enforces mechanical rules;
+these standards and code review cover architecture, security, accessibility, and product behavior
+that static analysis cannot evaluate.
 
-## Priorities
+The words **must**, **must not**, **required**, and **never** identify non-negotiable requirements.
+**Should** identifies the expected default; departures require a clear reason.
 
-1. Preserve the zero-knowledge boundary and prevent plaintext or key disclosure.
+## Decision priorities
+
+When requirements compete, use this order:
+
+1. Preserve the zero-knowledge boundary and prevent disclosure of plaintext or secret keys.
 2. Preserve user data and make failures observable without exposing sensitive details.
-3. Prefer the smallest design that has one clear owner and one source of truth.
-4. Use framework and library primitives as documented before introducing application abstractions.
-5. Optimize only after correctness, accessibility, and maintainability are established.
+3. Preserve strict isolation between users.
+4. Prefer the smallest design with one clear owner and one source of truth.
+5. Use documented framework and library primitives before adding application abstractions.
+6. Optimize only after correctness, accessibility, and maintainability are established.
 
-“Simple” means few concepts and predictable ownership. It does not mean omitting validation,
+Here, **simple** means few concepts and predictable ownership. It does not mean omitting validation,
 authorization, error handling, durable storage, or tests at a trust boundary.
 
-## Naming and ownership
+## Architectural ownership
 
 - `api/` owns browser endpoint functions and contracts shared across the HTTP boundary. Shared
   contract names use `Api`; browser-only inputs, state, and failures use `Client`.
-- `server/` owns application services, sessions, persistence, and server-only error-to-HTTP
-  mappings. Client code must never import it. Server entry modules use `server-only` where an
-  accidental client import must fail the build.
-- `crypto/` contains primitive adapters. Domain-specific protocol orchestration stays with its
-  domain so that context, versions, and invariants are visible together.
-- Components and hooks are named for a product responsibility, not a technical pattern. Avoid
-  generic `utils`, `helpers`, `manager`, `wrapper`, and `context` modules unless that term is the
-  actual responsibility.
-- A value has one canonical name across its boundary. Do not use `client`, `API client`, and
-  `server` interchangeably.
+- `app/api/v1/` owns versioned Route Handlers and HTTP concerns such as status codes, headers,
+  request limits, and response formatting.
+- `server/` owns application services, authentication, authorization, sessions, persistence, and
+  server-only error mappings. Client code must never import it.
+- `crypto/` contains low-level primitive adapters. Account and journal protocol orchestration stays
+  with the owning domain so versions, context, and invariants remain visible together.
+- Components and hooks are named for product responsibilities. Avoid generic `utils`, `helpers`,
+  `manager`, `wrapper`, and `context` modules unless the term describes the actual responsibility.
+- A value has one canonical name across a boundary. Do not use `browser`, `API`, and `server`
+  interchangeably.
+
+## State ownership
+
+Choose the owner in this order:
+
+1. URL state for navigable or shareable view choices.
+2. TanStack Query for remote server data and decrypted data cached while unlocked.
+3. Local React state for a component-owned draft or display control.
+4. Zustand for small in-memory state shared by independent components, including the unlocked user
+   and key-encryption key.
+
+React context is reserved for library integration or stable dependency injection. It must not
+become a second application state system, and TanStack Query data must not be copied into Zustand.
+Unlocked keys and decrypted journal content must never be persisted to browser storage.
 
 ## React components
 
-- Components should have one recognizable UI responsibility. Extract a child when it has its own
+- A component should have one recognizable UI responsibility. Extract a child when it has its own
   interaction, accessibility semantics, translation namespace, or independently testable state;
   do not extract markup solely to shorten a file.
 - Keep Client Component boundaries as small as practical. Server Components compose static page
   structure; Client Components own browser APIs and interaction.
-- Prefer derived values during render. Use `useState` for real local state such as a form draft,
-  editor draft, search input, or dialog visibility—not for copies of props or query data.
-- `useEffect` is for synchronizing with an external system. Navigation, data fetching, and derived
-  state should use the framework or owning library when it provides a declarative mechanism.
-- Do not pass callbacks through layers merely to reach an operation's owning component. Do pass
-  explicit props when they make a reusable component's contract clearer than hidden global state.
-- Every loading, empty, failure, disabled, and destructive state must remain accessible and must
-  not silently discard user work.
-
-## State ownership
-
-Use this order when deciding where state belongs:
-
-1. URL state for navigable/shareable view choices.
-2. TanStack Query for remote and cached server data.
-3. Local React state for a component-owned draft or display control.
-4. Zustand for client state used by multiple independent components, including the in-memory
-   unlocked user/key state and cross-workspace selection.
-
-React context is reserved for library/provider integration or stable dependency injection. Do not
-use it as a second application state system, and do not copy TanStack Query data into Zustand.
-Never persist unlocked keys or decrypted journal data to browser storage.
+- Derive values during render when possible. Use `useState` for genuine local state such as form
+  fields, editor drafts, search input, and dialog visibility—not copies of props or query data.
+- Use `useEffect` to synchronize with an external system. Navigation, requests, and derived state
+  should use the owning framework or library's declarative mechanism.
+- Loading, empty, failure, disabled, pending, and destructive states must remain accessible and
+  must not silently discard user work.
 
 ## TanStack Query
 
-- Queries read; mutations write. Query keys must uniquely identify the data and include every
-  variable used by the query function, especially the authenticated user ID for private data.
+- Queries read; mutations write. Query keys must include every value used by the query function,
+  especially the authenticated user ID for private data.
 - Keep key construction next to query options or in a small domain key module. Use the same key for
   reads, cache updates, invalidation, removal, and logout cleanup.
-- Updating immutable cache data from a successful mutation response with `setQueryData` is
-  expected. Use invalidation when the response is not authoritative or several queries are
-  affected. Do not maintain a second derived list beside the cache.
-- Global cache callbacks may present generic, localized notifications. Components handle local
-  recovery UI and navigation. A caught mutation error must never disappear without either a visible
-  state, a global notification, or deliberate reporting.
-- Retry only failures that can plausibly succeed unchanged. Authentication, validation,
-  decryption, and deterministic crypto failures are not retryable.
-- Cancellation signals, mutation serialization, and shared pending state must be used where stale
+- Update authoritative immutable cache data from mutation responses with `setQueryData`. Invalidate
+  when a response is not authoritative or affects several queries.
+- A caught mutation error must produce visible state, a localized notification, or deliberate
+  reporting. It must never disappear silently.
+- Retry only failures that can plausibly succeed without changing the request. Authentication,
+  validation, decryption, and deterministic cryptographic failures are not retryable.
+- Use cancellation signals, mutation serialization, and shared pending state wherever stale
   requests or concurrent writes could corrupt or expose user data.
 
 ## HTTP API and errors
 
-- A successful HTTP status returns data directly. Failures return the appropriate non-2xx status
-  and only `{ code }`, where `code` is a stable domain-namespaced contract value.
-- API, client-domain, and worker failures remain distinct. Error codes are independent of message
-  catalog paths; one exhaustive UI mapping selects the localized message.
-- Unknown codes are programmer/protocol failures: report them and let the caller choose an
-  intentional generic fallback. Do not leak stack traces, database errors, validation internals,
-  usernames, ciphertext, keys, or passwords to clients or logs.
+- Successful endpoints return their data directly. Failures use an appropriate non-2xx status and
+  return only `{ code }`, where `code` is a stable, domain-namespaced contract value.
+- API, browser-domain, and worker failures remain distinct. Error codes are independent of locale
+  message paths; an exhaustive UI mapping selects the localized message.
+- Unknown codes are programming or protocol failures. Report them and require the caller to choose
+  an intentional generic fallback.
+- Never expose stack traces, database errors, validation internals, authentication material,
+  passwords, keys, plaintext, session identifiers, or unnecessary user data.
 - Validate unknown request bodies and persistence reads at their trust boundaries. TypeScript
   assertions and `.json<T>()` do not perform runtime validation.
-- Authenticate and authorize every private endpoint in the handler/service path. Cookie-authenticated
-  mutations require same-origin/CSRF protection, bounded bodies, rate limiting, and `no-store`.
-- Use named HTTP status constants on the server. Browser code reasons about domain error codes and
-  native HTTP/network/timeout error types, not numeric statuses.
+- Authenticate and authorize every private operation in both the handler and service path.
+- Cookie-authenticated mutations require same-origin or CSRF protection, bounded bodies, rate
+  limiting, and `Cache-Control: no-store`.
+- Browser code reasons about domain codes and native HTTP, network, timeout, and cancellation
+  errors—not numeric status values.
+
+## Authentication and sessions
+
+- Account creation and sign-in are explicit flows. An unknown sign-in must never create an account.
+- The salt endpoint returns the same response shape for existing and unknown usernames. Credential
+  failures remain generic, verification work is timing-resistant, and public authentication routes
+  are rate-limited across server instances.
+- The browser derives authentication and key-encryption material from the password. The server
+  receives only the authentication key over HTTPS and stores only its one-way verifier.
+- Browser sessions use random, opaque identifiers in `Secure`, `HttpOnly`, appropriately
+  `SameSite` cookies. They are expiring, revocable, rotated at authentication boundaries, and stored
+  as one-way hashes in the database.
+- Signing out clears local keys and private caches immediately, even if remote session revocation
+  fails. The UI must explain any resulting server-side failure without leaving plaintext unlocked.
 
 ## Zero-knowledge protocol
 
-- The server may store public identifiers and metadata, password-KDF salt and versioned parameters,
-  authentication verifier material, opaque sessions, ciphertext, IVs, and wrapped entry keys. It
-  must never receive a password, master key, key-encryption key, unwrapped entry key, or plaintext.
-- The account KDF/key schedule and encrypted-entry envelope are versioned protocols. Persist all
-  parameters needed to reproduce them; version labels and authenticated-data construction must not
-  drift independently.
-- Derive independent authentication and key-encryption material with explicit domain separation.
-  Use vetted primitives through libsodium/Web Crypto; do not implement cryptographic algorithms.
-- AES-GCM requires a fresh 96-bit IV for each encryption under a key. Bind the envelope version,
-  owner, and entry identity as authenticated additional data. Define whether rollback/replay is in
-  the threat model and implement revision protection if it is claimed.
-- Keep secret material in memory for the shortest practical time, use non-extractable `CryptoKey`s
-  after wrapping, clear owned byte arrays best-effort, and clear private caches immediately on lock
-  or logout—even if remote session revocation fails.
-- Treat XSS prevention and third-party script control as part of the cryptographic boundary. A
-  restrictive CSP and security headers are release requirements.
+### Allowed server data
 
-## Internationalization, UI, and styling
+The server may store usernames, opaque identifiers, KDF salts and parameters, authentication
+verifiers, hashed session tokens, timestamps, ciphertext, IVs, and wrapped entry keys.
+
+It must never receive a master password, password-derived master key, key-encryption key, unwrapped
+entry key, plaintext title, or plaintext journal body.
+
+### Cryptographic requirements
+
+- Treat the account key schedule and encrypted-entry envelope as versioned protocols. Persist every
+  parameter required to reproduce them, and keep protocol versions aligned with AAD construction.
+- Derive authentication and key-encryption material independently with explicit domain separation.
+  Use vetted primitives through libsodium and Web Crypto; never implement cryptographic algorithms.
+- AES-GCM requires a fresh, unpredictable 96-bit IV for every encryption under a key. Bind the
+  envelope version, user identifier, and entry identifier as authenticated additional data.
+- Make derived `CryptoKey` objects non-extractable, clear owned byte arrays best-effort, and keep
+  passwords, plaintext, and raw key material in memory for the shortest practical time.
+- Treat XSS prevention and third-party script control as part of the cryptographic boundary. A
+  restrictive CSP and appropriate browser security headers are release requirements.
+
+## Server database
+
+- Accounts, authentication verifiers, hashed sessions, entry metadata, wrapped keys, and ciphertext
+  reside in one durable, transactional database. Process memory is never authoritative.
+- The schema enforces normalized-username uniqueness, ownership relationships, foreign keys, data
+  bounds, and the indexes required by authenticated queries.
+- Account and session creation, encrypted entry writes, and destructive operations are atomic.
+- Every entry query is scoped by the authenticated user ID at the database and service layers.
+- The persistence boundary validates rows read from the database before returning them to services.
+- Session expiry cleanup and account storage quotas are bounded and observable.
+- Resource exhaustion fails closed and visibly. It must never fall back to process memory or
+  silently enable unapproved paid overages.
+
+## Export and data portability
+
+- Export operates only on the authenticated user's records and never includes another user's data.
+- The default portable export preserves ciphertext, wrapped keys, public KDF parameters, protocol
+  versions, and the minimum metadata required to understand the archive.
+- Export generation is bounded, cancellable, and consistent with a single database snapshot.
+- Filenames and logs do not reveal journal titles or other private content.
+- Any import or restore workflow treats the archive as untrusted, validates its size and structure,
+  and requires explicit confirmation before replacing server data.
+
+## Internationalization, accessibility, and styling
 
 - All user-visible text—including metadata, placeholders, tooltips, accessibility labels, errors,
-  and success messages—comes from the locale catalogs. Protocol values, identifiers, developer
+  and success messages—comes from locale catalogs. Protocol values, identifiers, developer
   diagnostics, and code comments are not translated.
-- English defines the catalog shape; every supported locale must pass strict catalog validation.
+- English defines the catalog shape. Every supported locale must pass strict catalog validation.
 - Radix Themes and Radix primitives are the design system. Prefer their semantic components,
-  responsive props, variants, and tokens. Custom CSS is appropriate only for document-level setup
-  or behavior Radix cannot express, such as the rich-text editing canvas.
-- Preserve native semantics and keyboard behavior when using `asChild`; destructive actions require
-  confirmation and must represent pending/failure states accurately.
+  responsive properties, variants, and tokens.
+- Custom CSS is appropriate only for document-level setup or behavior Radix cannot express, such as
+  the rich-text editing canvas.
+- Preserve native semantics and keyboard behavior when using `asChild`. Every interaction needs an
+  accessible name, visible focus, and meaningful pending and failure states.
+- Destructive actions require confirmation and must never imply success before the server confirms
+  the operation.
 
-## Server persistence and deployment
+## Deployment and operations
 
-- Production cannot use process memory for accounts, sessions, salts, or entries. Vercel functions
-  are ephemeral and horizontally isolated.
-- Use one durable, transactional server store with uniqueness constraints, ownership-scoped
-  queries, atomic account/session creation, optimistic revision checks where required, and bounded
-  cleanup for expired records.
-- The intended deployment uses only an explicitly selected free tier. Resource exhaustion must fail
-  closed and visibly; it must never silently fall back to memory or enable paid overages.
-- Secrets stay in server-only environment variables. `NEXT_PUBLIC_` configuration contains no
-  credentials and production browser requests remain same-origin unless cross-origin operation is
-  deliberately designed and secured.
+- Production browser requests remain same-origin unless cross-origin operation is deliberately
+  designed and secured.
+- Server secrets live only in validated server environment variables. `NEXT_PUBLIC_` configuration
+  must never contain credentials or private infrastructure details.
+- HTTPS, CSP, security headers, request-size limits, database backups, and restore verification are
+  deployment requirements.
+- Logs use server-generated request IDs for correlation and contain no passwords, raw session
+  tokens, key material, plaintext journal content, or ciphertext payloads.
 
-## Verification and review
+## Verification and release review
 
-- Tests cover crypto round trips and tampering, KDF/key-schedule compatibility, auth enumeration and
-  rate limits, session lifecycle, request validation, per-user authorization, persistence
-  constraints, query-cache isolation, and critical create/edit/delete/logout flows.
-- Run `pnpm check` and `pnpm build` before handoff. Security-sensitive changes also require tests
-  that fail when the intended invariant is removed.
-- Biome and TypeScript enforce mechanical consistency. They cannot prove state ownership,
-  separation of concerns, correct query keys, authorization, safe crypto parameters, useful UX, or
-  whether text is genuinely user-facing; those remain explicit code-review responsibilities.
+Automated tests cover:
 
-Review comments use `TODO(review-<severity>-<topic>)`, where severity is `critical`, `high`,
-`medium`, or `low`. Each comment states the violated invariant and the required outcome, without
-prescribing a large abstraction.
+- Cryptographic round trips, tampering, key-schedule determinism, and domain separation.
+- Account enumeration defenses, distributed rate limits, and session lifecycle.
+- Request validation, per-user authorization, and cross-user isolation.
+- Database constraints, transactions, cleanup, quotas, backup, and restore behavior.
+- Query-cache isolation and clearing of unlocked state.
+- Critical account creation, sign-in, create, edit, delete, export, and logout flows.
+
+Before handing off a change, run:
+
+```bash
+pnpm check
+pnpm build
+```
+
+Security-sensitive changes also require a regression test that fails when the intended invariant is
+removed. CI installs the frozen lockfile and runs `pnpm check`, `pnpm build`, and
+`pnpm audit --prod` for every pull request and push to the main branch.
+
+Biome and TypeScript enforce mechanical consistency. They cannot prove correct ownership,
+authorization, user isolation, safe cryptographic parameters, accessible UX, or whether text is
+genuinely user-facing. Those remain explicit review responsibilities.

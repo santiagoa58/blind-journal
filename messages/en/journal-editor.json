@@ -1,5 +1,9 @@
 {
-  "encryptedOnDevice": "Encrypted on this device",
+  "documentStatus": {
+    "saved": "Saved and encrypted",
+    "unsaved": "Unsaved changes",
+    "saving": "Encrypting and saving…"
+  },
   "entryActions": "Entry actions",
   "deleteEntry": "Delete entry",
   "deleteDialog": {
@@ -13,8 +17,8 @@
     "discard": "Discard changes"
   },
   "entryTitleLabel": "Entry title",
-  "entryTitlePlaceholder": "Untitled entry",
   "entryBodyLabel": "Journal entry",
+  "entryBodyPlaceholder": "Start writing…",
   "lastSaved": "Last saved {time}",
   "formatting": {
     "toolbarLabel": "Text formatting",
