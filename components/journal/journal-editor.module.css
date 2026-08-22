@@ -9,15 +9,11 @@
 
 .titleInput {
   display: block;
-  field-sizing: content;
   width: 100%;
-  min-height: 1.1em;
   margin: 0 0 var(--space-5);
   padding: 0;
   border: 0;
   outline: none;
-  overflow: hidden;
-  resize: none;
   background: transparent;
   color: var(--gray-12);
   font: inherit;

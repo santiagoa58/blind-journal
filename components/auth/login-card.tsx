@@ -1,6 +1,6 @@
 "use client";
 
-import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
+import { PersonIcon } from "@radix-ui/react-icons";
 import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -16,6 +16,7 @@ import { useAppToast } from "@/hooks/use-app-toast";
 import { useClientSessionActions } from "@/hooks/use-client-session";
 import { Link as NavigationLink } from "@/i18n/navigation";
 import { LabeledInput } from "./labeled-input";
+import { PasswordInput } from "./password-input";
 
 export function LoginCard() {
   const t = useTranslations("auth");
@@ -59,7 +60,7 @@ export function LoginCard() {
   }
 
   return (
-    <Card size="4" variant="classic">
+    <Card size="4" variant="surface">
       <Text as="p" size="2" weight="medium" color="iris">
         {t("signIn.eyebrow")}
       </Text>
@@ -86,19 +87,18 @@ export function LoginCard() {
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
-          <LabeledInput
+          <PasswordInput
             autoComplete="current-password"
             label={t("signIn.passwordLabel")}
             name="password"
             placeholder={t("signIn.passwordPlaceholder")}
             minLength={MIN_PASSWORD_LENGTH}
             maxLength={MAX_PASSWORD_LENGTH}
-            type="password"
             required
             disabled={loginMutation.isPending}
-          >
-            <LockClosedIcon aria-hidden />
-          </LabeledInput>
+            showPasswordLabel={t("showPassword")}
+            hidePasswordLabel={t("hidePassword")}
+          />
           <Button
             type="submit"
             size="3"

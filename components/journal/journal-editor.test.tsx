@@ -82,8 +82,8 @@ function TestEditor() {
 }
 
 function changeTitle(value: string) {
-  const title = container.querySelector<HTMLTextAreaElement>("textarea");
-  const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+  const title = container.querySelector<HTMLInputElement>("input[type='text']");
+  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
   if (!title || !setValue) throw new Error("Missing title field");
   setValue.call(title, value);
   title.dispatchEvent(new Event("input", { bubbles: true }));

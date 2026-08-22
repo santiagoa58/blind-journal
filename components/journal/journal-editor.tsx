@@ -152,14 +152,14 @@ export function JournalEditor({
                     </Flex>
                   </Flex>
 
-                  <textarea
+                  <input
+                    type="text"
                     className={css.titleInput}
                     aria-label={t("entryTitleLabel")}
                     value={title}
                     placeholder={t("entryTitlePlaceholder")}
                     maxLength={MAX_JOURNAL_ENTRY_TITLE_CHARACTERS}
                     disabled={saving}
-                    rows={1}
                     onChange={(event) => {
                       const nextTitle = event.target.value;
                       setTitle(nextTitle);

@@ -1,6 +1,6 @@
 "use client";
 
-import { LockClosedIcon, PersonIcon } from "@radix-ui/react-icons";
+import { PersonIcon } from "@radix-ui/react-icons";
 import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -16,6 +16,7 @@ import { useAppToast } from "@/hooks/use-app-toast";
 import { useClientSessionActions } from "@/hooks/use-client-session";
 import { Link as NavigationLink } from "@/i18n/navigation";
 import { LabeledInput } from "./labeled-input";
+import { PasswordInput } from "./password-input";
 
 export function CreateAccountCard() {
   const t = useTranslations("auth");
@@ -59,7 +60,7 @@ export function CreateAccountCard() {
   }
 
   return (
-    <Card size="4" variant="classic">
+    <Card size="4" variant="surface">
       <Text as="p" size="2" weight="medium" color="iris">
         {t("createAccount.eyebrow")}
       </Text>
@@ -86,7 +87,7 @@ export function CreateAccountCard() {
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
-          <LabeledInput
+          <PasswordInput
             autoComplete="new-password"
             description={t("passwordRequirements", {
               maxLength: MAX_PASSWORD_LENGTH,
@@ -95,27 +96,25 @@ export function CreateAccountCard() {
             label={t("createAccount.passwordLabel")}
             name="password"
             placeholder={t("createAccount.passwordPlaceholder")}
-            type="password"
             minLength={MIN_PASSWORD_LENGTH}
             maxLength={MAX_PASSWORD_LENGTH}
             required
             disabled={createAccountMutation.isPending}
-          >
-            <LockClosedIcon aria-hidden />
-          </LabeledInput>
-          <LabeledInput
+            showPasswordLabel={t("showPassword")}
+            hidePasswordLabel={t("hidePassword")}
+          />
+          <PasswordInput
             autoComplete="new-password"
             label={t("createAccount.confirmPasswordLabel")}
             name="confirmPassword"
             placeholder={t("createAccount.confirmPasswordPlaceholder")}
-            type="password"
             minLength={MIN_PASSWORD_LENGTH}
             maxLength={MAX_PASSWORD_LENGTH}
             required
             disabled={createAccountMutation.isPending}
-          >
-            <LockClosedIcon aria-hidden />
-          </LabeledInput>
+            showPasswordLabel={t("showConfirmPassword")}
+            hidePasswordLabel={t("hideConfirmPassword")}
+          />
 
           <Button
             type="submit"

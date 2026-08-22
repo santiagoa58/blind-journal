@@ -89,8 +89,12 @@ describe("EntryList", () => {
     const onSelectEntry = vi.fn();
     await act(async () => renderEntryList({ onSelectEntry }));
 
-    expect(container.querySelectorAll("ul > li")).toHaveLength(2);
-    expect(getButton("Open First entry").getAttribute("aria-current")).toBe("true");
+    expect(container.querySelector("[role='radiogroup']")?.getAttribute("aria-label")).toBe(
+      "Journal entries",
+    );
+    expect(container.querySelectorAll("[role='radio']")).toHaveLength(2);
+    expect(getButton("Open First entry").getAttribute("aria-checked")).toBe("true");
+    expect(getButton("Open Second entry").getAttribute("aria-checked")).toBe("false");
 
     await act(async () => getButton("Open Second entry").click());
     expect(onSelectEntry).toHaveBeenCalledWith(secondEntry.id);
@@ -106,13 +110,13 @@ describe("EntryList", () => {
     await act(async () => {
       changeSearch(search, "second");
     });
-    expect(container.querySelectorAll("ul > li")).toHaveLength(1);
+    expect(container.querySelectorAll("[role='radio']")).toHaveLength(1);
     expect(container.querySelector("output")?.textContent).toBe("1 entry");
 
     await act(async () => {
       changeSearch(search, "missing");
     });
-    expect(container.querySelectorAll("ul > li")).toHaveLength(0);
+    expect(container.querySelectorAll("[role='radio']")).toHaveLength(0);
     expect(container.textContent).toContain("No matching entries");
     expect(container.textContent).toContain("Try a different entry title.");
   });
