@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import { base64ToUint8Array } from "@/crypto/base64";
-import { deriveAuthSalt } from "@/server/auth-salt";
+import { deriveAuthSalt } from "@/server/auth/auth-salt";
 
 vi.mock("server-only", () => ({}));
 
@@ -17,6 +17,7 @@ describe("authentication salts", () => {
 
     const salt = deriveAuthSalt("journal.user");
 
+    expect(salt).toBe("+CcbPQseMrnkxUVTxiGn/g==");
     expect(deriveAuthSalt("journal.user")).toBe(salt);
     expect(deriveAuthSalt("another.user")).not.toBe(salt);
     expect(base64ToUint8Array(salt)).toHaveLength(

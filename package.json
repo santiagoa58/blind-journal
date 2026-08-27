@@ -11,9 +11,11 @@
     "i18n:check": "eloqnt lint --strict",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:database": "RUN_DATABASE_TESTS=1 node --env-file=.env node_modules/vitest/vitest.mjs run server/database/database.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-icons": "^1.3.2",
     "@radix-ui/themes": "^3.3.0",
     "@tanstack/react-query": "^5.101.4",
@@ -21,6 +23,7 @@
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",
     "@tiptap/starter-kit": "^3.29.2",
+    "client-only": "0.0.1",
     "ky": "^2.0.2",
     "libsodium-wrappers-sumo": "^0.8.4",
     "next": "16.3.1",
@@ -39,7 +42,9 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "hono": "^4.13.4",
     "jsdom": "^29.1.1",
+    "neon": "^4.1.0",
     "typescript": "^5",
     "vitest": "^4.1.10"
   },

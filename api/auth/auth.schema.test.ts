@@ -6,7 +6,6 @@ import {
 } from "@/api/auth/auth.constants";
 import {
   createAccountRequestSchema,
-  normalizeUsername,
   passwordSchema,
   saltRequestSchema,
   verifyCredentialsRequestSchema,
@@ -99,9 +98,8 @@ describe("username validation", () => {
     },
   );
 
-  it("trims display input and normalizes identity consistently", () => {
+  it("trims display input", () => {
     expect(saltRequestSchema.parse({ username: "  Journal.User  " }).username).toBe("Journal.User");
-    expect(normalizeUsername("  Journal.User  ")).toBe("journal.user");
   });
 });
 

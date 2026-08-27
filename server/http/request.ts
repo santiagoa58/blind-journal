@@ -1,29 +1,13 @@
 import "server-only";
 
-import { constants as HTTP_STATUS } from "node:http2";
-import { NextResponse } from "next/server";
 import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/api/request.error";
-import { getRequestErrorHttpStatus } from "@/server/request.error";
 
 const JSON_CONTENT_TYPE = "application/json";
-
-export function jsonResponse<T>(body: T, status = HTTP_STATUS.HTTP_STATUS_OK): NextResponse<T> {
-  return NextResponse.json(body, {
-    status,
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
-}
 
 export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
 
   return origin !== null && origin === new URL(request.url).origin;
-}
-
-export function requestErrorResponse(code: RequestErrorCode) {
-  return jsonResponse({ code }, getRequestErrorHttpStatus(code));
 }
 
 type JsonBodyResult = { data: unknown } | { error: RequestErrorCode };

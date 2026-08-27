@@ -10,14 +10,6 @@ const journalEntriesCursorDataSchema: z.ZodType<JournalEntriesCursorData> = z.st
   updatedAt: z.iso.datetime(),
 });
 
-export function compareJournalEntries(
-  left: EncryptedJournalEntry,
-  right: EncryptedJournalEntry,
-): number {
-  const updatedAtComparison = right.updatedAt.localeCompare(left.updatedAt);
-  return updatedAtComparison === 0 ? right.id.localeCompare(left.id) : updatedAtComparison;
-}
-
 export function encodeJournalEntriesCursor(entry: EncryptedJournalEntry): Base64Url {
   return valueToBase64Url({ id: entry.id, updatedAt: entry.updatedAt });
 }
@@ -30,11 +22,4 @@ export function decodeJournalEntriesCursor(
   } catch {
     return undefined;
   }
-}
-
-export function entryIsAfterCursor(entry: EncryptedJournalEntry, cursor: JournalEntriesCursorData) {
-  return (
-    entry.updatedAt < cursor.updatedAt ||
-    (entry.updatedAt === cursor.updatedAt && entry.id < cursor.id)
-  );
 }

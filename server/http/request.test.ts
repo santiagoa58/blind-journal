@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
-import { readJsonBody, requestErrorResponse } from "@/server/http";
+import { readJsonBody } from "@/server/http/request";
 
 vi.mock("server-only", () => ({}));
 
@@ -156,19 +156,5 @@ describe("JSON request bodies", () => {
     await expect(readJsonBody(request, 2)).resolves.toEqual({
       error: REQUEST_ERROR_CODES.invalid,
     });
-  });
-});
-
-describe("request error responses", () => {
-  it.each([
-    [REQUEST_ERROR_CODES.invalid, 400],
-    [REQUEST_ERROR_CODES.forbidden, 403],
-    [REQUEST_ERROR_CODES.payloadTooLarge, 413],
-    [REQUEST_ERROR_CODES.unsupportedMediaType, 415],
-  ] as const)("maps %s to HTTP %i", async (code, expectedStatus) => {
-    const response = requestErrorResponse(code);
-
-    expect(response.status).toBe(expectedStatus);
-    await expect(response.json()).resolves.toEqual({ code });
   });
 });

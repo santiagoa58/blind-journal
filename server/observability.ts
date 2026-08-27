@@ -9,19 +9,10 @@ type ServerErrorContext = {
 };
 
 function errorName(error: unknown): string {
-  if (error instanceof TypeError) {
-    return "TypeError";
+  if (!(error instanceof Error)) {
+    return "NonErrorThrown";
   }
-  if (error instanceof RangeError) {
-    return "RangeError";
-  }
-  if (error instanceof SyntaxError) {
-    return "SyntaxError";
-  }
-  if (error instanceof Error) {
-    return "Error";
-  }
-  return "NonErrorThrown";
+  return /^[A-Za-z][A-Za-z0-9]*Error$/.test(error.name) ? error.name : "Error";
 }
 
 export function reportServerError({

@@ -26,10 +26,6 @@ export const usernameSchema = requiredUsernameSchema
   .max(MAX_USERNAME_LENGTH)
   .regex(USERNAME_PATTERN);
 
-export function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
-}
-
 export const passwordSchema = z.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH);
 
 const authKeySchema = z.base64().refine((authKey) => {

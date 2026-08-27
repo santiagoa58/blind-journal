@@ -4,11 +4,9 @@ import { createHmac } from "node:crypto";
 import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import type { Base64 } from "@/types/base64";
 
-// TODO(review-low-auth-salt-context-version): The embedded "v1" is not selected through the shared
-// authentication protocol version and can drift from CURRENT_AUTH_KEY_SCHEDULE. Remove the
-// misleading version label if this server-only domain separator is intentionally stable, or make
-// it an explicit field of the versioned schedule if changing it is protocol behavior.
-const AUTH_SALT_CONTEXT = "blind-journal:auth-salt:v1";
+// This server-only domain separator is intentionally independent of the client key schedule.
+// Accounts persist the generated salt, while the schedule defines how clients use that salt.
+const AUTH_SALT_CONTEXT = "blind-journal:auth-salt";
 const DEVELOPMENT_AUTH_SALT_SECRET = "blind-journal-development-only-auth-salt-secret";
 const MINIMUM_AUTH_SALT_SECRET_BYTES = 32;
 
