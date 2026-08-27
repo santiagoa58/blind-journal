@@ -1,17 +1,16 @@
 import type { NextRequest } from "next/server";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
-import { isSameOrigin, jsonResponse, requestErrorResponse } from "@/server/http";
-import { endSession } from "@/server/session";
+import { endSession } from "@/server/auth/session";
+import { isSameOrigin } from "@/server/http/request";
+import { jsonResponse, requestErrorResponse } from "@/server/http/response";
 
-export const runtime = "nodejs";
-
-export function POST(request: NextRequest) {
+export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
     return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
   const response = jsonResponse(null);
-  endSession(request, response);
+  await endSession(request, response);
 
   return response;
 }

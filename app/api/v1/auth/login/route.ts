@@ -2,12 +2,11 @@ import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
 import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/api/auth/auth.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
-import { verifyCredentials } from "@/server/auth";
-import { getAuthErrorHttpStatus } from "@/server/auth.error";
-import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
-import { startSession } from "@/server/session";
-
-export const runtime = "nodejs";
+import { verifyCredentials } from "@/server/auth/auth";
+import { startSession } from "@/server/auth/session";
+import { getErrorHttpStatus } from "@/server/http/error-status";
+import { isSameOrigin, readJsonBody } from "@/server/http/request";
+import { jsonResponse, requestErrorResponse } from "@/server/http/response";
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
@@ -21,10 +20,10 @@ export async function POST(request: NextRequest) {
 
   const result = await verifyCredentials(body.data);
   if (!result.success) {
-    return jsonResponse(result.error, getAuthErrorHttpStatus(result.error.code));
+    return jsonResponse(result.error, getErrorHttpStatus(result.error.code));
   }
 
   const response = jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_OK);
-  startSession(response, result.data.user.id);
+  await startSession(request, response, result.data.user.id);
   return response;
 }

@@ -5,13 +5,12 @@ import { journalEntryIdSchema } from "@/api/journal/journal.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
 import type { ApiErrorResponse } from "@/api/response.type";
 import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
-import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
-import { deleteEntry, updateEntry } from "@/server/journal";
-import { getJournalErrorHttpStatus } from "@/server/journal.error";
-import { getSessionUserId } from "@/server/session";
+import { getSessionUserId } from "@/server/auth/session";
+import { getErrorHttpStatus } from "@/server/http/error-status";
+import { isSameOrigin, readJsonBody } from "@/server/http/request";
+import { jsonResponse, requestErrorResponse } from "@/server/http/response";
+import { deleteEntry, updateEntry } from "@/server/journal/journal";
 import { unauthorizedResponse } from "../../api-response";
-
-export const runtime = "nodejs";
 
 type RouteContext = {
   params: Promise<{ entryId: string }>;
@@ -22,7 +21,7 @@ function entryNotFoundResponse() {
     { code: JOURNAL_ERROR_CODES.entryNotFound } satisfies ApiErrorResponse<
       (typeof JOURNAL_ERROR_CODES)["entryNotFound"]
     >,
-    getJournalErrorHttpStatus(JOURNAL_ERROR_CODES.entryNotFound),
+    getErrorHttpStatus(JOURNAL_ERROR_CODES.entryNotFound),
   );
 }
 
@@ -31,7 +30,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
-  const userId = getSessionUserId(request);
+  const userId = await getSessionUserId(request);
 
   if (!userId) {
     return unauthorizedResponse();
@@ -48,10 +47,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return requestErrorResponse(body.error);
   }
 
-  const result = updateEntry(userId, entryId, body.data);
+  const result = await updateEntry(userId, entryId, body.data);
   return result.success
     ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_OK)
-    : jsonResponse(result.error, getJournalErrorHttpStatus(result.error.code));
+    : jsonResponse(result.error, getErrorHttpStatus(result.error.code));
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
@@ -59,7 +58,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return requestErrorResponse(REQUEST_ERROR_CODES.forbidden);
   }
 
-  const userId = getSessionUserId(request);
+  const userId = await getSessionUserId(request);
 
   if (!userId) {
     return unauthorizedResponse();
@@ -71,9 +70,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     return entryNotFoundResponse();
   }
 
-  const result = deleteEntry(userId, entryId);
+  const result = await deleteEntry(userId, entryId);
 
   return result.success
     ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_OK)
-    : jsonResponse(result.error, getJournalErrorHttpStatus(result.error.code));
+    : jsonResponse(result.error, getErrorHttpStatus(result.error.code));
 }

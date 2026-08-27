@@ -2,11 +2,10 @@ import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
 import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/api/auth/auth.schema";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
-import { getAuthSalt } from "@/server/auth";
-import { getAuthErrorHttpStatus } from "@/server/auth.error";
-import { isSameOrigin, jsonResponse, readJsonBody, requestErrorResponse } from "@/server/http";
-
-export const runtime = "nodejs";
+import { getAuthSalt } from "@/server/auth/auth";
+import { getErrorHttpStatus } from "@/server/http/error-status";
+import { isSameOrigin, readJsonBody } from "@/server/http/request";
+import { jsonResponse, requestErrorResponse } from "@/server/http/response";
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
@@ -18,8 +17,8 @@ export async function POST(request: NextRequest) {
     return requestErrorResponse(body.error);
   }
 
-  const result = getAuthSalt(body.data);
+  const result = await getAuthSalt(body.data);
   return result.success
     ? jsonResponse(result.data, HTTP_STATUS.HTTP_STATUS_OK)
-    : jsonResponse(result.error, getAuthErrorHttpStatus(result.error.code));
+    : jsonResponse(result.error, getErrorHttpStatus(result.error.code));
 }
