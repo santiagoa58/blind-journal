@@ -7,6 +7,14 @@ import { LanguageSelector } from "@/components/language-selector";
 
 type AuthShellProps = PropsWithChildren;
 
+function Brand() {
+  return (
+    <BrandMark.Root>
+      <BrandMark.Avatar />
+      <BrandMark.Name />
+    </BrandMark.Root>
+  );
+}
 export function AuthShell({ children }: AuthShellProps) {
   const t = useTranslations("auth");
 
@@ -24,7 +32,7 @@ export function AuthShell({ children }: AuthShellProps) {
           <Box display={{ initial: "none", md: "block" }}>
             <Card size="4" variant="surface">
               <Grid gap={{ initial: "7", md: "9" }}>
-                <BrandMark />
+                <Brand />
 
                 <Box>
                   <Text as="p" size="2" weight="medium" color="iris">
@@ -57,7 +65,7 @@ export function AuthShell({ children }: AuthShellProps) {
 
           <Container size="1" width="100%">
             <Box display={{ initial: "block", md: "none" }} mb="5">
-              <BrandMark />
+              <Brand />
             </Box>
             {children}
           </Container>

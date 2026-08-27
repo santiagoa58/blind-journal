@@ -4,8 +4,8 @@ import { MutationObserver, QueryClient, QueryClientProvider } from "@tanstack/re
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useAppSession } from "@/client-state/app-session.state";
 import { useLogout } from "@/hooks/use-logout";
-import { useUser } from "@/state/user.state";
 
 const mocks = vi.hoisted(() => ({
   logout: vi.fn(),
@@ -28,7 +28,8 @@ function Harness() {
 beforeEach(async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.clearAllMocks();
-  useUser.getState().setUser({
+  useAppSession.setState({ initialized: true, session: { status: "signed-out" } });
+  useAppSession.getState().unlock({
     id: "user-one",
     username: "user-one",
     displayName: "User One",
@@ -58,12 +59,11 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
-  useUser.getState().setUser(null);
   container.remove();
 });
 
 describe("useLogout", () => {
-  it("shows pending state until revocation succeeds, then clears the client session", async () => {
+  it("clears private client state immediately while server revocation finishes", async () => {
     const remoteRevocation = Promise.withResolvers<null>();
     mocks.logout.mockReturnValueOnce(remoteRevocation.promise);
 
@@ -73,21 +73,23 @@ describe("useLogout", () => {
     });
 
     expect(control.isPending).toBe(true);
-    expect(useUser.getState().user).not.toBeNull();
-    expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeDefined();
-    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(useAppSession.getState().session.status).toBe("signed-out");
+    expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeUndefined();
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
 
     remoteRevocation.resolve(null);
     await act(async () => {
       await vi.waitFor(() => expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/"));
     });
 
-    expect(useUser.getState().user).toBeNull();
+    expect(useAppSession.getState().session.status).toBe("signed-out");
     expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeUndefined();
-    expect(queryClient.getMutationCache().findAll()).toHaveLength(0);
+    expect(
+      queryClient.getMutationCache().findAll({ mutationKey: ["journal"], exact: false }),
+    ).toHaveLength(0);
   });
 
-  it("keeps the current session when revocation fails", async () => {
+  it("keeps local keys and plaintext cleared when remote revocation fails", async () => {
     const remoteRevocation = Promise.withResolvers<null>();
     mocks.logout.mockReturnValueOnce(remoteRevocation.promise);
 
@@ -97,8 +99,8 @@ describe("useLogout", () => {
       await vi.waitFor(() => expect(control.isPending).toBe(false));
     });
 
-    expect(useUser.getState().user).not.toBeNull();
-    expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeDefined();
-    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(useAppSession.getState().session.status).toBe("signed-out");
+    expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeUndefined();
+    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
   });
 });

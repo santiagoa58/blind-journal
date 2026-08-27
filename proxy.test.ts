@@ -6,7 +6,10 @@ import { createContentSecurityPolicy } from "@/content-security-policy";
 import proxy, { config } from "@/proxy";
 
 const middlewareMocks = vi.hoisted(() => ({ request: undefined as NextRequest | undefined }));
+const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));
 
+vi.mock("server-only", () => ({}));
+vi.mock("@/server/environment", () => environmentMocks);
 vi.mock("next-intl/middleware", () => ({
   default: () => (request: NextRequest) => {
     middlewareMocks.request = request;
@@ -15,12 +18,12 @@ vi.mock("next-intl/middleware", () => ({
 }));
 
 afterEach(() => {
-  vi.unstubAllEnvs();
+  vi.clearAllMocks();
 });
 
 describe("nonce-based content security policy", () => {
   it("uses the nonce for scripts without allowing inline script execution", () => {
-    vi.stubEnv("NODE_ENV", "production");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
 
     const policy = createContentSecurityPolicy("test-nonce");
 
@@ -35,7 +38,7 @@ describe("nonce-based content security policy", () => {
   });
 
   it("adds only the development script exception needed by Next.js", () => {
-    vi.stubEnv("NODE_ENV", "development");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "development" });
 
     const policy = createContentSecurityPolicy("test-nonce");
 
@@ -44,7 +47,7 @@ describe("nonce-based content security policy", () => {
   });
 
   it("generates a fresh nonce and forwards its policy through the i18n proxy", () => {
-    vi.stubEnv("NODE_ENV", "production");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
 
     const firstResponse = proxy(new NextRequest("https://blind-journal.test/en"));
     const firstPolicy = firstResponse.headers.get("content-security-policy");

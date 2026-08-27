@@ -25,6 +25,15 @@ type JournalDesktopSidebarProps = {
   selectedEntryId: string | undefined;
 };
 
+function Brand() {
+  return (
+    <BrandMark.Root>
+      <BrandMark.Avatar />
+      <BrandMark.Name />
+    </BrandMark.Root>
+  );
+}
+
 export function JournalDesktopSidebar({
   currentUser,
   entries,
@@ -53,7 +62,7 @@ export function JournalDesktopSidebar({
       <aside aria-label={t("journalNavigationLabel")}>
         <Flex direction="column" gap="4" p="4" pb="0">
           <Flex align="center" justify="between" gap="3">
-            <BrandMark />
+            <Brand />
             {entries.length > 0 ? (
               <Tooltip content={t("hideEntries")}>
                 <IconButton
@@ -69,7 +78,7 @@ export function JournalDesktopSidebar({
               </Tooltip>
             ) : null}
           </Flex>
-          <Button size="3" onClick={onCreateEntry}>
+          <Button size="3" variant="surface" onClick={onCreateEntry}>
             <PlusIcon aria-hidden />
             {t("newEntry")}
           </Button>

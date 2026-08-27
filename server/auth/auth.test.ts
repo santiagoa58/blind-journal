@@ -9,9 +9,11 @@ const accountDatabaseMocks = vi.hoisted(() => ({
   createUserWithSession: vi.fn(),
   findUserByUsername: vi.fn(),
 }));
+const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/database/accounts", () => accountDatabaseMocks);
+vi.mock("@/server/environment", () => environmentMocks);
 
 const AUTH_KEY = toBase64(new Uint8Array(32).fill(1));
 const OTHER_AUTH_KEY = toBase64(new Uint8Array(32).fill(2));
@@ -23,6 +25,10 @@ async function authKeyHash(authKey: string) {
 
 afterEach(() => {
   vi.clearAllMocks();
+});
+
+environmentMocks.getServerEnvironment.mockReturnValue({
+  authSaltSecret: Buffer.from("blind-journal-development-only-auth-salt-secret"),
 });
 
 describe("authentication domain", () => {

@@ -1,19 +1,11 @@
-import { routing } from "@/i18n/routing";
-import "@radix-ui/themes/styles.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { DocumentLocale } from "@/components/document-locale";
+import { routing } from "@/i18n/routing";
 import { Providers } from "../client-providers";
-
-import "../globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
@@ -57,12 +49,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className={inter.variable}>
-        <NextIntlClientProvider>
-          <Providers nonce={nonce}>{children}</Providers>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider>
+      <DocumentLocale locale={locale} />
+      <Providers nonce={nonce}>{children}</Providers>
+    </NextIntlClientProvider>
   );
 }

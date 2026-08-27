@@ -31,7 +31,7 @@ export function JournalEntrySelect({
       >
         <Box asChild width="100%" minWidth="0">
           <Select.Trigger
-            variant="soft"
+            variant="surface"
             radius="large"
             aria-label={t("sectionLabel")}
             placeholder={t("title")}

@@ -14,7 +14,6 @@ import type {
   JournalEntry,
 } from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
-import { isCurrentClientSession } from "@/hooks/use-client-session";
 import { journalEntriesQueryKey } from "./journal-query";
 
 type JournalEditorActionsProps = {
@@ -51,16 +50,7 @@ export function JournalEditorActions({
     mutationFn: (input: ClientCreateJournalEntryRequest | ClientUpdateJournalEntryRequest) =>
       "id" in input ? updateJournalEntry(input, user) : createJournalEntry(input, user),
     onSuccess: async (savedEntry) => {
-      if (!isCurrentClientSession(user)) {
-        return;
-      }
-
       await queryClient.invalidateQueries({ queryKey: journalEntriesQueryKey(user.id) });
-
-      if (!isCurrentClientSession(user)) {
-        return;
-      }
-
       onSaved(savedEntry);
       appToast.success(tJournal(entry ? "success.saved" : "success.created"));
     },
@@ -72,16 +62,7 @@ export function JournalEditorActions({
     gcTime: 0,
     mutationFn: (entryId: string) => deleteJournalEntry(entryId),
     onSuccess: async () => {
-      if (!isCurrentClientSession(user)) {
-        return;
-      }
-
       await queryClient.invalidateQueries({ queryKey: journalEntriesQueryKey(user.id) });
-
-      if (!isCurrentClientSession(user)) {
-        return;
-      }
-
       onDeleted();
       setDeleteDialogOpen(false);
       appToast.success(tJournal("success.deleted"));

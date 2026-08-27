@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getServerEnvironment } from "@/server/environment";
+
 type ServerErrorContext = {
   error: unknown;
   method: string;
@@ -33,7 +35,7 @@ export function reportServerError({
   if (requestId != null) {
     event["requestId"] = requestId;
   }
-  if (process.env.NODE_ENV === "development" && error instanceof Error) {
+  if (getServerEnvironment().nodeEnvironment === "development" && error instanceof Error) {
     event["errorMessage"] = error.message;
     event["errorStack"] = error.stack;
   }

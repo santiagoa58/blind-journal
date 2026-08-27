@@ -9,7 +9,6 @@ import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalEditorActions } from "@/components/journal/journal-editor-actions";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
-import { useUser } from "@/state/user.state";
 
 const mocks = vi.hoisted(() => ({
   createJournalEntry: vi.fn(),
@@ -125,7 +124,6 @@ function renderActions(
 beforeEach(async () => {
   vi.clearAllMocks();
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  useUser.getState().setUser(user);
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -139,7 +137,6 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
-  useUser.getState().setUser(null);
   container.remove();
 });
 
@@ -172,17 +169,6 @@ describe("journal entry writes", () => {
     await act(async () => vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedEntry)));
     expect(onSavingChange).toHaveBeenNthCalledWith(1, true);
     expect(onSavingChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it("does not commit a save after the session is cleared", async () => {
-    const update = Promise.withResolvers<JournalEntry>();
-    mocks.updateJournalEntry.mockReturnValueOnce(update.promise);
-    await act(async () => getButton("save").click());
-    useUser.getState().setUser(null);
-    update.resolve(entry);
-    await act(async () => vi.waitFor(() => expect(getButton("save").disabled).toBe(false)));
-    expect(onSaved).not.toHaveBeenCalled();
-    expect(mocks.success).not.toHaveBeenCalled();
   });
 
   it("disables save for a clean draft", async () => {

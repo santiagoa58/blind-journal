@@ -33,6 +33,7 @@
         "noJsxLiterals": "error",
         "noNonNullAssertion": "error",
         "noParameterAssign": "error",
+        "noProcessEnv": "error",
         "useConst": "error",
         "useImportType": "error",
         "useNodejsImportProtocol": "error"
@@ -72,5 +73,21 @@
       "indentStyle": "space",
       "indentWidth": 2
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "instrumentation.ts",
+        "server/database/database.test.ts",
+        "server/environment.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noProcessEnv": "off"
+          }
+        }
+      }
+    }
+  ]
 }

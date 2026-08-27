@@ -1,5 +1,9 @@
+import "server-only";
+
+import { getServerEnvironment } from "@/server/environment";
+
 export function createContentSecurityPolicy(nonce: string) {
-  const isDevelopment = process.env.NODE_ENV === "development";
+  const isDevelopment = getServerEnvironment().nodeEnvironment === "development";
   const directives = [
     // Allows unspecified resources only from this website.
     "default-src 'self'",

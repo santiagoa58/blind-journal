@@ -75,6 +75,12 @@ function changeSearch(search: HTMLInputElement, value: string) {
   search.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+function getSearch() {
+  const search = container.querySelector<HTMLInputElement>("input[type='search']");
+  if (!search) throw new Error("Missing entry search field");
+  return search;
+}
+
 beforeEach(() => {
   Object.assign(globalThis, {
     IS_REACT_ACT_ENVIRONMENT: true,
@@ -116,10 +122,12 @@ describe("EntryList", () => {
 
   it("filters loaded entries and explains an empty result", async () => {
     await act(async () => renderEntryList());
-    const search = container.querySelector<HTMLInputElement>(
-      "input[aria-label='Search loaded entry titles']",
+    const search = getSearch();
+    expect(search.placeholder).toBe("Search by title");
+    expect(container.querySelector(`label[for='${search.id}']`)?.textContent).toBe(
+      "Search journal entries by title",
     );
-    if (!search) throw new Error("Missing entry search field");
+    expect(search.parentElement?.querySelector("[data-side='right']")).not.toBeNull();
 
     await act(async () => {
       changeSearch(search, "second");
@@ -138,10 +146,7 @@ describe("EntryList", () => {
   it("keeps pagination available when the loaded entries do not match", async () => {
     const loadMoreEntries = vi.fn();
     await act(async () => renderEntryList({ hasMoreEntries: true, loadMoreEntries }));
-    const search = container.querySelector<HTMLInputElement>(
-      "input[aria-label='Search loaded entry titles']",
-    );
-    if (!search) throw new Error("Missing entry search field");
+    const search = getSearch();
 
     await act(async () => {
       changeSearch(search, "missing");

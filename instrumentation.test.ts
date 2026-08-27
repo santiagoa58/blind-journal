@@ -1,17 +1,39 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { REQUEST_ID_HEADER } from "@/api/observability";
-import { onRequestError } from "@/instrumentation";
+import { onRequestError, register } from "@/instrumentation";
+
+const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/server/environment", () => environmentMocks);
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.clearAllMocks();
   vi.unstubAllEnvs();
+});
+
+describe("server startup instrumentation", () => {
+  it("validates the complete environment before the Node.js server becomes ready", async () => {
+    vi.stubEnv("NEXT_RUNTIME", "nodejs");
+
+    await register();
+
+    expect(environmentMocks.getServerEnvironment).toHaveBeenCalledOnce();
+  });
+
+  it("does not import Node.js configuration into the Edge runtime", async () => {
+    vi.stubEnv("NEXT_RUNTIME", "edge");
+
+    await register();
+
+    expect(environmentMocks.getServerEnvironment).not.toHaveBeenCalled();
+  });
 });
 
 describe("server request error instrumentation", () => {
   it("writes one production-safe structured event with its request ID", async () => {
-    vi.stubEnv("NODE_ENV", "production");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     await onRequestError(
@@ -49,7 +71,7 @@ describe("server request error instrumentation", () => {
   });
 
   it("includes exception diagnostics during local development", async () => {
-    vi.stubEnv("NODE_ENV", "development");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "development" });
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const error = new TypeError("local diagnostic");
 

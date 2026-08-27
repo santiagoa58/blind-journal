@@ -23,6 +23,7 @@
     "decryptionFailed": "No se pudo descifrar esta entrada del diario.",
     "invalidEntry": "Agrega un título antes de guardar esta entrada.",
     "entryAlreadyExists": "Esa entrada ya existe. Actualiza tu diario e inténtalo de nuevo.",
-    "entryNotFound": "Esa entrada ya no está disponible."
+    "entryNotFound": "Esa entrada ya no está disponible.",
+    "storageQuotaExceeded": "Tu diario alcanzó su límite de almacenamiento. Elimina una entrada antes de agregar más."
   }
 }

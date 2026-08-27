@@ -1,23 +1,23 @@
 // @vitest-environment jsdom
 
-import { act, type PropsWithChildren } from "react";
+import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AuthRouteGuard } from "@/components/auth/auth-route-guard";
-import { useUser } from "@/state/user.state";
+import { useAppSession } from "@/client-state/app-session.state";
+import { SignedOutRoute } from "@/components/auth/signed-out-route";
 
 const mocks = vi.hoisted(() => ({ replace: vi.fn() }));
-const AUTH_CONTENT = "Sign in";
 
-vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }) }));
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ replace: mocks.replace }),
+}));
 
 let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  mocks.replace.mockReset();
-  useUser.getState().setUser(null);
+  useAppSession.setState({ initialized: true, session: { status: "signed-out" } });
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -26,30 +26,26 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
-  useUser.getState().setUser(null);
 });
 
-function Child({ children }: PropsWithChildren) {
-  return <div>{children}</div>;
-}
-
-describe("AuthRouteGuard", () => {
-  it("shows auth content without a session and owns the authenticated redirect", async () => {
+describe("SignedOutRoute", () => {
+  it("renders for a signed-out session and redirects after the session unlocks", async () => {
     await act(async () => {
       root.render(
-        <AuthRouteGuard>
-          <Child>{AUTH_CONTENT}</Child>
-        </AuthRouteGuard>,
+        <SignedOutRoute>
+          <div>{"Sign in"}</div>
+        </SignedOutRoute>,
       );
     });
-    expect(container.textContent).toBe(AUTH_CONTENT);
+
+    expect(container.textContent).toBe("Sign in");
     expect(mocks.replace).not.toHaveBeenCalled();
 
     await act(async () => {
-      useUser.getState().setUser({
-        id: "user-1",
+      useAppSession.getState().unlock({
+        id: "user-one",
         username: "writer",
-        displayName: "writer",
+        displayName: "Writer",
         keyEncryptionKey: {} as CryptoKey,
       });
     });

@@ -7,7 +7,6 @@ import type { ClientUser } from "@/api/auth/user.type";
 import { deleteJournalEntry } from "@/api/journal/journal";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
-import { isCurrentClientSession } from "@/hooks/use-client-session";
 import { journalEntriesQueryKey } from "./journal-query";
 
 type JournalEntryDeleteDialogProps = {
@@ -36,16 +35,7 @@ export function JournalEntryDeleteDialog({
     gcTime: 0,
     mutationFn: () => deleteJournalEntry(entry.id),
     onSuccess: async () => {
-      if (!isCurrentClientSession(user)) {
-        return;
-      }
-
       await queryClient.invalidateQueries({ queryKey: journalEntriesQueryKey(user.id) });
-
-      if (!isCurrentClientSession(user)) {
-        return;
-      }
-
       onDeleted(entry.id);
       onOpenChange(false);
       appToast.success(tJournal("success.deleted"));

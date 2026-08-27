@@ -22,8 +22,8 @@ export function JournalAccountMenu({
   const locale = useLocale();
   const avatar = (
     <Avatar
-      size="1"
-      variant="soft"
+      size="2"
+      variant="solid"
       color="iris"
       fallback={<span aria-hidden>{currentUser.displayName.charAt(0).toUpperCase()}</span>}
     />
@@ -33,12 +33,12 @@ export function JournalAccountMenu({
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         {compact ? (
-          <IconButton size="3" variant="ghost" color="gray" aria-label={t("account.menuLabel")}>
+          <IconButton size="2" variant="surface" color="iris" aria-label={t("account.menuLabel")}>
             {avatar}
           </IconButton>
         ) : (
           <Box asChild width="100%">
-            <Button variant="soft" color="gray" size="2">
+            <Button variant="ghost" color="gray" size="2">
               <Grid columns="auto minmax(0, 1fr) auto" align="center" gap="2" width="100%">
                 {avatar}
                 <Text truncate align="left">

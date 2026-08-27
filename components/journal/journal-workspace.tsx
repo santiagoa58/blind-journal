@@ -10,31 +10,20 @@ import { API_ERROR_CODES } from "@/api/error";
 import { listJournalEntriesPage } from "@/api/journal/journal";
 import type { JournalEntriesPage } from "@/api/journal/journal.type";
 import { isCodedError, reportClientError } from "@/client.error";
+import { useAppSession } from "@/client-state/app-session.state";
 import { useErrorMessage } from "@/i18n/error-message";
-import { useRouter } from "@/i18n/navigation";
-import { useUser } from "@/state/user.state";
 import type { Base64Url } from "@/types/base64";
 import { JournalContent } from "./journal-content";
 import { journalEntriesQueryKey } from "./journal-query";
 
 export function JournalWorkspace() {
-  const user = useUser((state) => state.user);
+  const session = useAppSession((state) => state.session);
 
-  if (!user) {
-    return <LockedJournalWorkspace />;
+  if (session.status !== "unlocked") {
+    return <JournalWorkspaceLoading />;
   }
 
-  return <UnlockedJournalWorkspace user={user} />;
-}
-
-function LockedJournalWorkspace() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/");
-  }, [router]);
-
-  return <JournalWorkspaceLoading />;
+  return <UnlockedJournalWorkspace user={session.user} />;
 }
 
 function JournalWorkspaceLoading() {

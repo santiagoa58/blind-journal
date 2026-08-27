@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
-import { AuthRouteGuard } from "@/components/auth/auth-route-guard";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginCard } from "@/components/auth/login-card";
+import { SignedOutRoute } from "@/components/auth/signed-out-route";
 import type { Locale } from "@/i18n/routing";
 
 export default async function Home({ params }: { params: Promise<{ locale: Locale }> }) {
@@ -9,12 +9,12 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
   setRequestLocale(locale);
 
   return (
-    <AuthRouteGuard>
+    <SignedOutRoute>
       <main>
         <AuthShell>
           <LoginCard />
         </AuthShell>
       </main>
-    </AuthRouteGuard>
+    </SignedOutRoute>
   );
 }

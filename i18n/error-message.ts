@@ -71,6 +71,8 @@ export function useErrorMessage() {
         [JOURNAL_ERROR_CODES.entryAlreadyExists]: (values) =>
           t("journal.errors.entryAlreadyExists", values),
         [JOURNAL_ERROR_CODES.entryNotFound]: (values) => t("journal.errors.entryNotFound", values),
+        [JOURNAL_ERROR_CODES.storageQuotaExceeded]: (values) =>
+          t("journal.errors.storageQuotaExceeded", values),
         [JOURNAL_CLIENT_ERROR_CODES.documentTooLarge]: (values) =>
           t("journal.errors.documentTooLarge", values),
         [JOURNAL_CLIENT_ERROR_CODES.encryptionFailed]: (values) =>

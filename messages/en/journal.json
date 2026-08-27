@@ -23,6 +23,7 @@
     "decryptionFailed": "This journal entry could not be decrypted.",
     "invalidEntry": "Add a title before saving this entry.",
     "entryAlreadyExists": "That entry already exists. Refresh your journal and try again.",
-    "entryNotFound": "That entry is no longer available."
+    "entryNotFound": "That entry is no longer available.",
+    "storageQuotaExceeded": "Your journal has reached its storage limit. Delete an entry before adding more."
   }
 }

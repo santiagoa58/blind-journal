@@ -7,9 +7,11 @@ const sessionDatabaseMocks = vi.hoisted(() => ({
   findSessionUserId: vi.fn(),
   replaceSession: vi.fn(),
 }));
+const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/database/sessions", () => sessionDatabaseMocks);
+vi.mock("@/server/environment", () => environmentMocks);
 
 const SESSION_COOKIE_NAME = "blind-journal-session";
 const HOST_SESSION_COOKIE_NAME = `__Host-${SESSION_COOKIE_NAME}`;
@@ -35,16 +37,16 @@ beforeEach(() => {
   sessionDatabaseMocks.deleteSession.mockResolvedValue(undefined);
   sessionDatabaseMocks.findSessionUserId.mockResolvedValue(undefined);
   sessionDatabaseMocks.replaceSession.mockResolvedValue(undefined);
+  environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "test" });
 });
 
 afterEach(() => {
   vi.clearAllMocks();
-  vi.unstubAllEnvs();
 });
 
 describe("session cookie policy", () => {
   it("uses a development-safe cookie over local HTTP", async () => {
-    vi.stubEnv("NODE_ENV", "development");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "development" });
     const response = NextResponse.json(null);
 
     await startSession(requestWithoutCookies(), response, crypto.randomUUID());
@@ -59,7 +61,7 @@ describe("session cookie policy", () => {
   });
 
   it("uses the hardened __Host- cookie contract in production", async () => {
-    vi.stubEnv("NODE_ENV", "production");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
     const response = NextResponse.json(null);
 
     await startSession(requestWithoutCookies(), response, crypto.randomUUID());
@@ -74,7 +76,7 @@ describe("session cookie policy", () => {
   });
 
   it("persists and revokes only the hash of a production bearer token", async () => {
-    vi.stubEnv("NODE_ENV", "production");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
     const userId = crypto.randomUUID();
     const startResponse = NextResponse.json(null);
     await startSession(requestWithoutCookies(), startResponse, userId);
@@ -106,7 +108,7 @@ describe("session cookie policy", () => {
   });
 
   it("passes the previous session hash into atomic session replacement", async () => {
-    vi.stubEnv("NODE_ENV", "development");
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "development" });
     const previousSessionId = "a".repeat(43);
     const previousSessionHash = toSessionHash(previousSessionId);
     const response = NextResponse.json(null);

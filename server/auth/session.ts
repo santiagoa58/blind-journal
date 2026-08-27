@@ -8,13 +8,14 @@ import {
   replaceSession,
   type StoredSession,
 } from "@/server/database/sessions";
+import { getServerEnvironment } from "@/server/environment";
 
 const SESSION_ID_BYTES = 32;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24;
 
 function getSessionCookiePolicy() {
-  if (process.env.NODE_ENV === "development") {
+  if (getServerEnvironment().nodeEnvironment === "development") {
     return {
       httpOnly: true,
       name: "blind-journal-session",

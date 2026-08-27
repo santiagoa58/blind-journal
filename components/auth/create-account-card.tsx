@@ -13,7 +13,7 @@ import {
 } from "@/api/auth/auth.constants";
 import type { ClientCreateAccountRequest } from "@/api/auth/auth.type";
 import { useAppToast } from "@/hooks/use-app-toast";
-import { useClientSessionActions } from "@/hooks/use-client-session";
+import { useStartJournalSession } from "@/hooks/use-start-journal-session";
 import { Link as NavigationLink } from "@/i18n/navigation";
 import { LabeledInput } from "./labeled-input";
 import { PasswordInput } from "./password-input";
@@ -21,13 +21,13 @@ import { PasswordInput } from "./password-input";
 export function CreateAccountCard() {
   const t = useTranslations("auth");
   const appToast = useAppToast();
-  const { replaceSession } = useClientSessionActions();
+  const startJournalSession = useStartJournalSession();
 
   const createAccountMutation = useMutation({
     gcTime: 0,
     mutationFn: createAccount,
     onSuccess(user) {
-      replaceSession(user);
+      startJournalSession(user);
       appToast.success(t("success.accountCreated"));
     },
   });
