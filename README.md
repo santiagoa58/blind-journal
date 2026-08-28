@@ -12,12 +12,12 @@ encrypted records, but it never receives the password or the keys needed to decr
 Blind Journal provides a complete, secure journaling experience:
 
 - Explicit create-account and sign-in flows. An unknown sign-in never creates an account.
-- Multiple dated journal entries with title search and rich-text editing.
+- Multiple dated journal entries with rich-text editing and a title filter for entries already
+  loaded in the browser.
 - End-to-end encrypted create, read, update, and delete operations.
 - Durable server storage that preserves accounts and entries across deployments.
 - Opaque, expiring, revocable browser sessions.
 - Strict isolation between users at the API, service, and database layers.
-- A portable encrypted export of the authenticated user's journal.
 - Responsive desktop and mobile layouts.
 - English and Spanish interfaces with locale-aware routes, messages, dates, times, and metadata.
 - Installable PWA branding and light and dark themes.
@@ -147,8 +147,8 @@ each bearer session identifier.
 - AAD binds the ciphertext to the envelope version, user identifier, and entry identifier.
 - The server stores the ciphertext, IV, wrapped key, protocol version, and minimum record metadata
   in a single authorized transaction.
-- Title search decrypts eligible entries in the browser and filters them while the journal is
-  unlocked; plaintext titles are not stored in a server index.
+- The title filter operates only on entries already decrypted and loaded in the browser; plaintext
+  titles are not stored in a server index.
 
 Passwords, raw keys, plaintext content, and bearer session identifiers never enter logs, URLs,
 query keys, analytics, or server persistence.
@@ -166,24 +166,32 @@ JavaScript cannot guarantee that garbage-collected memory is overwritten immedia
 minimizes the lifetime and number of copies of passwords, plaintext, and raw key bytes instead of
 claiming perfect memory erasure.
 
-## Encrypted export
+## Delete an account
 
-An authenticated user can export their journal as a single versioned `.blind-journal` archive. The
-export contains only that user's encrypted entries, wrapped keys, public key-schedule parameters,
-and the minimum metadata required to interpret the archive. Titles and bodies remain encrypted.
+Account deletion permanently removes the account and all of its journal data:
 
-The export flow:
+1. The signed-in user opens the destructive account action and re-enters the master password.
+2. The browser derives the authentication key locally and submits a deletion request over HTTPS.
+3. The server verifies the current credentials and requires an explicit confirmation.
+4. In one database transaction, the server deletes every entry and session owned by the user, then
+   deletes the user record.
+5. The response expires the session cookie, and the browser clears the unlocked key, private query
+   data, drafts, and user state.
 
-1. Requests an ownership-scoped, consistent snapshot of the user's encrypted records.
-2. Validates every record against the supported export schema.
-3. Builds the archive without decrypting journal content on the server.
-4. Uses a neutral filename that does not reveal journal titles or usernames.
-5. Offers the completed archive for download only after validation succeeds.
-
-An export is portable but still sensitive. Anyone who obtains it can attempt to guess the user's
-password offline, so strong passwords and careful backup storage remain essential.
+Deletion is irreversible. Blind Journal has no password recovery or retained copy of a deleted
+journal.
 
 ## Architecture
+
+The system keeps password-derived decryption material and journal plaintext inside the browser,
+while the server authenticates requests and stores only encrypted journal envelopes and observable
+account metadata:
+
+![Blind Journal system design](./blind-journal-system-design.png)
+
+The endpoint labels in the diagram omit the shared `/api/v1` prefix for readability.
+
+The implementation is organized into the following layers:
 
 ```mermaid
 flowchart LR
@@ -196,7 +204,6 @@ flowchart LR
     State --> Crypto["Client cryptography"]
     Crypto --> Sodium["Argon2id via libsodium"]
     Crypto --> WebCrypto["HKDF, AES-KW, and AES-GCM via Web Crypto"]
-    State --> Export["Encrypted export"]
 ```
 
 ### Boundary rules
@@ -206,8 +213,8 @@ flowchart LR
 - `api/` owns browser endpoint functions and types or schemas shared across the HTTP boundary.
 - Ky provides a thin, same-origin transport layer with credentials and stable headers.
 - `app/api/v1/` contains thin Route Handlers that apply HTTP concerns and call server services.
-- `server/` owns authentication, authorization, sessions, journal services, export orchestration,
-  and persistence.
+- `server/` owns authentication, authorization, sessions, journal services, account deletion, and
+  persistence.
 - Untrusted API bodies and database rows are validated at their trust boundaries.
 - The database implementation stays behind the server boundary.
 
@@ -232,7 +239,6 @@ fallback for unknown codes. Stack traces and diagnostic details remain on the se
 | Form fields, editor drafts, search input, and display controls | Local React state |
 | Unlocked user and non-extractable key-encryption key | In-memory Zustand store |
 | Accounts, verifiers, hashed sessions, wrapped keys, metadata, and ciphertext | Server database |
-| Downloaded encrypted archives | User-selected file-system location |
 
 Unlocked keys and decrypted journal data are never persisted to browser storage. Signing out clears
 both the unlocked-user state and all private query data.
@@ -249,7 +255,8 @@ The server uses a durable transactional database as the authoritative store. It 
 
 The schema enforces username uniqueness, user-entry ownership, bounded values, and referential
 integrity. Every journal query is scoped by the authenticated user ID, and multi-step writes are
-atomic. Process memory is never used as a persistence fallback.
+atomic. Deleting a user removes their entries and sessions in the same transaction. Process memory
+is never used as a persistence fallback.
 
 The database still cannot decrypt journal content because it never receives the key-encryption key
 or an unwrapped entry key.
@@ -273,8 +280,8 @@ or an unwrapped entry key.
 | Formatting and linting | Biome | Deterministic formatting and static checks |
 
 The selected database and deployment provider must support durable transactions, uniqueness and
-foreign-key constraints, backups, and a no-overage configuration. Exact dependency and
-package-manager versions are pinned in `package.json` and `pnpm-lock.yaml`.
+foreign-key constraints, and a no-overage configuration. Exact dependency and package-manager
+versions are pinned in `package.json` and `pnpm-lock.yaml`.
 
 ## Repository map
 
@@ -287,7 +294,7 @@ hooks/                  Small reusable React hooks
 i18n/                   Locale routing, message loading, navigation, and error mapping
 messages/               Translation catalogs under messages/{locale}/{feature}.json
 public/                 Brand and install assets
-server/                 Server-only services, HTTP helpers, sessions, export, and persistence
+server/                 Server-only services, HTTP helpers, sessions, and persistence
 state/                  Small in-memory Zustand stores
 types/                  Cross-cutting TypeScript declarations and branded types
 ```
@@ -341,12 +348,14 @@ every deployed environment must use HTTPS.
 
 | Variable | Purpose |
 | --- | --- |
-| `AUTH_SALT_SECRET` | Base64URL-encoded server secret of at least 32 decoded bytes, used to derive enumeration-resistant salt metadata. |
-| `DATABASE_URL` | Server-only connection string for the durable application database. |
+| `AUTH_SALT_SECRET` | Base64URL-encoded server secret of at least 32 decoded bytes, used to derive enumeration-resistant salt metadata. Required in production; local development and tests have a deterministic non-production fallback. |
+| `DATABASE_URL` | Server-only Neon connection string using the restricted `blind_journal_app` role and pooled endpoint. Required in every environment. |
 
-Production fails fast when required configuration is missing or malformed. Generate independent
-secrets for each environment, keep `AUTH_SALT_SECRET` stable for the lifetime of stored accounts,
-and never expose either value to the browser.
+The server validates all environment configuration together before it starts accepting requests.
+Generate independent production secrets, keep `AUTH_SALT_SECRET` stable for the lifetime of stored
+accounts, and never expose either value to the browser. Server modules consume the validated values
+from `server/environment.ts`; Biome rejects direct `process.env` access outside that boundary and
+the narrowly scoped startup and integration-test exceptions.
 
 The browser calls the built-in `/api/v1` Route Handlers on the same origin. A separately deployed
 browser API is not part of this architecture.
@@ -374,10 +383,10 @@ pnpm build
 
 ## Testing approach
 
-Tests cover cryptographic round trips and tampering, key-schedule behavior, authentication and
-session lifecycle, request validation, database constraints, per-user authorization, cross-user
-isolation, query-cache cleanup, encrypted export, and critical account and journal flows through the
-real application boundaries.
+Tests cover cryptographic round trips and tampering, key-schedule behavior, session creation,
+expiration, and revocation, request validation, database constraints, per-user authorization,
+cross-user isolation, query-cache cleanup, account deletion, and critical account and journal flows
+through the real application boundaries.
 
 Test code does not maintain a separate fake API implementation. Persistence tests use the real
 database contract, and production builds verify the framework boundary.
@@ -385,14 +394,14 @@ database contract, and production builds verify the framework boundary.
 ## Scope
 
 Blind Journal focuses on private personal journaling with remote accounts, server persistence, and
-client-side encryption. Encrypted export is included for data portability.
+client-side encryption.
 
 The following are outside its scope:
 
 - Sharing and multi-user collaboration
 - Attachments
 - Third-party identity providers
-- Password recovery that gives the server decryption access
+- Password changes and password recovery
 - Automatic offline editing or background synchronization
 - Claims of hiding all network and traffic metadata
 

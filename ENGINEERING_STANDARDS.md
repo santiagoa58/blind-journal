@@ -147,15 +147,19 @@ entry key, plaintext title, or plaintext journal body.
 - Resource exhaustion fails closed and visibly. It must never fall back to process memory or
   silently enable unapproved paid overages.
 
-## Export and data portability
+## Account deletion
 
-- Export operates only on the authenticated user's records and never includes another user's data.
-- The default portable export preserves ciphertext, wrapped keys, public KDF parameters, protocol
-  versions, and the minimum metadata required to understand the archive.
-- Export generation is bounded, cancellable, and consistent with a single database snapshot.
-- Filenames and logs do not reveal journal titles or other private content.
-- Any import or restore workflow treats the archive as untrusted, validates its size and structure,
-  and requires explicit confirmation before replacing server data.
+- Account deletion is available only to an authenticated user and requires the master password to
+  be re-entered and verified immediately before deletion.
+- The operation requires explicit destructive confirmation and is protected by the same-origin,
+  body-size, and rate-limit controls as other authenticated mutations.
+- One database transaction deletes every journal entry and session owned by the user before deleting
+  the user record. If any step fails, the database remains unchanged and the application reports
+  failure.
+- The response expires the browser cookie. The browser clears the unlocked key, user state, private
+  query cache, and drafts regardless of whether navigation succeeds.
+- Deleted data is not retained for recovery. Logs contain no journal content, credentials, or other
+  data that would recreate the deleted account.
 
 ## Internationalization, accessibility, and styling
 
@@ -178,8 +182,9 @@ entry key, plaintext title, or plaintext journal body.
   designed and secured.
 - Server secrets live only in validated server environment variables. `NEXT_PUBLIC_` configuration
   must never contain credentials or private infrastructure details.
-- HTTPS, CSP, security headers, request-size limits, database backups, and restore verification are
-  deployment requirements.
+- Server modules read configuration through `server/environment.ts`. Biome rejects direct
+  `process.env` access outside the environment boundary and narrowly scoped bootstrap or test code.
+- HTTPS, CSP, security headers, and request-size limits are deployment requirements.
 - Logs use server-generated request IDs for correlation and contain no passwords, raw session
   tokens, key material, plaintext journal content, or ciphertext payloads.
 
@@ -188,11 +193,13 @@ entry key, plaintext title, or plaintext journal body.
 Automated tests cover:
 
 - Cryptographic round trips, tampering, key-schedule determinism, and domain separation.
-- Account enumeration defenses, distributed rate limits, and session lifecycle.
+- Account enumeration defenses, distributed rate limits, and session creation, expiry, and
+  revocation.
 - Request validation, per-user authorization, and cross-user isolation.
-- Database constraints, transactions, cleanup, quotas, backup, and restore behavior.
+- Database constraints, transactions, cleanup, quotas, and complete account deletion.
 - Query-cache isolation and clearing of unlocked state.
-- Critical account creation, sign-in, create, edit, delete, export, and logout flows.
+- Critical account creation, sign-in, journal create, edit, delete, account deletion, and logout
+  flows.
 
 Before handing off a change, run:
 
