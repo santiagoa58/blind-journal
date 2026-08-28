@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Dialog, Flex, Heading, Separator, Spinner, VisuallyHidden } from "@radix-ui/themes";
+import { Box, Flex, Heading, Separator, VisuallyHidden } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import type { ClientUser } from "@/api/auth/user.type";
@@ -31,32 +31,6 @@ type PendingIntent =
   | { type: "logout" }
   | { type: "select"; entryId: string };
 
-function preventDismiss(event: Event) {
-  event.preventDefault();
-}
-
-function LogoutProgressDialog({ open }: { open: boolean }) {
-  const t = useTranslations("sidebar.account");
-
-  return (
-    <Dialog.Root open={open}>
-      <Dialog.Content
-        maxWidth="360px"
-        onEscapeKeyDown={preventDismiss}
-        onPointerDownOutside={preventDismiss}
-      >
-        <Flex align="center" gap="3">
-          <Spinner size="3" aria-hidden />
-          <Box>
-            <Dialog.Title mb="1">{t("signingOut")}</Dialog.Title>
-            <Dialog.Description size="2">{t("signingOutDescription")}</Dialog.Description>
-          </Box>
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
-  );
-}
-
 export function JournalContent({
   entries,
   hasMoreEntries,
@@ -75,7 +49,7 @@ export function JournalContent({
   const [newEntryOpen, setNewEntryOpen] = useState(false);
   const [pendingIntent, setPendingIntent] = useState<PendingIntent | null>(null);
   const [entryPendingDeletion, setEntryPendingDeletion] = useState<JournalEntry>();
-  const { signOut, isPending: loggingOut } = useLogout();
+  const { signOut } = useLogout();
   const selectedEntry = entries.find(({ id }) => id === selectedEntryId) ?? entries.at(0);
   const effectiveSelectedEntryId = newEntryOpen ? undefined : selectedEntry?.id;
 
@@ -125,107 +99,99 @@ export function JournalContent({
   }
 
   return (
-    <>
-      <Flex direction="column" height="100dvh" overflow="hidden">
-        <VisuallyHidden asChild>
-          <Heading as="h1">{tEntries("title")}</Heading>
-        </VisuallyHidden>
-        <JournalDraftGuard
-          dirty={draftDirty}
-          open={pendingIntent !== null}
-          onCancel={() => setPendingIntent(null)}
-          onDiscard={discardDraftAndContinue}
-        />
-        {entryPendingDeletion ? (
-          <JournalEntryDeleteDialog
-            entry={entryPendingDeletion}
-            includesUnsavedChanges={
-              draftDirty && entryPendingDeletion.id === effectiveSelectedEntryId
+    <Flex direction="column" height="100dvh" overflow="hidden">
+      <VisuallyHidden asChild>
+        <Heading as="h1">{tEntries("title")}</Heading>
+      </VisuallyHidden>
+      <JournalDraftGuard
+        dirty={draftDirty}
+        open={pendingIntent !== null}
+        onCancel={() => setPendingIntent(null)}
+        onDiscard={discardDraftAndContinue}
+      />
+      {entryPendingDeletion ? (
+        <JournalEntryDeleteDialog
+          entry={entryPendingDeletion}
+          includesUnsavedChanges={
+            draftDirty && entryPendingDeletion.id === effectiveSelectedEntryId
+          }
+          open
+          user={user}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEntryPendingDeletion(undefined);
             }
-            open
-            user={user}
-            onOpenChange={(open) => {
-              if (!open) {
-                setEntryPendingDeletion(undefined);
-              }
-            }}
-            onDeleted={(entryId) => {
-              if (entryId === effectiveSelectedEntryId) {
-                setDraftDirty(false);
-                setNewEntryOpen(false);
-                setPendingIntent(null);
-                setSelectedEntryId(undefined);
-              }
-            }}
-          />
-        ) : null}
-        <JournalMobileHeader
-          currentUser={user}
-          entries={entries}
-          hasMoreEntries={hasMoreEntries}
-          loadingMoreEntries={loadingMoreEntries}
-          loadMoreEntries={loadMoreEntries}
-          onCreateEntry={requestCreate}
-          onLocaleChange={requestLocaleChange}
-          onSelectEntry={requestSelection}
-          onSignOut={requestSignOut}
-          selectedEntryId={effectiveSelectedEntryId}
+          }}
+          onDeleted={(entryId) => {
+            if (entryId === effectiveSelectedEntryId) {
+              setDraftDirty(false);
+              setDesktopSidebarOpen(true);
+              setNewEntryOpen(false);
+              setPendingIntent(null);
+              setSelectedEntryId(undefined);
+            }
+          }}
         />
-        <UnreadableEntriesNotice entries={unreadableEntries} />
+      ) : null}
+      <JournalMobileHeader
+        currentUser={user}
+        entries={entries}
+        hasMoreEntries={hasMoreEntries}
+        loadingMoreEntries={loadingMoreEntries}
+        loadMoreEntries={loadMoreEntries}
+        onCreateEntry={requestCreate}
+        onLocaleChange={requestLocaleChange}
+        onSelectEntry={requestSelection}
+        onSignOut={requestSignOut}
+        selectedEntryId={effectiveSelectedEntryId}
+      />
+      <UnreadableEntriesNotice entries={unreadableEntries} />
 
-        <Flex flexGrow="1" minHeight="0" overflow="hidden">
-          {desktopSidebarOpen ? (
-            <>
-              <JournalDesktopSidebar
-                currentUser={user}
-                entries={entries}
-                hasMoreEntries={hasMoreEntries}
-                loadingMoreEntries={loadingMoreEntries}
-                loadMoreEntries={loadMoreEntries}
-                onCollapse={() => setDesktopSidebarOpen(false)}
-                onCreateEntry={requestCreate}
-                onLocaleChange={requestLocaleChange}
-                onDeleteEntry={setEntryPendingDeletion}
-                onSelectEntry={requestSelection}
-                onSignOut={requestSignOut}
-                selectedEntryId={effectiveSelectedEntryId}
-              />
-              <Box asChild display={{ initial: "none", lg: "block" }}>
-                <Separator orientation="vertical" size="4" />
-              </Box>
-            </>
-          ) : null}
-
-          {newEntryOpen || selectedEntry ? (
-            <JournalEditor
-              key={`${newEntryOpen ? "new" : selectedEntry?.id}:${editorVersion}`}
-              draftDirty={draftDirty}
-              entry={newEntryOpen ? undefined : selectedEntry}
-              navigationOpen={desktopSidebarOpen}
-              user={user}
-              onDeleted={() => {
-                setDraftDirty(false);
-                setDesktopSidebarOpen(true);
-                setNewEntryOpen(false);
-                setPendingIntent(null);
-                setSelectedEntryId(undefined);
-              }}
-              onDraftChange={setDraftDirty}
-              onSaved={(savedEntry) => {
-                setDraftDirty(false);
-                setNewEntryOpen(false);
-                setSelectedEntryId(savedEntry.id);
-              }}
-              onShowNavigation={() => setDesktopSidebarOpen(true)}
+      <Flex flexGrow="1" minHeight="0" overflow="hidden">
+        {desktopSidebarOpen ? (
+          <>
+            <JournalDesktopSidebar
+              currentUser={user}
+              entries={entries}
+              hasMoreEntries={hasMoreEntries}
+              loadingMoreEntries={loadingMoreEntries}
+              loadMoreEntries={loadMoreEntries}
+              onCollapse={() => setDesktopSidebarOpen(false)}
+              onCreateEntry={requestCreate}
+              onLocaleChange={requestLocaleChange}
+              onDeleteEntry={setEntryPendingDeletion}
+              onSelectEntry={requestSelection}
+              onSignOut={requestSignOut}
+              selectedEntryId={effectiveSelectedEntryId}
             />
-          ) : (
-            <Flex align="center" justify="center" flexGrow="1" p="5">
-              <JournalEmptyCard onCreateEntry={requestCreate} />
-            </Flex>
-          )}
-        </Flex>
+            <Box asChild display={{ initial: "none", lg: "block" }}>
+              <Separator orientation="vertical" size="4" />
+            </Box>
+          </>
+        ) : null}
+
+        {newEntryOpen || selectedEntry ? (
+          <JournalEditor
+            key={`${newEntryOpen ? "new" : selectedEntry?.id}:${editorVersion}`}
+            draftDirty={draftDirty}
+            entry={newEntryOpen ? undefined : selectedEntry}
+            navigationOpen={desktopSidebarOpen}
+            user={user}
+            onDeleteEntry={setEntryPendingDeletion}
+            onDraftChange={setDraftDirty}
+            onSaved={(savedEntry) => {
+              setDraftDirty(false);
+              setNewEntryOpen(false);
+              setSelectedEntryId(savedEntry.id);
+            }}
+            onShowNavigation={() => setDesktopSidebarOpen(true)}
+          />
+        ) : (
+          <Flex align="center" justify="center" flexGrow="1" p="5">
+            <JournalEmptyCard onCreateEntry={requestCreate} />
+          </Flex>
+        )}
       </Flex>
-      <LogoutProgressDialog open={loggingOut} />
-    </>
+    </Flex>
   );
 }

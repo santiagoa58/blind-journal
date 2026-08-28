@@ -15,7 +15,7 @@ export function UnlockCard({ user }: { user: ApiUser }) {
   const t = useTranslations("auth");
   const appToast = useAppToast();
   const unlock = useAppSession((state) => state.unlock);
-  const { signOut, isPending: signingOut } = useLogout();
+  const { signOut } = useLogout();
   const unlockMutation = useMutation({
     gcTime: 0,
     mutationFn: (password: string) => login({ username: user.username, password }),
@@ -24,7 +24,7 @@ export function UnlockCard({ user }: { user: ApiUser }) {
       appToast.success(t("success.unlocked"));
     },
   });
-  const submitting = unlockMutation.isPending || signingOut;
+  const submitting = unlockMutation.isPending;
 
   function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();

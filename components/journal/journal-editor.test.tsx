@@ -76,7 +76,7 @@ function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
         draftDirty={draftDirty}
         entry={newEntry ? undefined : entry}
         navigationOpen
-        onDeleted={vi.fn()}
+        onDeleteEntry={vi.fn()}
         onDraftChange={setDraftDirty}
         onSaved={onSaved}
         onShowNavigation={vi.fn()}

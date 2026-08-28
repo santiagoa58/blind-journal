@@ -1,13 +1,12 @@
 "use client";
 
 import { CheckIcon, TrashIcon } from "@radix-ui/react-icons";
-import { AlertDialog, Box, Button, Flex, IconButton, Tooltip } from "@radix-ui/themes";
+import { Box, Button, Flex, IconButton, Tooltip } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import type { ClientUser } from "@/api/auth/user.type";
-import { createJournalEntry, deleteJournalEntry, updateJournalEntry } from "@/api/journal/journal";
+import { createJournalEntry, updateJournalEntry } from "@/api/journal/journal";
 import type {
   ClientCreateJournalEntryRequest,
   ClientUpdateJournalEntryRequest,
@@ -21,7 +20,7 @@ type JournalEditorActionsProps = {
   draftDirty: boolean;
   editor: Editor | null;
   entry: JournalEntry | undefined;
-  onDeleted: () => void;
+  onDeleteEntry: (entry: JournalEntry) => void;
   onSaved: (entry: JournalEntry) => void;
   onSavingChange: (saving: boolean) => void;
   title: string;
@@ -33,7 +32,7 @@ export function JournalEditorActions({
   draftDirty,
   editor,
   entry,
-  onDeleted,
+  onDeleteEntry,
   onSaved,
   onSavingChange,
   title,
@@ -44,7 +43,6 @@ export function JournalEditorActions({
   const tActions = useTranslations("common.actions");
   const queryClient = useQueryClient();
   const appToast = useAppToast();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const saveMutation = useMutation({
     gcTime: 0,
     mutationFn: (input: ClientCreateJournalEntryRequest | ClientUpdateJournalEntryRequest) =>
@@ -58,17 +56,6 @@ export function JournalEditorActions({
       onSavingChange(false);
     },
   });
-  const deleteMutation = useMutation({
-    gcTime: 0,
-    mutationFn: (entryId: string) => deleteJournalEntry(entryId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: journalEntriesQueryKey(user.id) });
-      onDeleted();
-      setDeleteDialogOpen(false);
-      appToast.success(tJournal("success.deleted"));
-    },
-  });
-  const writeDisabled = saveMutation.isPending || deleteMutation.isPending;
 
   function saveEntry() {
     if (!editor) {
@@ -84,74 +71,35 @@ export function JournalEditorActions({
     saveMutation.mutate(input, { onSettled: () => saveMutation.reset() });
   }
 
-  function deleteEntry() {
-    if (entry) {
-      deleteMutation.mutate(entry.id, { onSettled: () => deleteMutation.reset() });
-    }
-  }
-
   return (
-    <AlertDialog.Root
-      open={deleteDialogOpen}
-      onOpenChange={(open) => {
-        if (!writeDisabled) {
-          setDeleteDialogOpen(open);
-        }
-      }}
-    >
-      <Flex align="center" gap="3" flexShrink="0" px="3">
-        <Button
-          size="2"
-          aria-label={tActions("save")}
-          onClick={saveEntry}
-          loading={saveMutation.isPending}
-          disabled={!editor || (entry !== undefined && !draftDirty) || writeDisabled}
-        >
-          <CheckIcon aria-hidden width={16} height={16} />
-          <Box as="span" display={{ initial: "none", sm: "inline" }}>
-            {tActions("save")}
-          </Box>
-        </Button>
+    <Flex align="center" gap="3" flexShrink="0" px="3">
+      <Button
+        size="2"
+        aria-label={tActions("save")}
+        onClick={saveEntry}
+        loading={saveMutation.isPending}
+        disabled={!editor || (entry !== undefined && !draftDirty) || saveMutation.isPending}
+      >
+        <CheckIcon aria-hidden width={16} height={16} />
+        <Box as="span" display={{ initial: "none", sm: "inline" }}>
+          {tActions("save")}
+        </Box>
+      </Button>
 
-        {entry ? (
-          <Tooltip content={t("deleteEntry")}>
-            <IconButton
-              size="2"
-              variant="ghost"
-              color="red"
-              aria-label={t("deleteEntry")}
-              disabled={writeDisabled}
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <TrashIcon aria-hidden width={17} height={17} />
-            </IconButton>
-          </Tooltip>
-        ) : null}
-      </Flex>
-
-      <AlertDialog.Content maxWidth="440px">
-        <AlertDialog.Title>{t("deleteDialog.title")}</AlertDialog.Title>
-        <AlertDialog.Description size="2">
-          {t(
-            draftDirty ? "deleteDialog.descriptionWithUnsavedChanges" : "deleteDialog.description",
-          )}
-        </AlertDialog.Description>
-        <Flex gap="3" mt="5" justify="end">
-          <AlertDialog.Cancel>
-            <Button variant="soft" color="gray" disabled={writeDisabled}>
-              {tActions("cancel")}
-            </Button>
-          </AlertDialog.Cancel>
-          <Button
+      {entry ? (
+        <Tooltip content={t("deleteEntry")}>
+          <IconButton
+            size="2"
+            variant="ghost"
             color="red"
-            onClick={deleteEntry}
-            loading={deleteMutation.isPending}
-            disabled={writeDisabled}
+            aria-label={t("deleteEntry")}
+            disabled={saveMutation.isPending}
+            onClick={() => onDeleteEntry(entry)}
           >
-            {tActions("delete")}
-          </Button>
-        </Flex>
-      </AlertDialog.Content>
-    </AlertDialog.Root>
+            <TrashIcon aria-hidden width={17} height={17} />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+    </Flex>
   );
 }

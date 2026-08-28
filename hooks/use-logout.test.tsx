@@ -72,14 +72,20 @@ describe("useLogout", () => {
       await vi.waitFor(() => expect(mocks.logout).toHaveBeenCalledOnce());
     });
 
-    expect(control.isPending).toBe(true);
     expect(useAppSession.getState().session.status).toBe("signed-out");
     expect(queryClient.getQueryData(["journal", "entries", "user-one"])).toBeUndefined();
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
 
     remoteRevocation.resolve(null);
     await act(async () => {
-      await vi.waitFor(() => expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/"));
+      await vi.waitFor(() =>
+        expect(
+          queryClient
+            .getMutationCache()
+            .getAll()
+            .some((mutation) => mutation.state.status === "success"),
+        ).toBe(true),
+      );
     });
 
     expect(useAppSession.getState().session.status).toBe("signed-out");
@@ -96,7 +102,14 @@ describe("useLogout", () => {
     await act(async () => control.signOut());
     remoteRevocation.reject(new Error("remote logout failed"));
     await act(async () => {
-      await vi.waitFor(() => expect(control.isPending).toBe(false));
+      await vi.waitFor(() =>
+        expect(
+          queryClient
+            .getMutationCache()
+            .getAll()
+            .some((mutation) => mutation.state.status === "error"),
+        ).toBe(true),
+      );
     });
 
     expect(useAppSession.getState().session.status).toBe("signed-out");

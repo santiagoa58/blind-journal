@@ -14,15 +14,11 @@ export function useLogout() {
   });
 
   function signOut() {
-    if (logoutMutation.isPending) {
-      return;
-    }
-
     // Drop keys and cached plaintext immediately. Server revocation may finish afterward.
     clearClientSession(queryClient);
     router.replace("/");
     logoutMutation.mutate();
   }
 
-  return { signOut, isPending: logoutMutation.isPending };
+  return { signOut };
 }

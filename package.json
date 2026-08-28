@@ -11,7 +11,6 @@
     "i18n:check": "eloqnt lint --strict",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:database": "RUN_DATABASE_TESTS=1 node --env-file=.env node_modules/vitest/vitest.mjs run server/database/database.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

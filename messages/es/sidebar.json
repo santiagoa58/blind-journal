@@ -5,8 +5,6 @@
   "showEntries": "Mostrar entradas",
   "account": {
     "menuLabel": "Menú de la cuenta",
-    "signOut": "Cerrar sesión",
-    "signingOut": "Cerrando sesión…",
-    "signingOutDescription": "Finalizando tu sesión y bloqueando este diario."
+    "signOut": "Cerrar sesión"
   }
 }

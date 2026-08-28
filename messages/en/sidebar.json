@@ -5,8 +5,6 @@
   "showEntries": "Show entries",
   "account": {
     "menuLabel": "Account menu",
-    "signOut": "Sign out",
-    "signingOut": "Signing out…",
-    "signingOutDescription": "Ending your session and locking this journal."
+    "signOut": "Sign out"
   }
 }

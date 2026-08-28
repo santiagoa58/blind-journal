@@ -8,7 +8,6 @@ import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalContent } from "@/components/journal/journal-content";
 
 const mocks = vi.hoisted(() => ({
-  loggingOut: false,
   replaceRoute: vi.fn(),
   signOut: vi.fn(),
 }));
@@ -18,17 +17,9 @@ vi.mock("@radix-ui/themes", async () => {
   const Wrapper = ({ children }: PropsWithChildren) => React.createElement("div", null, children);
   return {
     Box: Wrapper,
-    Dialog: {
-      Root: ({ children, open }: PropsWithChildren<{ open: boolean }>) =>
-        open ? React.createElement("div", { "data-testid": "logout-dialog" }, children) : null,
-      Content: Wrapper,
-      Description: Wrapper,
-      Title: Wrapper,
-    },
     Flex: Wrapper,
     Heading: Wrapper,
     Separator: Wrapper,
-    Spinner: Wrapper,
     Text: Wrapper,
     VisuallyHidden: Wrapper,
   };
@@ -43,7 +34,7 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("@/hooks/use-logout", () => ({
-  useLogout: () => ({ signOut: mocks.signOut, isPending: mocks.loggingOut }),
+  useLogout: () => ({ signOut: mocks.signOut }),
 }));
 vi.mock("@/components/journal/journal-desktop-sidebar", () => ({
   JournalDesktopSidebar: ({
@@ -127,6 +118,11 @@ vi.mock("@/components/journal/journal-draft-guard", () => ({
     ) : null,
 }));
 vi.mock("@/components/journal/journal-empty-card", () => ({ JournalEmptyCard: () => null }));
+vi.mock("@/components/journal/journal-entry-delete-dialog", () => ({
+  JournalEntryDeleteDialog: ({ entry }: { entry: JournalEntry }) => (
+    <div data-testid="entry-delete-dialog" data-entry-id={entry.id} />
+  ),
+}));
 vi.mock("@/components/journal/mobile/journal-mobile-header", () => ({
   JournalMobileHeader: () => null,
 }));
@@ -139,10 +135,12 @@ vi.mock("@/components/journal/journal-editor", async () => {
   return {
     JournalEditor: ({
       entry,
+      onDeleteEntry,
       onDraftChange,
       onShowNavigation,
     }: {
       entry: JournalEntry | undefined;
+      onDeleteEntry(entry: JournalEntry): void;
       onDraftChange(dirty: boolean): void;
       onShowNavigation(): void;
     }) => {
@@ -162,6 +160,11 @@ vi.mock("@/components/journal/journal-editor", async () => {
           <button type="button" onClick={onShowNavigation}>
             {"show-navigation"}
           </button>
+          {entry ? (
+            <button type="button" onClick={() => onDeleteEntry(entry)}>
+              {"delete-current"}
+            </button>
+          ) : null}
         </div>
       );
     },
@@ -209,7 +212,6 @@ function click(text: string) {
 
 beforeEach(async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  mocks.loggingOut = false;
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -277,13 +279,12 @@ describe("JournalContent", () => {
     expect(container.querySelectorAll("[data-testid='desktop-sidebar'] button")).toHaveLength(6);
   });
 
-  it("overlays signing-out feedback without unmounting the journal", async () => {
-    mocks.loggingOut = true;
-    await act(async () => renderContent());
+  it("uses the shared deletion dialog for the current editor entry", async () => {
+    await act(async () => click("delete-current"));
 
-    expect(container.textContent).toContain("signingOut");
-    expect(container.querySelector("[data-testid='logout-dialog']")).not.toBeNull();
-    expect(container.querySelector("[data-testid='editor']")).not.toBeNull();
+    expect(
+      container.querySelector("[data-testid='entry-delete-dialog']")?.getAttribute("data-entry-id"),
+    ).toBe(firstEntry.id);
   });
 
   it("lets the editor reclaim the desktop navigation space", async () => {

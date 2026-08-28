@@ -12,14 +12,12 @@ import { journalEntriesQueryKey } from "@/components/journal/journal-query";
 
 const mocks = vi.hoisted(() => ({
   createJournalEntry: vi.fn(),
-  deleteJournalEntry: vi.fn(),
   updateJournalEntry: vi.fn(),
   success: vi.fn(),
 }));
 
 vi.mock("@/api/journal/journal", () => ({
   createJournalEntry: mocks.createJournalEntry,
-  deleteJournalEntry: mocks.deleteJournalEntry,
   updateJournalEntry: mocks.updateJournalEntry,
 }));
 vi.mock("@/hooks/use-app-toast", () => ({
@@ -32,24 +30,6 @@ vi.mock("@radix-ui/themes", async () => {
   const TestButton = ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) =>
     React.createElement("button", props, children);
   return {
-    AlertDialog: {
-      Root: ({
-        children,
-        onOpenChange,
-        open,
-      }: PropsWithChildren<{ onOpenChange(open: boolean): void; open: boolean }>) => (
-        <div data-dialog-open={String(open)}>
-          {children}
-          <button type="button" aria-label="dismiss-dialog" onClick={() => onOpenChange(false)}>
-            {"dismiss"}
-          </button>
-        </div>
-      ),
-      Cancel: Wrapper,
-      Content: Wrapper,
-      Description: Wrapper,
-      Title: Wrapper,
-    },
     Box: Wrapper,
     Button: ({
       loading: _loading,
@@ -81,7 +61,7 @@ const editor = { getHTML: () => entry.content } as Editor;
 let container: HTMLDivElement;
 let queryClient: QueryClient;
 let root: Root;
-const onDeleted = vi.fn();
+const onDeleteEntry = vi.fn();
 const onSaved = vi.fn();
 const onSavingChange = vi.fn();
 
@@ -91,12 +71,6 @@ function getButton(text: string) {
   );
   if (!button) throw new Error(`Missing ${text} button`);
   return button;
-}
-
-function getDialog() {
-  const dialog = container.querySelector<HTMLElement>("[data-dialog-open]");
-  if (!dialog) throw new Error("Missing test dialog");
-  return dialog;
 }
 
 function renderActions(
@@ -111,7 +85,7 @@ function renderActions(
         draftDirty={draftDirty}
         editor={editor}
         entry={currentEntry ?? undefined}
-        onDeleted={onDeleted}
+        onDeleteEntry={onDeleteEntry}
         onSaved={onSaved}
         onSavingChange={onSavingChange}
         title={title}
@@ -219,24 +193,9 @@ describe("journal entry writes", () => {
 });
 
 describe("journal entry deletion", () => {
-  it("keeps the dialog open on failure and closes it after success", async () => {
-    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+  it("delegates deletion of the current entry", async () => {
     await act(async () => getButton("deleteEntry").click());
-    expect(getDialog().dataset["dialogOpen"]).toBe("true");
 
-    mocks.deleteJournalEntry.mockRejectedValueOnce(new Error("delete failed"));
-    await act(async () => {
-      getButton("delete").click();
-      await vi.waitFor(() => expect(getButton("delete").disabled).toBe(false));
-    });
-    expect(getDialog().dataset["dialogOpen"]).toBe("true");
-
-    mocks.deleteJournalEntry.mockResolvedValueOnce({ id: entry.id });
-    await act(async () => {
-      getButton("delete").click();
-      await vi.waitFor(() => expect(onDeleted).toHaveBeenCalledOnce());
-    });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: journalEntriesQueryKey(user.id) });
-    expect(getDialog().dataset["dialogOpen"]).toBe("false");
+    expect(onDeleteEntry).toHaveBeenCalledExactlyOnceWith(entry);
   });
 });

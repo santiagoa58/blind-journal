@@ -23,7 +23,7 @@ type JournalEditorProps = {
   draftDirty: boolean;
   entry: JournalEntry | undefined;
   navigationOpen: boolean;
-  onDeleted: () => void;
+  onDeleteEntry: (entry: JournalEntry) => void;
   onDraftChange: (dirty: boolean) => void;
   onSaved: (entry: JournalEntry) => void;
   onShowNavigation: () => void;
@@ -34,7 +34,7 @@ export function JournalEditor({
   draftDirty,
   entry,
   navigationOpen,
-  onDeleted,
+  onDeleteEntry,
   onDraftChange,
   onSaved,
   onShowNavigation,
@@ -169,7 +169,7 @@ export function JournalEditor({
           draftDirty={draftDirty}
           editor={editor}
           entry={entry}
-          onDeleted={onDeleted}
+          onDeleteEntry={onDeleteEntry}
           onSaved={handleSaved}
           onSavingChange={handleSavingChange}
           defaultTitle={defaultTitle}
