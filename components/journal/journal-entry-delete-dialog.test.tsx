@@ -6,7 +6,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ClientUser } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
+import type { ApiDeleteJournalEntryResponse, JournalEntry } from "@/api/journal/journal.type";
 import { JournalEntryDeleteDialog } from "@/components/journal/journal-entry-delete-dialog";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
 
@@ -40,7 +40,7 @@ const entry = {
 describe("JournalEntryDeleteDialog", () => {
   it("prevents duplicate deletion and closes only after refreshing the entry list", async () => {
     const userEventController = userEvent.setup();
-    const deletion = Promise.withResolvers<null>();
+    const deletion = Promise.withResolvers<ApiDeleteJournalEntryResponse>();
     const queryClient = new QueryClient();
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries").mockResolvedValue();
     const onDeleted = vi.fn();
@@ -62,17 +62,17 @@ describe("JournalEntryDeleteDialog", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByRole("alertdialog", { name: "deleteDialog.title" })).toBeDefined();
-    expect(screen.getByText("deleteDialog.descriptionWithUnsavedChanges")).toBeDefined();
+    expect(screen.getByRole("alertdialog", { name: "deleteDialog.title" })).toBeInTheDocument();
+    expect(screen.getByText("deleteDialog.descriptionWithUnsavedChanges")).toBeInTheDocument();
     const deleteButton = screen.getByRole<HTMLButtonElement>("button", { name: "delete" });
 
     await userEventController.click(deleteButton);
-    await waitFor(() => expect(deleteButton.disabled).toBe(true));
+    await waitFor(() => expect(deleteButton).toBeDisabled());
     await userEventController.click(deleteButton);
     expect(mocks.deleteJournalEntry).toHaveBeenCalledExactlyOnceWith(entry.id);
     expect(onOpenChange).not.toHaveBeenCalled();
 
-    deletion.resolve(null);
+    deletion.resolve({ id: entry.id });
     await waitFor(() => expect(onDeleted).toHaveBeenCalledExactlyOnceWith(entry.id));
     expect(invalidateQueries).toHaveBeenCalledExactlyOnceWith({
       queryKey: journalEntriesQueryKey(user.id),

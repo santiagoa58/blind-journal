@@ -12,9 +12,15 @@
 !.yarn/versions
 
 # testing
-/coverage
-.playwright/
-.playwright-*
+/coverage/
+/.playwright/
+/.playwright-*
+/playwright-report/
+/test-results/
+/blob-report/
+
+# Playwright authentication state can contain reusable session credentials
+/playwright/.auth/
 
 # next.js
 /.next/
@@ -25,6 +31,7 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug

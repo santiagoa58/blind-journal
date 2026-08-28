@@ -23,7 +23,7 @@ describe("SignedOutRoute", () => {
       </SignedOutRoute>,
     );
 
-    expect(screen.getByText("Sign in")).toBeDefined();
+    expect(screen.getByText("Sign in")).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -35,7 +35,7 @@ describe("SignedOutRoute", () => {
       });
     });
 
-    expect(screen.queryByText("Sign in")).toBeNull();
+    expect(screen.queryByText("Sign in")).not.toBeInTheDocument();
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/journal");
   });
 });

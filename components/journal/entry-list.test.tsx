@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { Theme } from "@radix-ui/themes";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -74,12 +74,12 @@ describe("EntryList", () => {
     const onSelectEntry = vi.fn();
     renderEntryList({ onSelectEntry });
 
-    expect(screen.getByRole("radiogroup", { name: "Journal entries" })).toBeDefined();
+    expect(screen.getByRole("radiogroup", { name: "Journal entries" })).toBeInTheDocument();
     expect(screen.getAllByRole("radio")).toHaveLength(2);
     const firstEntryButton = screen.getByRole("radio", { name: "Open First entry" });
     const secondEntryButton = screen.getByRole("radio", { name: "Open Second entry" });
-    expect(firstEntryButton.getAttribute("aria-checked")).toBe("true");
-    expect(secondEntryButton.getAttribute("aria-checked")).toBe("false");
+    expect(firstEntryButton).toBeChecked();
+    expect(secondEntryButton).not.toBeChecked();
 
     await user.click(secondEntryButton);
     expect(onSelectEntry).toHaveBeenCalledWith(secondEntry.id);
@@ -91,17 +91,17 @@ describe("EntryList", () => {
     const search = screen.getByRole<HTMLInputElement>("searchbox", {
       name: "Search journal entries by title",
     });
-    expect(search.placeholder).toBe("Search by title");
+    expect(search).toHaveAttribute("placeholder", "Search by title");
 
     await user.type(search, "second");
     expect(screen.getAllByRole("radio")).toHaveLength(1);
-    expect(screen.getByRole("status").textContent).toBe("1 entry");
+    expect(screen.getByRole("status")).toHaveTextContent("1 entry");
 
     await user.clear(search);
     await user.type(search, "missing");
     expect(screen.queryAllByRole("radio")).toHaveLength(0);
-    expect(screen.getByText("No matching entries")).toBeDefined();
-    expect(screen.getByText("Try a different entry title.")).toBeDefined();
+    expect(screen.getByText("No matching entries")).toBeInTheDocument();
+    expect(screen.getByText("Try a different entry title.")).toBeInTheDocument();
   });
 
   it("keeps pagination available when the loaded entries do not match", async () => {
@@ -111,7 +111,7 @@ describe("EntryList", () => {
     const search = screen.getByRole("searchbox", { name: "Search journal entries by title" });
 
     await user.type(search, "missing");
-    expect(screen.getByText(/No match in the loaded entries yet\./)).toBeDefined();
+    expect(screen.getByText(/No match in the loaded entries yet\./)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Load more" }));
     expect(loadMoreEntries).toHaveBeenCalledOnce();
@@ -122,9 +122,9 @@ describe("EntryList", () => {
     const onDeleteEntry = vi.fn();
     renderEntryList({ onDeleteEntry });
 
-    fireEvent.contextMenu(screen.getByRole("radio", { name: "Open Second entry" }), {
-      clientX: 20,
-      clientY: 20,
+    await user.pointer({
+      keys: "[MouseRight]",
+      target: screen.getByRole("radio", { name: "Open Second entry" }),
     });
 
     const deleteItem = await screen.findByRole("menuitem", { name: "Delete entry" });

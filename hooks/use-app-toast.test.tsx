@@ -17,9 +17,8 @@ vi.mock("sonner", () => ({
   toast: { error: mocks.toastError, success: vi.fn() },
 }));
 
-vi.mock("@/client.error", () => ({
-  isCodedError: (error: unknown) =>
-    error instanceof Error && "code" in error && typeof error.code === "string",
+vi.mock("@/client.error", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/client.error")>()),
   reportClientError: mocks.reportClientError,
 }));
 

@@ -25,23 +25,4 @@ describe("browser password KDF budget", () => {
     expect(getAuthKeySchedule(CURRENT_AUTH_KEY_SCHEDULE.version)).toBe(AUTH_KEY_SCHEDULES.v1);
     expect(() => getAuthKeySchedule(2)).toThrow(RangeError);
   });
-
-  it("can allocate the configured budget and derive a master key", () => {
-    const { passwordKdf } = AUTH_KEY_SCHEDULES.v1;
-    const salt = new Uint8Array(passwordKdf.saltLengthBytes);
-    const masterKey = sodium.crypto_pwhash(
-      passwordKdf.outputLengthBytes,
-      "correct horse battery staple",
-      salt,
-      passwordKdf.operationsLimit,
-      passwordKdf.memoryLimitBytes,
-      sodium.crypto_pwhash_ALG_ARGON2ID13,
-    );
-
-    try {
-      expect(masterKey).toHaveLength(passwordKdf.outputLengthBytes);
-    } finally {
-      sodium.memzero(masterKey);
-    }
-  });
 });

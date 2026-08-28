@@ -79,7 +79,8 @@
       "includes": [
         "instrumentation.ts",
         "server/database/database.test.ts",
-        "server/environment.ts"
+        "server/environment.ts",
+        "tests/e2e/**/*.ts"
       ],
       "linter": {
         "rules": {

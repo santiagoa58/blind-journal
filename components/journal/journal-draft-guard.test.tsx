@@ -32,7 +32,7 @@ describe("JournalDraftGuard", () => {
     const onDiscard = vi.fn();
     render(draftGuard(true, true, onDiscard));
 
-    expect(screen.getByRole("alertdialog", { name: "title" })).toBeDefined();
+    expect(screen.getByRole("alertdialog", { name: "title" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "discard" }));
 
     expect(onDiscard).toHaveBeenCalledOnce();

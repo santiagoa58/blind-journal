@@ -91,7 +91,7 @@ describe("journal entry writes", () => {
     mocks.updateJournalEntry.mockReturnValueOnce(update.promise);
     const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
     await userEventController.click(saveButton);
-    await waitFor(() => expect(saveButton.disabled).toBe(true));
+    await waitFor(() => expect(saveButton).toBeDisabled());
     await userEventController.click(saveButton);
     await waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
     update.resolve(savedEntry);
@@ -100,7 +100,7 @@ describe("journal entry writes", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: journalEntriesQueryKey(user.id) });
     expect(onSaved).not.toHaveBeenCalled();
     expect(onSavingChange).toHaveBeenCalledTimes(1);
-    expect(saveButton.disabled).toBe(true);
+    expect(saveButton).toBeDisabled();
 
     refresh.resolve();
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedEntry));
@@ -110,7 +110,7 @@ describe("journal entry writes", () => {
 
   it("disables save for a clean draft", async () => {
     renderActions(false);
-    expect(screen.getByRole<HTMLButtonElement>("button", { name: "save" }).disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
   });
 
   it("normalizes a blank title before saving", async () => {
@@ -120,7 +120,7 @@ describe("journal entry writes", () => {
 
     renderActions(true, "   ");
     const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
-    expect(saveButton.disabled).toBe(false);
+    expect(saveButton).toBeEnabled();
 
     await userEventController.click(saveButton);
     await waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
@@ -137,7 +137,7 @@ describe("journal entry writes", () => {
 
     renderActions(true, "   ", null);
     const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
-    expect(saveButton.disabled).toBe(false);
+    expect(saveButton).toBeEnabled();
     expect(mocks.createJournalEntry).not.toHaveBeenCalled();
 
     await userEventController.click(saveButton);
@@ -149,7 +149,7 @@ describe("journal entry writes", () => {
     );
     expect(mocks.updateJournalEntry).not.toHaveBeenCalled();
     expect(mocks.success).toHaveBeenCalledWith("success.created");
-    expect(screen.queryByRole("button", { name: "deleteEntry" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "deleteEntry" })).not.toBeInTheDocument();
   });
 });
 

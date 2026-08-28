@@ -26,10 +26,12 @@ beforeEach(() => {
 describe("useStartJournalSession", () => {
   it("stores the in-memory key before entering the journal", async () => {
     const { result } = renderHook(() => useStartJournalSession());
+    mocks.replace.mockImplementationOnce(() => {
+      expect(useAppSession.getState().session).toEqual({ status: "unlocked", user: USER });
+    });
 
     act(() => result.current(USER));
 
-    expect(useAppSession.getState().session).toEqual({ status: "unlocked", user: USER });
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/journal");
   });
 });

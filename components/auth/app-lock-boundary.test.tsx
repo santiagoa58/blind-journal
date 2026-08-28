@@ -33,8 +33,8 @@ describe("AppLockBoundary", () => {
       </AppLockBoundary>,
     );
 
-    expect(screen.getByText(LOCK_CONTENT)).toBeDefined();
-    expect(screen.queryByText(PAGE_CONTENT)).toBeNull();
+    expect(screen.getByText(LOCK_CONTENT)).toBeInTheDocument();
+    expect(screen.queryByText(PAGE_CONTENT)).not.toBeInTheDocument();
 
     await act(async () => {
       useAppSession.getState().unlock({
@@ -45,7 +45,7 @@ describe("AppLockBoundary", () => {
       });
     });
 
-    expect(screen.getByText(PAGE_CONTENT)).toBeDefined();
-    expect(screen.queryByText(LOCK_CONTENT)).toBeNull();
+    expect(screen.getByText(PAGE_CONTENT)).toBeInTheDocument();
+    expect(screen.queryByText(LOCK_CONTENT)).not.toBeInTheDocument();
   });
 });

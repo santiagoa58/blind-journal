@@ -21,19 +21,19 @@ describe("PasswordInput", () => {
     const input = screen.getByLabelText<HTMLInputElement>("Passphrase");
     const toggle = screen.getByRole<HTMLButtonElement>("button", { name: "Show passphrase" });
 
-    expect(input.type).toBe("password");
-    expect(toggle.type).toBe("button");
-    expect(toggle.getAttribute("aria-controls")).toBe("password");
+    expect(input).toHaveAttribute("type", "password");
+    expect(toggle).toHaveAttribute("type", "button");
+    expect(toggle).toHaveAttribute("aria-controls", "password");
 
     await user.click(toggle);
 
-    expect(input.type).toBe("text");
-    expect(input.value).toBe("correct horse");
+    expect(input).toHaveAttribute("type", "text");
+    expect(input).toHaveValue("correct horse");
     expect(screen.getByRole("button", { name: "Hide passphrase" })).toBe(toggle);
 
     await user.click(toggle);
 
-    expect(input.type).toBe("password");
-    expect(input.value).toBe("correct horse");
+    expect(input).toHaveAttribute("type", "password");
+    expect(input).toHaveValue("correct horse");
   });
 });

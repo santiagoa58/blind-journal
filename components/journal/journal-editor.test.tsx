@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { Theme } from "@radix-ui/themes";
-import { act, fireEvent, type RenderResult, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, type RenderResult, render, screen, waitFor } from "@testing-library/react";
+import userEvent, { type UserEvent } from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -86,18 +86,18 @@ function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
   );
 }
 
-function changeTitle(value: string) {
-  fireEvent.change(screen.getByRole("textbox", { name: "entryTitleLabel" }), {
-    target: { value },
-  });
+async function changeTitle(user: UserEvent, value: string) {
+  const title = screen.getByRole("textbox", { name: "entryTitleLabel" });
+  await user.clear(title);
+  await user.type(title, value);
 }
 
 function expectDirty(dirty: boolean) {
-  expect(screen.getByRole("status", { name: "draft state" }).textContent).toBe(`dirty:${dirty}`);
+  expect(screen.getByRole("status", { name: "draft state" })).toHaveTextContent(`dirty:${dirty}`);
 }
 
 function expectDocumentStatus(status: "saved" | "saving" | "unsaved") {
-  expect(screen.getByText(`documentStatus.${status}`)).toBeDefined();
+  expect(screen.getByText(`documentStatus.${status}`)).toBeInTheDocument();
 }
 
 beforeEach(async () => {
@@ -114,18 +114,19 @@ describe("JournalEditor draft state", () => {
     const article = screen.getByRole("article", { name: entry.title });
     if (!mocks.editor) throw new Error("Missing editor");
 
-    fireEvent.pointerDown(article, { button: 0 });
+    await user.pointer({ keys: "[MouseLeft]", target: article });
     await waitFor(() => expect(mocks.editor?.isFocused).toBe(true));
 
     await user.click(title);
-    expect(document.activeElement).toBe(title);
+    expect(title).toHaveFocus();
   });
 
   it("compares title and body changes with the saved Tiptap document", async () => {
-    await act(async () => changeTitle("Changed title"));
+    const user = userEvent.setup();
+    await changeTitle(user, "Changed title");
     expectDirty(true);
 
-    await act(async () => changeTitle(entry.title));
+    await changeTitle(user, entry.title);
     expectDirty(false);
 
     await act(async () => {
@@ -140,21 +141,23 @@ describe("JournalEditor draft state", () => {
   });
 
   it("normalizes a blank title to the journal default on blur", async () => {
+    const user = userEvent.setup();
     const title = screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" });
 
-    await act(async () => changeTitle("   "));
+    await changeTitle(user, "   ");
     expectDirty(true);
 
-    fireEvent.focus(title);
-    fireEvent.blur(title);
-    expect(title.value).toBe("newEntry.title");
+    await user.click(title);
+    await user.click(document.body);
+    expect(title).toHaveValue("newEntry.title");
     expectDirty(true);
   });
 
   it("distinguishes saved, unsaved, and saving document states", async () => {
+    const user = userEvent.setup();
     expectDocumentStatus("saved");
 
-    await act(async () => changeTitle("Changed title"));
+    await changeTitle(user, "Changed title");
     expectDocumentStatus("unsaved");
 
     await act(async () => mocks.actions?.onSavingChange(true));
@@ -163,7 +166,7 @@ describe("JournalEditor draft state", () => {
     await act(async () => mocks.actions?.onSavingChange(false));
     expectDocumentStatus("unsaved");
 
-    await act(async () => changeTitle(entry.title));
+    await changeTitle(user, entry.title);
     expectDocumentStatus("saved");
   });
 
@@ -201,9 +204,7 @@ describe("JournalEditor draft state", () => {
     view.rerender(<TestEditor key="new" newEntry />);
     await waitFor(() => expect(mocks.editor).not.toBeNull());
 
-    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" }).value).toBe(
-      "newEntry.title",
-    );
+    expect(screen.getByRole("textbox", { name: "entryTitleLabel" })).toHaveValue("newEntry.title");
     expectDocumentStatus("unsaved");
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import type {
   ApiCreateJournalEntryRequest,
@@ -16,6 +16,10 @@ const journalDatabaseMocks = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/database/journal-entries", () => journalDatabaseMocks);
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function encryptedData(marker: number) {
   return {
@@ -75,22 +79,23 @@ describe("journal domain", () => {
   });
 
   it("returns the server-authored timestamps for a created entry", async () => {
+    const now = new Date("2026-02-03T04:05:06.789Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
     const request = createRequest();
+    const expectedEntry = {
+      ...request,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    } satisfies EncryptedJournalEntry;
     journalDatabaseMocks.insertJournalEntry.mockResolvedValue("created");
 
     const result = await createEntry("user-id", request);
 
-    expect(result).toMatchObject({
-      success: true,
-      data: { id: request.id, encryptedData: request.encryptedData },
-    });
-    expect(journalDatabaseMocks.insertJournalEntry).toHaveBeenCalledWith(
+    expect(result).toEqual({ success: true, data: expectedEntry });
+    expect(journalDatabaseMocks.insertJournalEntry).toHaveBeenCalledExactlyOnceWith(
       "user-id",
-      expect.objectContaining({
-        id: request.id,
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-      }),
+      expectedEntry,
     );
   });
 
