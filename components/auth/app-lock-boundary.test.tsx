@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAppSession } from "@/client-state/app-session.state";
 import { AppLockBoundary } from "@/components/auth/app-lock-boundary";
 
@@ -16,14 +15,7 @@ vi.mock("@/components/auth/unlock-card", () => ({
   UnlockCard: () => <div>{"Unlock journal"}</div>,
 }));
 
-let container: HTMLDivElement;
-let root: Root;
-
 beforeEach(() => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
   useAppSession.setState({
     initialized: true,
     session: {
@@ -33,23 +25,16 @@ beforeEach(() => {
   });
 });
 
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
-});
-
 describe("AppLockBoundary", () => {
   it("globally replaces application pages until the session has an in-memory key", async () => {
-    await act(async () => {
-      root.render(
-        <AppLockBoundary>
-          <div>{PAGE_CONTENT}</div>
-        </AppLockBoundary>,
-      );
-    });
+    render(
+      <AppLockBoundary>
+        <div>{PAGE_CONTENT}</div>
+      </AppLockBoundary>,
+    );
 
-    expect(container.textContent).toBe(LOCK_CONTENT);
-    expect(container.querySelector("[data-auth-shell]")).not.toBeNull();
+    expect(screen.getByText(LOCK_CONTENT)).toBeDefined();
+    expect(screen.queryByText(PAGE_CONTENT)).toBeNull();
 
     await act(async () => {
       useAppSession.getState().unlock({
@@ -60,7 +45,7 @@ describe("AppLockBoundary", () => {
       });
     });
 
-    expect(container.textContent).toBe(PAGE_CONTENT);
-    expect(container.querySelector("[data-auth-shell]")).toBeNull();
+    expect(screen.getByText(PAGE_CONTENT)).toBeDefined();
+    expect(screen.queryByText(LOCK_CONTENT)).toBeNull();
   });
 });

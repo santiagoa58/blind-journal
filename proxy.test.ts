@@ -1,6 +1,6 @@
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { NextRequest, NextResponse } from "next/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { REQUEST_ID_HEADER } from "@/api/observability";
 import { createContentSecurityPolicy } from "@/content-security-policy";
 import proxy, { config } from "@/proxy";
@@ -16,10 +16,6 @@ vi.mock("next-intl/middleware", () => ({
     return NextResponse.next({ request: { headers: request.headers } });
   },
 }));
-
-afterEach(() => {
-  vi.clearAllMocks();
-});
 
 describe("nonce-based content security policy", () => {
   it("uses the nonce for scripts without allowing inline script execution", () => {

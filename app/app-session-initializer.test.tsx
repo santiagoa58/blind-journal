@@ -1,20 +1,16 @@
 // @vitest-environment jsdom
 
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
 import { AppSessionInitializerClient, useAppSession } from "@/client-state/app-session.state";
-
-let container: HTMLDivElement;
-let root: Root;
 
 function LocaleSubtree({ locale }: { locale: string }) {
   const status = useAppSession((state) => state.session.status);
   return <output>{`${locale}:${status}`}</output>;
 }
 
-function renderLocale(locale: string) {
-  root.render(
+function localeTree(locale: string) {
+  return (
     <AppSessionInitializerClient
       initialSession={{
         status: "locked",
@@ -22,26 +18,17 @@ function renderLocale(locale: string) {
       }}
     >
       <LocaleSubtree key={locale} locale={locale} />
-    </AppSessionInitializerClient>,
+    </AppSessionInitializerClient>
   );
 }
 
 beforeEach(() => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   useAppSession.setState({ initialized: false, session: { status: "signed-out" } });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
 });
 
 describe("AppSessionInitializer", () => {
   it("initializes once and preserves the unlocked key when the locale subtree remounts", async () => {
-    await act(async () => renderLocale("en"));
+    const view = render(localeTree("en"));
 
     await act(async () => {
       useAppSession.getState().unlock({
@@ -51,10 +38,10 @@ describe("AppSessionInitializer", () => {
         keyEncryptionKey: {} as CryptoKey,
       });
     });
-    expect(container.textContent).toBe("en:unlocked");
+    expect(screen.getByText("en:unlocked")).toBeDefined();
 
-    await act(async () => renderLocale("es"));
+    view.rerender(localeTree("es"));
 
-    expect(container.textContent).toBe("es:unlocked");
+    expect(screen.getByText("es:unlocked")).toBeDefined();
   });
 });

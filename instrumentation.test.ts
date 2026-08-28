@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { REQUEST_ID_HEADER } from "@/api/observability";
 import { onRequestError, register } from "@/instrumentation";
 
@@ -6,12 +6,6 @@ const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/server/environment", () => environmentMocks);
-
-afterEach(() => {
-  vi.restoreAllMocks();
-  vi.clearAllMocks();
-  vi.unstubAllEnvs();
-});
 
 describe("server startup instrumentation", () => {
   it("validates the complete environment before the Node.js server becomes ready", async () => {

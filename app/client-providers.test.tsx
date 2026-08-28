@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 
 import { MutationObserver, type QueryClient, useQueryClient } from "@tanstack/react-query";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { Providers } from "@/app/client-providers";
 import { useAppSession } from "@/client-state/app-session.state";
@@ -30,9 +29,7 @@ vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ replace: mocks.replace }),
 }));
 
-let container: HTMLDivElement;
 let queryClient: QueryClient;
-let root: Root;
 
 function Harness() {
   queryClient = useQueryClient();
@@ -45,8 +42,7 @@ function unauthorizedError() {
   });
 }
 
-beforeEach(async () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+beforeEach(() => {
   useAppSession.setState({
     initialized: true,
     session: {
@@ -59,26 +55,15 @@ beforeEach(async () => {
       },
     },
   });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-
-  await act(async () => {
-    root.render(
-      <Providers>
-        <Harness />
-      </Providers>,
-    );
-  });
+  render(
+    <Providers>
+      <Harness />
+    </Providers>,
+  );
 
   queryClient.setQueryData(["journal", "entries", "user-one"], {
     entries: [{ content: "private journal plaintext" }],
   });
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
 });
 
 describe("Providers", () => {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import { toBase64 } from "@/crypto/base64";
@@ -22,10 +22,6 @@ async function authKeyHash(authKey: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(authKey));
   return toBase64(new Uint8Array(digest));
 }
-
-afterEach(() => {
-  vi.clearAllMocks();
-});
 
 environmentMocks.getServerEnvironment.mockReturnValue({
   authSaltSecret: Buffer.from("blind-journal-development-only-auth-salt-secret"),

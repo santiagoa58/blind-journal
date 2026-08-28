@@ -8,6 +8,7 @@ export default defineConfig({
     clearMocks: true,
     environment: "node",
     restoreMocks: true,
+    setupFiles: ["./test/setup.ts"],
     unstubEnvs: true,
     unstubGlobals: true,
   },

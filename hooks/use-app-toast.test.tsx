@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAppToast } from "@/hooks/use-app-toast";
 
 const mocks = vi.hoisted(() => ({
@@ -35,25 +34,9 @@ vi.mock("@/i18n/error-message", () => ({
 }));
 
 let appToast: ReturnType<typeof useAppToast>;
-let container: HTMLDivElement;
-let root: Root;
 
-function Harness() {
-  appToast = useAppToast();
-  return null;
-}
-
-beforeEach(async () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-  await act(async () => root.render(<Harness />));
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
+beforeEach(() => {
+  appToast = renderHook(() => useAppToast()).result.current;
 });
 
 describe("useAppToast", () => {

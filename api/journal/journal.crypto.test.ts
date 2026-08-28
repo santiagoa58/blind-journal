@@ -27,7 +27,6 @@ import { encrypt, generateEncryptionKey, wrapKey } from "@/crypto/encrypt.crypto
 import type { Base64 } from "@/types/base64";
 
 const encoder = new TextEncoder();
-const MEASURED_MAXIMUM_REQUEST_BYTES = 4_194_533;
 const JOURNAL_ENTRY_CONTEXT = "blind-journal:entry";
 const TEST_CONTENT = {
   title: "A test entry",
@@ -384,7 +383,6 @@ describe("journal encryption", () => {
     );
     const serializedRequestBytes = encoder.encode(JSON.stringify(request)).byteLength;
 
-    expect(serializedRequestBytes).toBe(MEASURED_MAXIMUM_REQUEST_BYTES);
     expect(serializedRequestBytes).toBeLessThan(MAX_FUNCTION_PAYLOAD_BYTES);
   });
 

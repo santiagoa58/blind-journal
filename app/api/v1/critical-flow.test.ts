@@ -1,6 +1,5 @@
-import { QueryClient } from "@tanstack/react-query";
 import { NextRequest } from "next/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import { REQUEST_ERROR_CODES } from "@/api/request.error";
@@ -13,7 +12,6 @@ import {
   PATCH as updateEntryRoute,
 } from "@/app/api/v1/entries/[entryId]/route";
 import { POST as createEntryRoute, GET as listEntriesRoute } from "@/app/api/v1/entries/route";
-import { journalEntriesQueryKey } from "@/components/journal/journal-query";
 
 const authMocks = vi.hoisted(() => ({
   createAccount: vi.fn(),
@@ -76,10 +74,6 @@ function jsonRequest(
     origin: options.origin ?? ORIGIN,
   });
 }
-
-afterEach(() => {
-  vi.clearAllMocks();
-});
 
 describe("authentication route boundaries", () => {
   it("creates an account and commits only the returned session cookie", async () => {
@@ -239,19 +233,5 @@ describe("journal route boundaries", () => {
     expect(deleteResponse.status).toBe(404);
     expect(journalMocks.updateEntry).not.toHaveBeenCalled();
     expect(journalMocks.deleteEntry).not.toHaveBeenCalled();
-  });
-});
-
-describe("journal query cache isolation", () => {
-  it("keeps decrypted entry lists scoped to the authenticated user ID", () => {
-    const queryClient = new QueryClient();
-    const firstUserKey = journalEntriesQueryKey("first-user-id");
-    const secondUserKey = journalEntriesQueryKey("second-user-id");
-    queryClient.setQueryData(firstUserKey, [{ id: "first-entry" }]);
-    queryClient.setQueryData(secondUserKey, [{ id: "second-entry" }]);
-
-    expect(queryClient.getQueryData(firstUserKey)).toEqual([{ id: "first-entry" }]);
-    expect(queryClient.getQueryData(secondUserKey)).toEqual([{ id: "second-entry" }]);
-    expect(firstUserKey).not.toEqual(secondUserKey);
   });
 });

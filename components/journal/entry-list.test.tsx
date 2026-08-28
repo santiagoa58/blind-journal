@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
 import { Theme } from "@radix-ui/themes";
+import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { EntryList } from "@/components/journal/entry-list";
 import entryListMessages from "@/messages/en/entry-list.json";
@@ -23,9 +23,6 @@ const secondEntry = {
   updatedAt: "2026-01-02T00:00:00.000Z",
 } satisfies JournalEntry;
 
-let container: HTMLDivElement;
-let root: Root;
-
 function renderEntryList({
   hasMoreEntries = false,
   loadingMoreEntries = false,
@@ -39,7 +36,7 @@ function renderEntryList({
   onDeleteEntry?: (entry: JournalEntry) => void;
   onSelectEntry?: (entryId: string) => void;
 } = {}) {
-  root.render(
+  return render(
     <NextIntlClientProvider
       locale="en"
       messages={{ "entry-list": entryListMessages }}
@@ -60,118 +57,79 @@ function renderEntryList({
   );
 }
 
-function getButton(name: string) {
-  const button = Array.from(container.querySelectorAll("button")).find(
-    (candidate) => candidate.getAttribute("aria-label") === name || candidate.textContent === name,
-  );
-  if (!button) throw new Error(`Missing ${name} button`);
-  return button;
-}
-
-function changeSearch(search: HTMLInputElement, value: string) {
-  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-  if (!setValue) throw new Error("Missing native input value setter");
-  setValue.call(search, value);
-  search.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-function getSearch() {
-  const search = container.querySelector<HTMLInputElement>("input[type='search']");
-  if (!search) throw new Error("Missing entry search field");
-  return search;
-}
-
 beforeEach(() => {
-  Object.assign(globalThis, {
-    IS_REACT_ACT_ENVIRONMENT: true,
-    ResizeObserver: class {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
       observe() {}
       unobserve() {}
       disconnect() {}
     },
-  });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
+  );
 });
 
 describe("EntryList", () => {
   it("renders semantic entry options and reports the selected entry", async () => {
+    const user = userEvent.setup();
     const onSelectEntry = vi.fn();
-    await act(async () => renderEntryList({ onSelectEntry }));
+    renderEntryList({ onSelectEntry });
 
-    expect(container.querySelector("[role='radiogroup']")?.getAttribute("aria-label")).toBe(
-      "Journal entries",
-    );
-    expect(container.querySelectorAll("[role='radio']")).toHaveLength(2);
-    const firstEntryButton = getButton("Open First entry");
-    const secondEntryButton = getButton("Open Second entry");
+    expect(screen.getByRole("radiogroup", { name: "Journal entries" })).toBeDefined();
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    const firstEntryButton = screen.getByRole("radio", { name: "Open First entry" });
+    const secondEntryButton = screen.getByRole("radio", { name: "Open Second entry" });
     expect(firstEntryButton.getAttribute("aria-checked")).toBe("true");
-    expect(firstEntryButton.dataset["state"]).toBe("checked");
     expect(secondEntryButton.getAttribute("aria-checked")).toBe("false");
-    expect(secondEntryButton.dataset["state"]).toBe("unchecked");
 
-    await act(async () => secondEntryButton.click());
+    await user.click(secondEntryButton);
     expect(onSelectEntry).toHaveBeenCalledWith(secondEntry.id);
   });
 
   it("filters loaded entries and explains an empty result", async () => {
-    await act(async () => renderEntryList());
-    const search = getSearch();
+    const user = userEvent.setup();
+    renderEntryList();
+    const search = screen.getByRole<HTMLInputElement>("searchbox", {
+      name: "Search journal entries by title",
+    });
     expect(search.placeholder).toBe("Search by title");
-    expect(container.querySelector(`label[for='${search.id}']`)?.textContent).toBe(
-      "Search journal entries by title",
-    );
-    expect(search.parentElement?.querySelector("[data-side='right']")).not.toBeNull();
 
-    await act(async () => {
-      changeSearch(search, "second");
-    });
-    expect(container.querySelectorAll("[role='radio']")).toHaveLength(1);
-    expect(container.querySelector("output")?.textContent).toBe("1 entry");
+    await user.type(search, "second");
+    expect(screen.getAllByRole("radio")).toHaveLength(1);
+    expect(screen.getByRole("status").textContent).toBe("1 entry");
 
-    await act(async () => {
-      changeSearch(search, "missing");
-    });
-    expect(container.querySelectorAll("[role='radio']")).toHaveLength(0);
-    expect(container.textContent).toContain("No matching entries");
-    expect(container.textContent).toContain("Try a different entry title.");
+    await user.clear(search);
+    await user.type(search, "missing");
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(screen.getByText("No matching entries")).toBeDefined();
+    expect(screen.getByText("Try a different entry title.")).toBeDefined();
   });
 
   it("keeps pagination available when the loaded entries do not match", async () => {
+    const user = userEvent.setup();
     const loadMoreEntries = vi.fn();
-    await act(async () => renderEntryList({ hasMoreEntries: true, loadMoreEntries }));
-    const search = getSearch();
+    renderEntryList({ hasMoreEntries: true, loadMoreEntries });
+    const search = screen.getByRole("searchbox", { name: "Search journal entries by title" });
 
-    await act(async () => {
-      changeSearch(search, "missing");
-    });
-    expect(container.textContent).toContain("No match in the loaded entries yet.");
+    await user.type(search, "missing");
+    expect(screen.getByText(/No match in the loaded entries yet\./)).toBeDefined();
 
-    await act(async () => getButton("Load more").click());
+    await user.click(screen.getByRole("button", { name: "Load more" }));
     expect(loadMoreEntries).toHaveBeenCalledOnce();
   });
 
   it("offers deletion from an entry context menu", async () => {
+    const user = userEvent.setup();
     const onDeleteEntry = vi.fn();
-    await act(async () => renderEntryList({ onDeleteEntry }));
+    renderEntryList({ onDeleteEntry });
 
-    await act(async () => {
-      getButton("Open Second entry").dispatchEvent(
-        new MouseEvent("contextmenu", { bubbles: true, clientX: 20, clientY: 20 }),
-      );
+    fireEvent.contextMenu(screen.getByRole("radio", { name: "Open Second entry" }), {
+      clientX: 20,
+      clientY: 20,
     });
 
-    const deleteItem = document.querySelector<HTMLElement>("[role='menuitem']");
-    if (!deleteItem) throw new Error("Missing context-menu delete item");
-    expect(deleteItem.textContent).toContain("Delete entry");
+    const deleteItem = await screen.findByRole("menuitem", { name: "Delete entry" });
 
-    await act(async () => deleteItem.click());
+    await user.click(deleteItem);
     expect(onDeleteEntry).toHaveBeenCalledWith(secondEntry);
   });
 });

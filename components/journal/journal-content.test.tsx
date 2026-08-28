@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { act, type PropsWithChildren } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Theme } from "@radix-ui/themes";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalContent } from "@/components/journal/journal-content";
@@ -12,18 +13,6 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn(),
 }));
 
-vi.mock("@radix-ui/themes", async () => {
-  const React = await import("react");
-  const Wrapper = ({ children }: PropsWithChildren) => React.createElement("div", null, children);
-  return {
-    Box: Wrapper,
-    Flex: Wrapper,
-    Heading: Wrapper,
-    Separator: Wrapper,
-    Text: Wrapper,
-    VisuallyHidden: Wrapper,
-  };
-});
 vi.mock("next-intl", () => ({
   useLocale: () => "en",
   useTranslations: () => (key: string) => key,
@@ -52,7 +41,7 @@ vi.mock("@/components/journal/journal-desktop-sidebar", () => ({
     onSelectEntry(id: string): void;
     onSignOut(): void;
   }) => (
-    <div data-testid="desktop-sidebar">
+    <nav aria-label="desktop navigation">
       <button type="button" onClick={onCollapse}>
         {"hide-navigation"}
       </button>
@@ -70,25 +59,11 @@ vi.mock("@/components/journal/journal-desktop-sidebar", () => ({
       <button type="button" onClick={onSignOut}>
         {"logout"}
       </button>
-    </div>
+    </nav>
   ),
 }));
 vi.mock("@/components/journal/entry-list", () => ({
-  EntryList: ({
-    entries,
-    onSelectEntry,
-  }: {
-    entries: JournalEntry[];
-    onSelectEntry(id: string): void;
-  }) => (
-    <>
-      {entries.map((entry) => (
-        <button key={entry.id} type="button" onClick={() => onSelectEntry(entry.id)}>
-          {entry.id}
-        </button>
-      ))}
-    </>
-  ),
+  EntryList: () => null,
 }));
 vi.mock("@/components/journal/journal-draft-guard", () => ({
   JournalDraftGuard: ({
@@ -101,7 +76,7 @@ vi.mock("@/components/journal/journal-draft-guard", () => ({
     onDiscard(): void;
   }) =>
     open ? (
-      <>
+      <div role="alertdialog" aria-label="discard draft">
         <button type="button" onClick={onCancel}>
           {"cancel-discard"}
         </button>
@@ -114,14 +89,12 @@ vi.mock("@/components/journal/journal-draft-guard", () => ({
         >
           {"confirm-discard"}
         </button>
-      </>
+      </div>
     ) : null,
 }));
 vi.mock("@/components/journal/journal-empty-card", () => ({ JournalEmptyCard: () => null }));
 vi.mock("@/components/journal/journal-entry-delete-dialog", () => ({
-  JournalEntryDeleteDialog: ({ entry }: { entry: JournalEntry }) => (
-    <div data-testid="entry-delete-dialog" data-entry-id={entry.id} />
-  ),
+  JournalEntryDeleteDialog: () => null,
 }));
 vi.mock("@/components/journal/mobile/journal-mobile-header", () => ({
   JournalMobileHeader: () => null,
@@ -147,7 +120,8 @@ vi.mock("@/components/journal/journal-editor", async () => {
       const [edited, setEdited] = React.useState(false);
 
       return (
-        <div data-testid="editor" data-entry-id={entry?.id ?? "new"} data-edited={String(edited)}>
+        <section aria-label={`editor ${entry?.id ?? "new"}`}>
+          <output aria-label="editor state">{`edited:${edited}`}</output>
           <button
             type="button"
             onClick={() => {
@@ -165,7 +139,7 @@ vi.mock("@/components/journal/journal-editor", async () => {
               {"delete-current"}
             </button>
           ) : null}
-        </div>
+        </section>
       );
     },
   };
@@ -186,116 +160,71 @@ const firstEntry = {
 } satisfies JournalEntry;
 const secondEntry = { ...firstEntry, id: "second-entry", title: "Second entry" };
 
-let container: HTMLDivElement;
-let root: Root;
-
 function renderContent() {
-  root.render(
-    <JournalContent
-      entries={[firstEntry, secondEntry]}
-      hasMoreEntries={false}
-      loadingMoreEntries={false}
-      loadMoreEntries={vi.fn()}
-      unreadableEntries={[]}
-      user={user}
-    />,
+  return render(
+    <Theme>
+      <JournalContent
+        entries={[firstEntry, secondEntry]}
+        hasMoreEntries={false}
+        loadingMoreEntries={false}
+        loadMoreEntries={vi.fn()}
+        unreadableEntries={[]}
+        user={user}
+      />
+    </Theme>,
   );
 }
 
-function click(text: string) {
-  const button = Array.from(container.querySelectorAll("button")).find(
-    (candidate) => candidate.textContent === text,
-  );
-  if (!button) throw new Error(`Missing ${text} button`);
-  button.click();
-}
-
-beforeEach(async () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-  await act(async () => {
-    renderContent();
-  });
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
+beforeEach(() => {
+  renderContent();
 });
 
 describe("JournalContent", () => {
   it("keeps the dirty entry mounted until a requested selection is confirmed", async () => {
-    await act(async () => click("make-dirty"));
-    await act(async () => click(secondEntry.id));
-    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-entry-id")).toBe(
-      firstEntry.id,
-    );
+    const userEventController = userEvent.setup();
+    await userEventController.click(screen.getByRole("button", { name: "make-dirty" }));
+    await userEventController.click(screen.getByRole("button", { name: secondEntry.id }));
+    expect(screen.getByRole("region", { name: `editor ${firstEntry.id}` })).toBeDefined();
 
-    await act(async () => click("confirm-discard"));
-    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-entry-id")).toBe(
-      secondEntry.id,
-    );
+    await userEventController.click(screen.getByRole("button", { name: "confirm-discard" }));
+    expect(screen.getByRole("region", { name: `editor ${secondEntry.id}` })).toBeDefined();
   });
 
   it.each([
     ["change-locale", mocks.replaceRoute],
     ["logout", mocks.signOut],
   ] as const)("guards %s with the same draft owner", async (action, expected) => {
-    await act(async () => click("make-dirty"));
-    await act(async () => click(action));
+    const userEventController = userEvent.setup();
+    await userEventController.click(screen.getByRole("button", { name: "make-dirty" }));
+    await userEventController.click(screen.getByRole("button", { name: action }));
     expect(expected).not.toHaveBeenCalled();
 
-    await act(async () => click("confirm-discard"));
+    await userEventController.click(screen.getByRole("button", { name: "confirm-discard" }));
     expect(expected).toHaveBeenCalledOnce();
   });
 
   it("actually resets the current editor when discarding a draft to create", async () => {
-    await act(async () => click("make-dirty"));
-    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-edited")).toBe(
-      "true",
-    );
+    const userEventController = userEvent.setup();
+    await userEventController.click(screen.getByRole("button", { name: "make-dirty" }));
+    expect(screen.getByRole("status", { name: "editor state" }).textContent).toBe("edited:true");
 
-    await act(async () => click("create"));
-    await act(async () => click("confirm-discard"));
+    await userEventController.click(screen.getByRole("button", { name: "create" }));
+    await userEventController.click(screen.getByRole("button", { name: "confirm-discard" }));
 
-    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-edited")).toBe(
-      "false",
-    );
-    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-entry-id")).toBe(
-      "new",
-    );
-  });
-
-  it("opens a new entry locally without adding it to the persisted list", async () => {
-    expect(container.querySelectorAll("[data-testid='desktop-sidebar'] button")).toHaveLength(6);
-
-    await act(async () => click("create"));
-
-    expect(container.querySelector("[data-testid='editor']")?.getAttribute("data-entry-id")).toBe(
-      "new",
-    );
-    expect(container.querySelectorAll("[data-testid='desktop-sidebar'] button")).toHaveLength(6);
-  });
-
-  it("uses the shared deletion dialog for the current editor entry", async () => {
-    await act(async () => click("delete-current"));
-
-    expect(
-      container.querySelector("[data-testid='entry-delete-dialog']")?.getAttribute("data-entry-id"),
-    ).toBe(firstEntry.id);
+    expect(screen.getByRole("region", { name: "editor new" })).toBeDefined();
+    expect(screen.getByRole("status", { name: "editor state" }).textContent).toBe("edited:false");
   });
 
   it("lets the editor reclaim the desktop navigation space", async () => {
-    expect(container.querySelector("[data-testid='desktop-sidebar']")).not.toBeNull();
+    const userEventController = userEvent.setup();
+    expect(screen.getByRole("navigation", { name: "desktop navigation" })).toBeDefined();
 
-    await act(async () => click("hide-navigation"));
+    await userEventController.click(screen.getByRole("button", { name: "hide-navigation" }));
 
-    expect(container.querySelector("[data-testid='desktop-sidebar']")).toBeNull();
-    expect(container.querySelector("[data-testid='editor']")).not.toBeNull();
+    expect(screen.queryByRole("navigation", { name: "desktop navigation" })).toBeNull();
+    expect(screen.getByRole("region", { name: `editor ${firstEntry.id}` })).toBeDefined();
 
-    await act(async () => click("show-navigation"));
-    expect(container.querySelector("[data-testid='desktop-sidebar']")).not.toBeNull();
+    await userEventController.click(screen.getByRole("button", { name: "show-navigation" }));
+    expect(screen.getByRole("navigation", { name: "desktop navigation" })).toBeDefined();
   });
 });

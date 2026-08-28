@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
+import { Theme } from "@radix-ui/themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
-import { act, type ButtonHTMLAttributes, type PropsWithChildren } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalEditorActions } from "@/components/journal/journal-editor-actions";
@@ -24,24 +25,6 @@ vi.mock("@/hooks/use-app-toast", () => ({
   useAppToast: () => ({ error: vi.fn(), success: mocks.success }),
 }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
-vi.mock("@radix-ui/themes", async () => {
-  const React = await import("react");
-  const Wrapper = ({ children }: PropsWithChildren) => React.createElement("div", null, children);
-  const TestButton = ({ children, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) =>
-    React.createElement("button", props, children);
-  return {
-    Box: Wrapper,
-    Button: ({
-      loading: _loading,
-      ...props
-    }: ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) => (
-      <TestButton {...props} />
-    ),
-    Flex: Wrapper,
-    IconButton: TestButton,
-    Tooltip: Wrapper,
-  };
-});
 
 const user = {
   id: "user-one",
@@ -58,64 +41,47 @@ const entry = {
 } satisfies JournalEntry;
 const editor = { getHTML: () => entry.content } as Editor;
 
-let container: HTMLDivElement;
 let queryClient: QueryClient;
-let root: Root;
 const onDeleteEntry = vi.fn();
 const onSaved = vi.fn();
 const onSavingChange = vi.fn();
-
-function getButton(text: string) {
-  const button = Array.from(container.querySelectorAll("button")).find(
-    (candidate) => candidate.getAttribute("aria-label") === text || candidate.textContent === text,
-  );
-  if (!button) throw new Error(`Missing ${text} button`);
-  return button;
-}
 
 function renderActions(
   draftDirty = true,
   title = entry.title,
   currentEntry: JournalEntry | null = entry,
 ) {
-  root.render(
+  return render(
     <QueryClientProvider client={queryClient}>
-      <JournalEditorActions
-        defaultTitle="Untitled entry"
-        draftDirty={draftDirty}
-        editor={editor}
-        entry={currentEntry ?? undefined}
-        onDeleteEntry={onDeleteEntry}
-        onSaved={onSaved}
-        onSavingChange={onSavingChange}
-        title={title}
-        user={user}
-      />
+      <Theme>
+        <JournalEditorActions
+          defaultTitle="Untitled entry"
+          draftDirty={draftDirty}
+          editor={editor}
+          entry={currentEntry ?? undefined}
+          onDeleteEntry={onDeleteEntry}
+          onSaved={onSaved}
+          onSavingChange={onSavingChange}
+          title={title}
+          user={user}
+        />
+      </Theme>
     </QueryClientProvider>,
   );
 }
 
-beforeEach(async () => {
-  vi.clearAllMocks();
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
+beforeEach(() => {
   queryClient = new QueryClient();
   queryClient.setQueryData(journalEntriesQueryKey(user.id), {
     pages: [{ entries: [entry], unreadableEntries: [], nextCursor: null }],
     pageParams: [null],
   });
-  await act(async () => renderActions());
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
 });
 
 describe("journal entry writes", () => {
   it("disables writing while saving and commits the result", async () => {
+    const userEventController = userEvent.setup();
+    renderActions();
     const update = Promise.withResolvers<JournalEntry>();
     const refresh = Promise.withResolvers<void>();
     const savedEntry = { ...entry, title: "Saved entry", updatedAt: "2026-01-02T00:00:00.000Z" };
@@ -123,46 +89,41 @@ describe("journal entry writes", () => {
       .spyOn(queryClient, "invalidateQueries")
       .mockReturnValue(refresh.promise);
     mocks.updateJournalEntry.mockReturnValueOnce(update.promise);
-    await act(async () => {
-      getButton("save").click();
-      await vi.waitFor(() => expect(getButton("save").disabled).toBe(true));
-      getButton("save").click();
-      await vi.waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
-    });
+    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
+    await userEventController.click(saveButton);
+    await waitFor(() => expect(saveButton.disabled).toBe(true));
+    await userEventController.click(saveButton);
+    await waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
     update.resolve(savedEntry);
 
-    await act(async () => {
-      await vi.waitFor(() => expect(invalidateQueries).toHaveBeenCalledOnce());
-    });
+    await waitFor(() => expect(invalidateQueries).toHaveBeenCalledOnce());
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: journalEntriesQueryKey(user.id) });
     expect(onSaved).not.toHaveBeenCalled();
     expect(onSavingChange).toHaveBeenCalledTimes(1);
-    expect(getButton("save").disabled).toBe(true);
+    expect(saveButton.disabled).toBe(true);
 
     refresh.resolve();
-    await act(async () => vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedEntry)));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedEntry));
     expect(onSavingChange).toHaveBeenNthCalledWith(1, true);
     expect(onSavingChange).toHaveBeenLastCalledWith(false);
   });
 
   it("disables save for a clean draft", async () => {
-    await act(async () => renderActions(false));
-    expect(getButton("save").disabled).toBe(true);
+    renderActions(false);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "save" }).disabled).toBe(true);
   });
 
   it("normalizes a blank title before saving", async () => {
+    const userEventController = userEvent.setup();
     const savedEntry = { ...entry, title: "Untitled entry" };
     mocks.updateJournalEntry.mockResolvedValueOnce(savedEntry);
 
-    await act(async () => {
-      renderActions(true, "   ");
-    });
-    expect(getButton("save").disabled).toBe(false);
+    renderActions(true, "   ");
+    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
+    expect(saveButton.disabled).toBe(false);
 
-    await act(async () => {
-      getButton("save").click();
-      await vi.waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
-    });
+    await userEventController.click(saveButton);
+    await waitFor(() => expect(mocks.updateJournalEntry).toHaveBeenCalledOnce());
     expect(mocks.updateJournalEntry).toHaveBeenCalledWith(
       { id: entry.id, title: "Untitled entry", content: entry.content },
       user,
@@ -170,17 +131,17 @@ describe("journal entry writes", () => {
   });
 
   it("creates a new entry only when its local draft is saved", async () => {
+    const userEventController = userEvent.setup();
     const createdEntry = { ...entry, id: "created-entry", title: "Untitled entry" };
     mocks.createJournalEntry.mockResolvedValueOnce(createdEntry);
 
-    await act(async () => renderActions(true, "   ", null));
-    expect(getButton("save").disabled).toBe(false);
+    renderActions(true, "   ", null);
+    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
+    expect(saveButton.disabled).toBe(false);
     expect(mocks.createJournalEntry).not.toHaveBeenCalled();
 
-    await act(async () => {
-      getButton("save").click();
-      await vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith(createdEntry));
-    });
+    await userEventController.click(saveButton);
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(createdEntry));
 
     expect(mocks.createJournalEntry).toHaveBeenCalledWith(
       { title: "Untitled entry", content: entry.content },
@@ -188,13 +149,15 @@ describe("journal entry writes", () => {
     );
     expect(mocks.updateJournalEntry).not.toHaveBeenCalled();
     expect(mocks.success).toHaveBeenCalledWith("success.created");
-    expect(container.textContent).not.toContain("deleteEntry");
+    expect(screen.queryByRole("button", { name: "deleteEntry" })).toBeNull();
   });
 });
 
 describe("journal entry deletion", () => {
   it("delegates deletion of the current entry", async () => {
-    await act(async () => getButton("deleteEntry").click());
+    const userEventController = userEvent.setup();
+    renderActions();
+    await userEventController.click(screen.getByRole("button", { name: "deleteEntry" }));
 
     expect(onDeleteEntry).toHaveBeenCalledExactlyOnceWith(entry);
   });

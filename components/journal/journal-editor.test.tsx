@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
 import { Theme } from "@radix-ui/themes";
+import { act, fireEvent, type RenderResult, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
-import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientUser } from "@/api/auth/user.type";
 import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalEditor } from "@/components/journal/journal-editor";
@@ -45,7 +46,7 @@ vi.mock("@/components/journal/journal-editor-actions", async () => {
       onSavingChange,
     }: EditorActions & { draftDirty: boolean }) => {
       mocks.actions = { onSaved, onSavingChange };
-      return React.createElement("output", { "data-dirty": String(draftDirty) });
+      return React.createElement("output", { "aria-label": "draft state" }, `dirty:${draftDirty}`);
     },
   };
 });
@@ -64,8 +65,7 @@ const entry = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 } satisfies JournalEntry;
 
-let container: HTMLDivElement;
-let root: Root;
+let view: RenderResult;
 
 function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
   const [draftDirty, setDraftDirty] = useState(false);
@@ -87,61 +87,37 @@ function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
 }
 
 function changeTitle(value: string) {
-  const title = container.querySelector<HTMLInputElement>(".rt-TextFieldInput");
-  const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-  if (!title || !setValue) throw new Error("Missing title field");
-  setValue.call(title, value);
-  title.dispatchEvent(new Event("input", { bubbles: true }));
+  fireEvent.change(screen.getByRole("textbox", { name: "entryTitleLabel" }), {
+    target: { value },
+  });
 }
 
 function expectDirty(dirty: boolean) {
-  expect(container.querySelector("output")?.getAttribute("data-dirty")).toBe(String(dirty));
+  expect(screen.getByRole("status", { name: "draft state" }).textContent).toBe(`dirty:${dirty}`);
 }
 
 function expectDocumentStatus(status: "saved" | "saving" | "unsaved") {
-  expect(container.querySelector("[role='status']")?.textContent).toBe(`documentStatus.${status}`);
+  expect(screen.getByText(`documentStatus.${status}`)).toBeDefined();
 }
 
 beforeEach(async () => {
-  vi.clearAllMocks();
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   mocks.actions = undefined;
   mocks.editor = null;
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-
-  await act(async () => {
-    root.render(<TestEditor />);
-  });
-  await act(async () => vi.waitFor(() => expect(mocks.editor).not.toBeNull()));
-});
-
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
+  view = render(<TestEditor />);
+  await waitFor(() => expect(mocks.editor).not.toBeNull());
 });
 
 describe("JournalEditor draft state", () => {
   it("uses a labeled Radix title field and focuses the editor from the document surface", async () => {
-    const title = container.querySelector<HTMLInputElement>(".rt-TextFieldInput");
-    const article = container.querySelector<HTMLElement>("article");
-    if (!title || !article || !mocks.editor) throw new Error("Missing document controls");
+    const user = userEvent.setup();
+    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" });
+    const article = screen.getByRole("article", { name: entry.title });
+    if (!mocks.editor) throw new Error("Missing editor");
 
-    expect(title.closest(".rt-TextFieldRoot")).not.toBeNull();
-    expect(container.querySelector(`label[for='${title.id}']`)?.textContent).toBe(
-      "entryTitleLabel",
-    );
+    fireEvent.pointerDown(article, { button: 0 });
+    await waitFor(() => expect(mocks.editor?.isFocused).toBe(true));
 
-    await act(async () => {
-      article.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
-    });
-    await vi.waitFor(() => expect(mocks.editor?.isFocused).toBe(true));
-
-    await act(async () => {
-      title.focus();
-      title.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
-    });
+    await user.click(title);
     expect(document.activeElement).toBe(title);
   });
 
@@ -164,16 +140,13 @@ describe("JournalEditor draft state", () => {
   });
 
   it("normalizes a blank title to the journal default on blur", async () => {
-    const title = container.querySelector<HTMLInputElement>(".rt-TextFieldInput");
-    if (!title) throw new Error("Missing title field");
+    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" });
 
     await act(async () => changeTitle("   "));
     expectDirty(true);
 
-    await act(async () => {
-      title.focus();
-      title.blur();
-    });
+    fireEvent.focus(title);
+    fireEvent.blur(title);
     expect(title.value).toBe("newEntry.title");
     expectDirty(true);
   });
@@ -225,10 +198,10 @@ describe("JournalEditor draft state", () => {
   });
 
   it("presents a new entry as an unsaved local document", async () => {
-    await act(async () => root.render(<TestEditor key="new" newEntry />));
-    await act(async () => vi.waitFor(() => expect(mocks.editor).not.toBeNull()));
+    view.rerender(<TestEditor key="new" newEntry />);
+    await waitFor(() => expect(mocks.editor).not.toBeNull());
 
-    expect(container.querySelector<HTMLInputElement>(".rt-TextFieldInput")?.value).toBe(
+    expect(screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" }).value).toBe(
       "newEntry.title",
     );
     expectDocumentStatus("unsaved");

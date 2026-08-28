@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { endSession, getSessionUserId, startSession, toSessionHash } from "@/server/auth/session";
 
 const sessionDatabaseMocks = vi.hoisted(() => ({
@@ -38,10 +38,6 @@ beforeEach(() => {
   sessionDatabaseMocks.findSessionUserId.mockResolvedValue(undefined);
   sessionDatabaseMocks.replaceSession.mockResolvedValue(undefined);
   environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "test" });
-});
-
-afterEach(() => {
-  vi.clearAllMocks();
 });
 
 describe("session cookie policy", () => {

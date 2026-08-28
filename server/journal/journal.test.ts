@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
 import type {
   ApiCreateJournalEntryRequest,
@@ -29,10 +29,6 @@ function encryptedData(marker: number) {
 function createRequest(id = crypto.randomUUID(), marker = 1): ApiCreateJournalEntryRequest {
   return { id, encryptedData: encryptedData(marker) };
 }
-
-afterEach(() => {
-  vi.clearAllMocks();
-});
 
 describe("journal domain", () => {
   it("rejects a cursor that persistence cannot decode", async () => {
