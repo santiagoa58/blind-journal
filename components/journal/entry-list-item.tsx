@@ -25,7 +25,7 @@ export function EntryListItem({ entry, onDeleteEntry, selected }: EntryListItemP
             >
               <Flex as="span" align="center" justify="between" gap="3" width="100%">
                 <Flex as="span" direction="column" align="start" gap="2" flexGrow="1" minWidth="0">
-                  <Box as="span" minWidth="0" maxWidth="100%">
+                  <Box asChild minWidth="0" maxWidth="100%">
                     <Text size="2" weight="bold" truncate align="left">
                       {entry.title}
                     </Text>
