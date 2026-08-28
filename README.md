@@ -374,6 +374,8 @@ browser API is not part of this architecture.
 | `pnpm i18n:check` | Validate message usage and catalog consistency in strict mode |
 | `pnpm typecheck` | Run TypeScript without emitting files |
 | `pnpm test` | Run the Vitest suite once |
+| `pnpm test:database` | Run the real Neon integration test using the local environment files |
+| `pnpm test:e2e` | Build the app and run the critical Chromium journey using the local environment files |
 | `pnpm test:watch` | Run Vitest in watch mode |
 
 Before handing off a change, run:
@@ -390,8 +392,9 @@ expiration, and revocation, request validation, database constraints, per-user a
 cross-user isolation, query-cache cleanup, account deletion, and critical account and journal flows
 through the real application boundaries.
 
-Test code does not maintain a separate fake API implementation. Persistence tests use the real
-database contract, and production builds verify the framework boundary.
+Test code does not maintain a separate fake API implementation. `pnpm test:database` exercises the
+real database contract separately from the deterministic unit suite. `pnpm test:e2e` runs one
+critical account and journal journey against a production build in Chromium.
 
 ## Scope
 

@@ -18,7 +18,6 @@ import { findSessionUserId } from "@/server/database/sessions";
 
 vi.mock("server-only", () => ({}));
 
-const describeDatabase = process.env["RUN_DATABASE_TESTS"] === "1" ? describe : describe.skip;
 const createdUserIds = new Set<string>();
 
 afterEach(async () => {
@@ -48,7 +47,7 @@ function encryptedEntry(
   };
 }
 
-describeDatabase("Neon database", () => {
+describe("Neon database", () => {
   it("persists an account, hashed session, and owner-scoped journal lifecycle", async () => {
     const id = crypto.randomUUID();
     const username = `database-test-${id}`;
