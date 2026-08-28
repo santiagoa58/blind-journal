@@ -275,13 +275,15 @@ or an unwrapped entry key.
 | Runtime validation | Zod | Validation at API and database boundaries |
 | Password derivation | libsodium | Audited Argon2id, secure randomness, encodings, and constant-time operations |
 | Key derivation and encryption | Web Crypto | Native HKDF-SHA-256, AES-KW, and AES-256-GCM |
+| Database | Neon | Hosted PostgreSQL for durable application data |
 | Localization | next-intl and Eloqnt | Locale routing, formatting, and synchronized message catalogs |
 | Tests | Vitest | Focused protocol, service, persistence, component, and critical-flow tests |
 | Formatting and linting | Biome | Deterministic formatting and static checks |
 
-The selected database and deployment provider must support durable transactions, uniqueness and
-foreign-key constraints, and a no-overage configuration. Exact dependency and package-manager
-versions are pinned in `package.json` and `pnpm-lock.yaml`.
+Blind Journal uses Neon to host its PostgreSQL database. PostgreSQL provides the transactions and
+data constraints required by this design. Configure Neon and the application host to prevent
+unexpected usage charges. Exact dependency and package-manager versions are pinned in
+`package.json` and `pnpm-lock.yaml`.
 
 ## Repository map
 
@@ -295,8 +297,8 @@ i18n/                   Locale routing, message loading, navigation, and error m
 messages/               Translation catalogs under messages/{locale}/{feature}.json
 public/                 Brand and install assets
 server/                 Server-only services, HTTP helpers, sessions, and persistence
-state/                  Small in-memory Zustand stores
-types/                  Cross-cutting TypeScript declarations and branded types
+client-state/           Small in-memory Zustand stores
+types/                  String type aliases for Base64 and Base64Url values
 ```
 
 Directories express ownership. Avoid generic dumping grounds, duplicate contract folders, and
@@ -328,7 +330,7 @@ security design so decrypted data is never placed outside the encrypted storage 
 
 - Node.js 24 or newer
 - Corepack
-- A supported durable database
+- A Neon account and project
 - A modern browser with Web Crypto and Web Worker support
 
 Corepack selects the PNPM version pinned by the repository.
