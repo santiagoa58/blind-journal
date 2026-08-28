@@ -1,8 +1,8 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { Avatar, Button, Flex, RadioCards, ScrollArea, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { EntryListItem } from "@/components/journal/entry-list-item";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type EntryListResultsProps = {
   entries: JournalEntry[];

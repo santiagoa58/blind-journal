@@ -1,7 +1,7 @@
 import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
-import { REQUEST_ERROR_CODES } from "@/api/request.error";
-import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
+import { REQUEST_ERROR_CODES } from "@/lib/api/request.error";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/lib/api/transport.constants";
 import { getSessionUserId } from "@/server/auth/session";
 import { getErrorHttpStatus } from "@/server/http/error-status";
 import { isSameOrigin, readJsonBody } from "@/server/http/request";

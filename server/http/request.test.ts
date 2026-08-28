@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { REQUEST_ERROR_CODES } from "@/api/request.error";
+import { REQUEST_ERROR_CODES } from "@/lib/api/request.error";
 import { readJsonBody } from "@/server/http/request";
 
 vi.mock("server-only", () => ({}));

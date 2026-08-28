@@ -5,13 +5,13 @@ import { Button, Callout, Container, Flex, Spinner, Text } from "@radix-ui/theme
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import type { ClientUser } from "@/api/auth/user.type";
-import { API_ERROR_CODES } from "@/api/error";
-import { listJournalEntriesPage } from "@/api/journal/journal";
-import type { JournalEntriesPage } from "@/api/journal/journal.type";
-import { isCodedError, reportClientError } from "@/client.error";
 import { useAppSession } from "@/client-state/app-session.state";
 import { useErrorMessage } from "@/i18n/error-message";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import { API_ERROR_CODES } from "@/lib/api/error";
+import { listJournalEntriesPage } from "@/lib/api/journal/journal";
+import type { JournalEntriesPage } from "@/lib/api/journal/journal.type";
+import { isCodedError, reportClientError } from "@/lib/client.error";
 import type { Base64Url } from "@/types/base64";
 import { JournalContent } from "./journal-content";
 import { journalEntriesQueryKey } from "./journal-query";

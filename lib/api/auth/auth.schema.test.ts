@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { toBase64 } from "@/crypto/base64";
 import {
   MAX_PASSWORD_LENGTH,
   MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
-} from "@/api/auth/auth.constants";
+} from "@/lib/api/auth/auth.constants";
 import {
   createAccountRequestSchema,
   passwordSchema,
   saltRequestSchema,
   verifyCredentialsRequestSchema,
-} from "@/api/auth/auth.schema";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
-import { toBase64 } from "@/crypto/base64";
+} from "@/lib/api/auth/auth.schema";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
 
 const USERNAME = "journal_user";
 

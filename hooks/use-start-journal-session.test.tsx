@@ -2,9 +2,9 @@
 
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
 import { useAppSession } from "@/client-state/app-session.state";
 import { useStartJournalSession } from "@/hooks/use-start-journal-session";
+import type { ClientUser } from "@/lib/api/auth/user.type";
 
 const mocks = vi.hoisted(() => ({ replace: vi.fn() }));
 

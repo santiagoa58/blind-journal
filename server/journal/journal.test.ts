@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
+import { toBase64 } from "@/crypto/base64";
+import { JOURNAL_ERROR_CODES } from "@/lib/api/journal/journal.error";
 import type {
   ApiCreateJournalEntryRequest,
   EncryptedJournalEntry,
-} from "@/api/journal/journal.type";
-import { toBase64 } from "@/crypto/base64";
+} from "@/lib/api/journal/journal.type";
 import { createEntry, deleteEntry, listEntries, updateEntry } from "@/server/journal/journal";
 
 const journalDatabaseMocks = vi.hoisted(() => ({

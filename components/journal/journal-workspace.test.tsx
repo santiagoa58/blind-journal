@@ -5,10 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { useAppSession } from "@/client-state/app-session.state";
 import { JournalWorkspace } from "@/components/journal/journal-workspace";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import type { Base64Url } from "@/types/base64";
 
 const mocks = vi.hoisted(() => ({
@@ -20,7 +20,7 @@ vi.mock("@/api/journal/journal", () => ({
   listJournalEntriesPage: mocks.listJournalEntriesPage,
 }));
 vi.mock("@/client.error", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/client.error")>()),
+  ...(await importOriginal<typeof import("@/lib/client.error")>()),
   reportClientError: mocks.reportClientError,
 }));
 vi.mock("next-intl", () => ({

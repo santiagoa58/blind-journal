@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { journalEntryIdSchema } from "@/api/journal/journal.schema";
-import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
 import { base64ToValue, valueToBase64Url } from "@/crypto/base64";
+import { journalEntryIdSchema } from "@/lib/api/journal/journal.schema";
+import type { EncryptedJournalEntry } from "@/lib/api/journal/journal.type";
 import type { Base64Url } from "@/types/base64";
 
 type JournalEntriesCursorData = Pick<EncryptedJournalEntry, "id" | "updatedAt">;

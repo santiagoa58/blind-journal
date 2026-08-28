@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { REQUEST_ID_HEADER } from "@/api/observability";
 import { onRequestError, register } from "@/instrumentation";
+import { REQUEST_ID_HEADER } from "@/lib/api/observability";
 
 const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));
 

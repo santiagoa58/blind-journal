@@ -1,23 +1,26 @@
-import type { ClientUser } from "@/api/auth/user.type";
-import { api } from "@/api/http";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import { api } from "@/lib/api/http";
 import {
   JOURNAL_ENTRY_UNREADABLE_REASONS,
   MAX_CONCURRENT_JOURNAL_ENTRY_DECRYPTIONS,
-} from "@/api/journal/journal.constants";
-import { decryptJournalEntry, encryptJournalEntry } from "@/api/journal/journal.crypto";
+} from "@/lib/api/journal/journal.constants";
+import { decryptJournalEntry, encryptJournalEntry } from "@/lib/api/journal/journal.crypto";
 import {
   deleteJournalEntryResponseSchema,
   encryptedJournalEntrySchema,
   journalEntriesPageSchema,
-} from "@/api/journal/journal.schema";
+} from "@/lib/api/journal/journal.schema";
 import type {
   ApiCreateJournalEntryRequest,
   ApiUpdateJournalEntryRequest,
   ClientCreateJournalEntryRequest,
   ClientUpdateJournalEntryRequest,
   JournalEntriesPage,
-} from "@/api/journal/journal.type";
-import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
+} from "@/lib/api/journal/journal.type";
+import {
+  JOURNAL_CLIENT_ERROR_CODES,
+  JournalClientError,
+} from "@/lib/api/journal/journal-client.error";
 import type { Base64Url } from "@/types/base64";
 
 async function listEncryptedJournalEntries(cursor: Base64Url | null, signal?: AbortSignal) {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
-import { REQUEST_ID_HEADER } from "@/api/observability";
-import { createContentSecurityPolicy } from "@/content-security-policy";
 import { routing } from "@/i18n/routing";
+import { REQUEST_ID_HEADER } from "@/lib/api/observability";
+import { createContentSecurityPolicy } from "@/lib/content-security-policy";
 import { toBase64 } from "./crypto/base64";
 
 const CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";

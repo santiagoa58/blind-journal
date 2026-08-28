@@ -1,18 +1,18 @@
 import "server-only";
 
-import { JOURNAL_ENTRIES_PAGE_SIZE } from "@/api/journal/journal.constants";
-import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/api/journal/journal.error";
+import { JOURNAL_ENTRIES_PAGE_SIZE } from "@/lib/api/journal/journal.constants";
+import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/lib/api/journal/journal.error";
 import {
   createEntryRequestSchema,
   journalEntriesPageRequestSchema,
   updateEntryRequestSchema,
-} from "@/api/journal/journal.schema";
+} from "@/lib/api/journal/journal.schema";
 import type {
   ApiDeleteJournalEntryResponse,
   ApiJournalEntriesPage,
   EncryptedJournalEntry,
-} from "@/api/journal/journal.type";
-import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
+} from "@/lib/api/journal/journal.type";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/lib/api/transport.constants";
 import {
   deleteJournalEntry,
   getJournalEntriesPage,

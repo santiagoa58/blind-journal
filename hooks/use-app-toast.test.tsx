@@ -18,7 +18,7 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/client.error", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/client.error")>()),
+  ...(await importOriginal<typeof import("@/lib/client.error")>()),
   reportClientError: mocks.reportClientError,
 }));
 

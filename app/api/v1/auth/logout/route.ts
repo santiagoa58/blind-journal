@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { REQUEST_ERROR_CODES } from "@/api/request.error";
+import { REQUEST_ERROR_CODES } from "@/lib/api/request.error";
 import { endSession } from "@/server/auth/session";
 import { isSameOrigin } from "@/server/http/request";
 import { jsonResponse, requestErrorResponse } from "@/server/http/response";

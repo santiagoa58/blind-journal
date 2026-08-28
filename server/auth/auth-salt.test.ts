@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import { base64ToUint8Array } from "@/crypto/base64";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
 import { deriveAuthSalt } from "@/server/auth/auth-salt";
 
 const environmentMocks = vi.hoisted(() => ({ getServerEnvironment: vi.fn() }));

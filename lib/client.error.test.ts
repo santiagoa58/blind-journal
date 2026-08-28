@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { isCodedError, reportClientError } from "@/client.error";
+import { isCodedError, reportClientError } from "@/lib/client.error";
 
 describe("client error handling", () => {
   it("recognizes only errors with string codes", () => {

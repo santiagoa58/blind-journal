@@ -1,7 +1,7 @@
 import { constants as HTTP_STATUS } from "node:http2";
-import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
-import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/api/journal/journal.error";
-import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/api/request.error";
+import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/lib/api/auth/auth.error";
+import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/lib/api/journal/journal.error";
+import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/lib/api/request.error";
 
 type ServerErrorCode = AuthErrorCode | JournalErrorCode | RequestErrorCode;
 

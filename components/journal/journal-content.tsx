@@ -3,11 +3,11 @@
 import { Box, Flex, Heading, Separator, VisuallyHidden } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
-import type { ClientUser } from "@/api/auth/user.type";
-import type { JournalEntry, UnreadableJournalEntry } from "@/api/journal/journal.type";
 import { useLogout } from "@/hooks/use-logout";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import type { JournalEntry, UnreadableJournalEntry } from "@/lib/api/journal/journal.type";
 import { JournalDesktopSidebar } from "./journal-desktop-sidebar";
 import { JournalDraftGuard } from "./journal-draft-guard";
 import { JournalEditor } from "./journal-editor";

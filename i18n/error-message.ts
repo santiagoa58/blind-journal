@@ -6,21 +6,24 @@ import {
   MAX_PASSWORD_LENGTH,
   MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
-} from "@/api/auth/auth.constants";
-import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
-import { AUTH_CLIENT_ERROR_CODES, type AuthClientErrorCode } from "@/api/auth/auth-client.error";
+} from "@/lib/api/auth/auth.constants";
+import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/lib/api/auth/auth.error";
+import {
+  AUTH_CLIENT_ERROR_CODES,
+  type AuthClientErrorCode,
+} from "@/lib/api/auth/auth-client.error";
 import {
   AUTH_WORKER_ERROR_CODES,
   type AuthWorkerErrorCode,
-} from "@/api/auth/worker/auth-worker.error";
-import { API_ERROR_CODES, type ApiErrorCode } from "@/api/error";
-import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/api/journal/journal.error";
+} from "@/lib/api/auth/worker/auth-worker.error";
+import { API_ERROR_CODES, type ApiErrorCode } from "@/lib/api/error";
+import { JOURNAL_ERROR_CODES, type JournalErrorCode } from "@/lib/api/journal/journal.error";
 import {
   JOURNAL_CLIENT_ERROR_CODES,
   type JournalClientErrorCode,
-} from "@/api/journal/journal-client.error";
-import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/api/request.error";
-import { type ErrorMessageValues, isCodedError } from "@/client.error";
+} from "@/lib/api/journal/journal-client.error";
+import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/lib/api/request.error";
+import { type ErrorMessageValues, isCodedError } from "@/lib/client.error";
 
 type KnownErrorCode =
   | ApiErrorCode

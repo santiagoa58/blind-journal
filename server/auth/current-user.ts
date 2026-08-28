@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { cache } from "react";
-import type { ApiUser } from "@/api/auth/user.type";
+import type { ApiUser } from "@/lib/api/auth/user.type";
 import { getSessionCookieName, getSessionUserIdFromSessionId } from "@/server/auth/session";
 import { findUserById } from "@/server/database/accounts";
 

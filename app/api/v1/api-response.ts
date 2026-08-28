@@ -1,7 +1,7 @@
 import "server-only";
 
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { ApiErrorResponse } from "@/api/response.type";
+import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
+import type { ApiErrorResponse } from "@/lib/api/response.type";
 import { getErrorHttpStatus } from "@/server/http/error-status";
 import { jsonResponse } from "@/server/http/response";
 

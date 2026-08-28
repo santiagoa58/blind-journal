@@ -6,10 +6,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalEditorActions } from "@/components/journal/journal-editor-actions";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 const mocks = vi.hoisted(() => ({
   createJournalEntry: vi.fn(),

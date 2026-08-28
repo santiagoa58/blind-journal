@@ -1,5 +1,5 @@
 import type { Instrumentation } from "next";
-import { REQUEST_ID_HEADER } from "@/api/observability";
+import { REQUEST_ID_HEADER } from "@/lib/api/observability";
 
 // Next.js calls register once for each new server instance and waits for it to finish before that
 // instance handles requests. This makes it the earliest reliable place to reject invalid setup.

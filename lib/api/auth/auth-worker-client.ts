@@ -1,6 +1,6 @@
-import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "@/api/auth/auth.type";
-import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
-import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/api/auth/worker/auth-worker.error";
+import type { AuthUserKeys, AuthWorkerPayload, AuthWorkerResponse } from "@/lib/api/auth/auth.type";
+import type { AuthKeyScheduleVersion } from "@/lib/api/auth/auth-key-schedule";
+import { AUTH_WORKER_ERROR_CODES, AuthWorkerError } from "@/lib/api/auth/worker/auth-worker.error";
 import type { Base64 } from "@/types/base64";
 
 const AUTH_WORKER_REQUEST_TIMEOUT_MS = 60_000;

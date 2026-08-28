@@ -1,8 +1,8 @@
 import "server-only";
 
 import { z } from "zod";
-import { encryptedJournalEntrySchema } from "@/api/journal/journal.schema";
-import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
+import { encryptedJournalEntrySchema } from "@/lib/api/journal/journal.schema";
+import type { EncryptedJournalEntry } from "@/lib/api/journal/journal.type";
 import { getDatabase } from "@/server/database/client";
 import {
   decodeJournalEntriesCursor,

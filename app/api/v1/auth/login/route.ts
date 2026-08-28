@@ -1,7 +1,7 @@
 import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
-import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/api/auth/auth.schema";
-import { REQUEST_ERROR_CODES } from "@/api/request.error";
+import { MAX_AUTH_REQUEST_BODY_BYTES } from "@/lib/api/auth/auth.schema";
+import { REQUEST_ERROR_CODES } from "@/lib/api/request.error";
 import { verifyCredentials } from "@/server/auth/auth";
 import { startSession } from "@/server/auth/session";
 import { getErrorHttpStatus } from "@/server/http/error-status";

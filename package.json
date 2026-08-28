@@ -8,6 +8,7 @@
     "start": "next start",
     "check": "biome check . && eloqnt lint --strict && tsc --noEmit && vitest run",
     "check:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:database": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.database.config.ts",

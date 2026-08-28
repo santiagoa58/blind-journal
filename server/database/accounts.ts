@@ -1,8 +1,8 @@
 import "server-only";
 
 import { z } from "zod";
-import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
-import type { ApiUser } from "@/api/auth/user.type";
+import type { AuthKeyScheduleVersion } from "@/lib/api/auth/auth-key-schedule";
+import type { ApiUser } from "@/lib/api/auth/user.type";
 import { getDatabase } from "@/server/database/client";
 import { SESSION_CLEANUP_BATCH_SIZE, type StoredSession } from "@/server/database/sessions";
 import type { Base64 } from "@/types/base64";

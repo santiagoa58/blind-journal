@@ -3,10 +3,10 @@
 import { AlertDialog, Button, Flex } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import type { ClientUser } from "@/api/auth/user.type";
-import { deleteJournalEntry } from "@/api/journal/journal";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { useAppToast } from "@/hooks/use-app-toast";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import { deleteJournalEntry } from "@/lib/api/journal/journal";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import { journalEntriesQueryKey } from "./journal-query";
 
 type JournalEntryDeleteDialogProps = {

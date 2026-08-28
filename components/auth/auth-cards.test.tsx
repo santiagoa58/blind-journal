@@ -6,7 +6,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
+import type { ClientUser } from "@/lib/api/auth/user.type";
 import { CreateAccountCard } from "./create-account-card";
 import { LoginCard } from "./login-card";
 import { UnlockCard } from "./unlock-card";

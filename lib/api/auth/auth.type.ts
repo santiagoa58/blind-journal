@@ -1,5 +1,5 @@
-import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
-import type { ApiUser } from "@/api/auth/user.type";
+import type { AuthKeyScheduleVersion } from "@/lib/api/auth/auth-key-schedule";
+import type { ApiUser } from "@/lib/api/auth/user.type";
 import type { Base64 } from "@/types/base64";
 
 export interface ApiAuthSession {

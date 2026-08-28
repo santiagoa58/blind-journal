@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { logout } from "@/api/auth/auth";
 import { clearClientSession } from "@/client-state/client-session";
 import { useRouter } from "@/i18n/navigation";
+import { logout } from "@/lib/api/auth/auth";
 
 export function useLogout() {
   const router = useRouter();

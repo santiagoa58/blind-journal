@@ -1,8 +1,8 @@
 import ky, { isHTTPError, isNetworkError, isTimeoutError } from "ky";
-import { API_BASE_PATH } from "@/api/constants";
-import { API_ERROR_CODES } from "@/api/error";
-import { REQUEST_ID_HEADER } from "@/api/observability";
-import type { CodedError } from "@/client.error";
+import { API_BASE_PATH } from "@/lib/api/constants";
+import { API_ERROR_CODES } from "@/lib/api/error";
+import { REQUEST_ID_HEADER } from "@/lib/api/observability";
+import type { CodedError } from "@/lib/client.error";
 
 function getApiErrorCode(data: unknown) {
   if (typeof data !== "object" || data === null || !("code" in data)) {

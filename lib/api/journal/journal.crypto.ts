@@ -1,17 +1,3 @@
-import {
-  JOURNAL_ENTRY_ENCRYPTION_VERSION,
-  MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
-  MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES,
-} from "@/api/journal/journal.constants";
-import { journalEntryContentSchema } from "@/api/journal/journal.schema";
-import type {
-  ApiCreateJournalEntryRequest,
-  EncryptedJournalData,
-  EncryptedJournalEntry,
-  JournalEntry,
-  JournalEntryContent,
-} from "@/api/journal/journal.type";
-import { JOURNAL_CLIENT_ERROR_CODES, JournalClientError } from "@/api/journal/journal-client.error";
 import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
 import {
   decrypt,
@@ -20,6 +6,23 @@ import {
   unwrapKey,
   wrapKey,
 } from "@/crypto/encrypt.crypto";
+import {
+  JOURNAL_ENTRY_ENCRYPTION_VERSION,
+  MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
+  MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES,
+} from "@/lib/api/journal/journal.constants";
+import { journalEntryContentSchema } from "@/lib/api/journal/journal.schema";
+import type {
+  ApiCreateJournalEntryRequest,
+  EncryptedJournalData,
+  EncryptedJournalEntry,
+  JournalEntry,
+  JournalEntryContent,
+} from "@/lib/api/journal/journal.type";
+import {
+  JOURNAL_CLIENT_ERROR_CODES,
+  JournalClientError,
+} from "@/lib/api/journal/journal-client.error";
 
 type JournalEntryEncryptionVersion = EncryptedJournalData["version"];
 

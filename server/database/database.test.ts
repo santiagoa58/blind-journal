@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
 import { toBase64 } from "@/crypto/base64";
+import type { EncryptedJournalEntry } from "@/lib/api/journal/journal.type";
 import { createSessionToken } from "@/server/auth/session";
 import {
   createUserWithSession,

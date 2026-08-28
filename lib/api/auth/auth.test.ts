@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAccount, login } from "@/api/auth/auth";
-import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth-client.error";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import { toBase64 } from "@/crypto/base64";
+import { createAccount, login } from "@/lib/api/auth/auth";
+import { AUTH_CLIENT_ERROR_CODES } from "@/lib/api/auth/auth-client.error";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
 
 const apiMocks = vi.hoisted(() => ({ post: vi.fn() }));
 const workerMocks = vi.hoisted(() => ({ deriveAuthUserKeysInWorker: vi.fn() }));

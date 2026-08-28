@@ -5,10 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
-import type { ApiDeleteJournalEntryResponse, JournalEntry } from "@/api/journal/journal.type";
 import { JournalEntryDeleteDialog } from "@/components/journal/journal-entry-delete-dialog";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import type { ApiDeleteJournalEntryResponse, JournalEntry } from "@/lib/api/journal/journal.type";
 
 const mocks = vi.hoisted(() => ({
   deleteJournalEntry: vi.fn(),

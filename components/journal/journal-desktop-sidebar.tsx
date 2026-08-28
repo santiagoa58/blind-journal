@@ -3,10 +3,10 @@
 import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Box, Button, Flex, IconButton, Separator, Tooltip } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { ClientUser } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { BrandMark } from "@/components/brand-mark";
 import type { Locale } from "@/i18n/routing";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import { EntryList } from "./entry-list";
 import { JournalAccountMenu } from "./journal-account-menu";
 

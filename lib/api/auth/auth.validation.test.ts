@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/api/auth/auth.constants";
-import { AUTH_CLIENT_ERROR_CODES } from "@/api/auth/auth-client.error";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/api/auth/auth.constants";
+import { AUTH_CLIENT_ERROR_CODES } from "@/lib/api/auth/auth-client.error";
 
 const USERNAME = "journal_user";
-let auth: typeof import("@/api/auth/auth");
+let auth: typeof import("@/lib/api/auth/auth");
 
 beforeAll(async () => {
-  auth = await import("@/api/auth/auth");
+  auth = await import("@/lib/api/auth/auth");
 });
 
 describe("password validation errors", () => {

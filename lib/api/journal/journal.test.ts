@@ -1,23 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
+import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
+import type { ClientUser } from "@/lib/api/auth/user.type";
 import {
   createJournalEntry,
   deleteJournalEntry,
   listJournalEntriesPage,
   updateJournalEntry,
-} from "@/api/journal/journal";
+} from "@/lib/api/journal/journal";
 import {
   JOURNAL_ENTRY_ENCRYPTION_VERSION,
   JOURNAL_ENTRY_UNREADABLE_REASONS,
-} from "@/api/journal/journal.constants";
-import { encryptJournalEntry } from "@/api/journal/journal.crypto";
+} from "@/lib/api/journal/journal.constants";
+import { encryptJournalEntry } from "@/lib/api/journal/journal.crypto";
 import type {
   ApiCreateJournalEntryRequest,
   ApiUpdateJournalEntryRequest,
   EncryptedJournalEntry,
   JournalEntryContent,
-} from "@/api/journal/journal.type";
-import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
+} from "@/lib/api/journal/journal.type";
 
 const apiMocks = vi.hoisted(() => ({
   delete: vi.fn(),

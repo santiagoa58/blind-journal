@@ -1,7 +1,7 @@
 import { CheckCircledIcon, TrashIcon } from "@radix-ui/react-icons";
 import { Box, ContextMenu, Flex, RadioCards, Separator, Text } from "@radix-ui/themes";
 import { useFormatter, useTranslations } from "next-intl";
-import type { JournalEntry } from "@/api/journal/journal.type";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type EntryListItemProps = {
   entry: JournalEntry;

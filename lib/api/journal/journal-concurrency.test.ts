@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
-import { listJournalEntriesPage } from "@/api/journal/journal";
-import { MAX_CONCURRENT_JOURNAL_ENTRY_DECRYPTIONS } from "@/api/journal/journal.constants";
-import type { EncryptedJournalEntry, JournalEntry } from "@/api/journal/journal.type";
 import { toBase64 } from "@/crypto/base64";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import { listJournalEntriesPage } from "@/lib/api/journal/journal";
+import { MAX_CONCURRENT_JOURNAL_ENTRY_DECRYPTIONS } from "@/lib/api/journal/journal.constants";
+import type { EncryptedJournalEntry, JournalEntry } from "@/lib/api/journal/journal.type";
 
 const mocks = vi.hoisted(() => ({
   decryptJournalEntry: vi.fn(),

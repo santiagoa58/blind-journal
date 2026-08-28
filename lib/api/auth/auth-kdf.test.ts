@@ -4,7 +4,7 @@ import {
   AUTH_KEY_SCHEDULES,
   CURRENT_AUTH_KEY_SCHEDULE,
   getAuthKeySchedule,
-} from "@/api/auth/auth-key-schedule";
+} from "@/lib/api/auth/auth-key-schedule";
 
 beforeAll(async () => {
   await sodium.ready;

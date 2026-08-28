@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { EncryptedJournalEntry } from "@/api/journal/journal.type";
 import { valueToBase64Url } from "@/crypto/base64";
+import type { EncryptedJournalEntry } from "@/lib/api/journal/journal.type";
 import {
   decodeJournalEntriesCursor,
   encodeJournalEntriesCursor,

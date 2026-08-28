@@ -1,8 +1,8 @@
 import { ChevronDownIcon, ExitIcon, GlobeIcon } from "@radix-ui/react-icons";
 import { Avatar, Box, Button, DropdownMenu, Grid, IconButton, Text } from "@radix-ui/themes";
 import { hasLocale, useLocale, useTranslations } from "next-intl";
-import type { ClientUser } from "@/api/auth/user.type";
 import { LOCALE_NAMES, type Locale, routing } from "@/i18n/routing";
+import type { ClientUser } from "@/lib/api/auth/user.type";
 
 type JournalAccountMenuProps = {
   compact?: boolean;

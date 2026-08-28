@@ -6,10 +6,10 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ClientUser } from "@/api/auth/user.type";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { JournalContent } from "@/components/journal/journal-content";
 import { englishMessages } from "@/i18n/messages";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 const mocks = vi.hoisted(() => ({
   replaceRoute: vi.fn(),

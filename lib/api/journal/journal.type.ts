@@ -1,4 +1,4 @@
-import type { JOURNAL_ENTRY_UNREADABLE_REASONS } from "@/api/journal/journal.constants";
+import type { JOURNAL_ENTRY_UNREADABLE_REASONS } from "@/lib/api/journal/journal.constants";
 import type { Base64, Base64Url } from "@/types/base64";
 
 export type EncryptedJournalData = {

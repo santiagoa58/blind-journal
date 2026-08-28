@@ -1,4 +1,4 @@
-import { ClientError } from "@/client.error";
+import { ClientError } from "@/lib/client.error";
 
 export const AUTH_WORKER_ERROR_CODES = {
   unavailable: "AUTH_WORKER_UNAVAILABLE",

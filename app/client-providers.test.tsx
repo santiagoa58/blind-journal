@@ -3,9 +3,9 @@
 import { MutationObserver, type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
 import { Providers } from "@/app/client-providers";
 import { useAppSession } from "@/client-state/app-session.state";
+import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),

@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import type { AuthUserKeys } from "@/api/auth/auth.type";
-import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
-import { deriveAuthUserKeys } from "@/api/auth/worker/auth-key-derivation";
 import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
+import type { AuthUserKeys } from "@/lib/api/auth/auth.type";
+import type { AuthKeyScheduleVersion } from "@/lib/api/auth/auth-key-schedule";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
+import { deriveAuthUserKeys } from "@/lib/api/auth/worker/auth-key-derivation";
 
 const PASSWORD = "correct horse battery staple";
 const WRONG_PASSWORD = "correct horse battery stapler";

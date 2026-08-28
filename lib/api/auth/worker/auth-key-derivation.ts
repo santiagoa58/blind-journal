@@ -1,8 +1,8 @@
 import sodium from "libsodium-wrappers-sumo";
-import type { AuthUserKeys } from "@/api/auth/auth.type";
-import type { AuthKeyScheduleVersion } from "@/api/auth/auth-key-schedule";
-import { getAuthKeySchedule } from "@/api/auth/auth-key-schedule";
 import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
+import type { AuthUserKeys } from "@/lib/api/auth/auth.type";
+import type { AuthKeyScheduleVersion } from "@/lib/api/auth/auth-key-schedule";
+import { getAuthKeySchedule } from "@/lib/api/auth/auth-key-schedule";
 import type { Base64 } from "@/types/base64";
 
 const BITS_PER_BYTE = 8;

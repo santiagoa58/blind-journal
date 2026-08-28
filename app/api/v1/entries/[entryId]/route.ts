@@ -1,10 +1,10 @@
 import { constants as HTTP_STATUS } from "node:http2";
 import type { NextRequest } from "next/server";
-import { JOURNAL_ERROR_CODES } from "@/api/journal/journal.error";
-import { journalEntryIdSchema } from "@/api/journal/journal.schema";
-import { REQUEST_ERROR_CODES } from "@/api/request.error";
-import type { ApiErrorResponse } from "@/api/response.type";
-import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
+import { JOURNAL_ERROR_CODES } from "@/lib/api/journal/journal.error";
+import { journalEntryIdSchema } from "@/lib/api/journal/journal.schema";
+import { REQUEST_ERROR_CODES } from "@/lib/api/request.error";
+import type { ApiErrorResponse } from "@/lib/api/response.type";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/lib/api/transport.constants";
 import { getSessionUserId } from "@/server/auth/session";
 import { getErrorHttpStatus } from "@/server/http/error-status";
 import { isSameOrigin, readJsonBody } from "@/server/http/request";

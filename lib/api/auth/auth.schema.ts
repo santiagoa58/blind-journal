@@ -1,20 +1,20 @@
 import { z } from "zod";
+import { base64ToUint8Array } from "@/crypto/base64";
 import {
   MAX_PASSWORD_LENGTH,
   MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
   USERNAME_PATTERN_SOURCE,
-} from "@/api/auth/auth.constants";
+} from "@/lib/api/auth/auth.constants";
 import type {
   ApiAuthSession,
   ApiCreateAccountRequest,
   ApiSaltRequest,
   ApiSaltResponse,
   ApiVerifyCredentialsRequest,
-} from "@/api/auth/auth.type";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
-import type { ApiUser } from "@/api/auth/user.type";
-import { base64ToUint8Array } from "@/crypto/base64";
+} from "@/lib/api/auth/auth.type";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
+import type { ApiUser } from "@/lib/api/auth/user.type";
 
 // Authentication request bodies contain only a username and a fixed-size encoded key.
 export const MAX_AUTH_REQUEST_BODY_BYTES = 1_024;

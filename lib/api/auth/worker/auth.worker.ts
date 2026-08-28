@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
-import type { AuthWorkerPayload, AuthWorkerResponse } from "@/api/auth/auth.type";
-import { deriveAuthUserKeys } from "@/api/auth/worker/auth-key-derivation";
+import type { AuthWorkerPayload, AuthWorkerResponse } from "@/lib/api/auth/auth.type";
+import { deriveAuthUserKeys } from "@/lib/api/auth/worker/auth-key-derivation";
 
 self.addEventListener("message", async (event: MessageEvent<AuthWorkerPayload>) => {
   try {

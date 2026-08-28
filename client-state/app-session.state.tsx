@@ -2,7 +2,7 @@ import "client-only";
 
 import { type PropsWithChildren, useLayoutEffect } from "react";
 import { create } from "zustand";
-import type { ApiUser, ClientUser } from "@/api/auth/user.type";
+import type { ApiUser, ClientUser } from "@/lib/api/auth/user.type";
 
 type SignedOutSession = { status: "signed-out" };
 type LockedSession = { status: "locked"; user: ApiUser };

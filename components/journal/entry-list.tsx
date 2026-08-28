@@ -2,9 +2,9 @@
 
 import { Flex } from "@radix-ui/themes";
 import { useId, useState } from "react";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { EntryListHeader } from "@/components/journal/entry-list-header";
 import { EntryListResults } from "@/components/journal/entry-list-results";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type EntryListProps = {
   entries: JournalEntry[];

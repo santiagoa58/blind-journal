@@ -1,11 +1,16 @@
 import { z } from "zod";
 import {
+  AES_GCM_AUTH_TAG_BYTES,
+  AES_GCM_IV_BYTES,
+  AES_KW_WRAPPED_KEY_BYTES,
+} from "@/crypto/encrypt.constants";
+import {
   JOURNAL_ENTRIES_PAGE_SIZE,
   JOURNAL_ENTRY_ENCRYPTION_VERSION,
   MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
   MAX_JOURNAL_ENTRY_TITLE_CHARACTERS,
   MIN_JOURNAL_ENTRY_TITLE_CHARACTERS,
-} from "@/api/journal/journal.constants";
+} from "@/lib/api/journal/journal.constants";
 import type {
   ApiCreateJournalEntryRequest,
   ApiDeleteJournalEntryResponse,
@@ -13,12 +18,7 @@ import type {
   ApiUpdateJournalEntryRequest,
   EncryptedJournalEntry,
   JournalEntryContent,
-} from "@/api/journal/journal.type";
-import {
-  AES_GCM_AUTH_TAG_BYTES,
-  AES_GCM_IV_BYTES,
-  AES_KW_WRAPPED_KEY_BYTES,
-} from "@/crypto/encrypt.constants";
+} from "@/lib/api/journal/journal.type";
 import type { Base64Url } from "@/types/base64";
 
 export const journalEntryIdSchema = z.uuid();

@@ -7,10 +7,10 @@ import { Theme } from "@radix-ui/themes";
 import { useParams } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { useEffect } from "react";
-import { reportClientError } from "@/client.error";
 import { UnexpectedErrorPage } from "@/components/unexpected-error-page";
 import { getErrorPageMessages } from "@/i18n/error-page-messages";
 import { routing } from "@/i18n/routing";
+import { reportClientError } from "@/lib/client.error";
 
 type GlobalErrorPageProps = {
   error: Error & { digest?: string };

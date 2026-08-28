@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { API_ERROR_CODES } from "@/api/error";
-import { api } from "@/api/http";
-import { REQUEST_ID_HEADER } from "@/api/observability";
+import { API_ERROR_CODES } from "@/lib/api/error";
+import { api } from "@/lib/api/http";
+import { REQUEST_ID_HEADER } from "@/lib/api/observability";
 
 vi.mock("@/api/constants", () => ({
   API_BASE_PATH: "https://blind-journal.test/api/v1/",

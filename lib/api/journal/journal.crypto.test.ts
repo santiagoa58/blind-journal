@@ -1,22 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  JOURNAL_ENTRY_ENCRYPTION_VERSION,
-  MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
-  MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES,
-} from "@/api/journal/journal.constants";
-import { decryptJournalEntry, encryptJournalEntry } from "@/api/journal/journal.crypto";
-import {
-  encryptedJournalDataSchema,
-  encryptedJournalEntrySchema,
-  journalEntryContentSchema,
-} from "@/api/journal/journal.schema";
-import type {
-  ApiCreateJournalEntryRequest,
-  EncryptedJournalEntry,
-  JournalEntryContent,
-} from "@/api/journal/journal.type";
-import { JOURNAL_CLIENT_ERROR_CODES } from "@/api/journal/journal-client.error";
-import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/api/transport.constants";
 import { base64ToUint8Array, toBase64 } from "@/crypto/base64";
 import {
   AES_GCM_AUTH_TAG_BYTES,
@@ -24,6 +6,24 @@ import {
   AES_KW_WRAPPED_KEY_BYTES,
 } from "@/crypto/encrypt.constants";
 import { encrypt, generateEncryptionKey, wrapKey } from "@/crypto/encrypt.crypto";
+import {
+  JOURNAL_ENTRY_ENCRYPTION_VERSION,
+  MAX_JOURNAL_ENTRY_PLAINTEXT_BYTES,
+  MAX_JOURNAL_ENTRY_PLAINTEXT_MEBIBYTES,
+} from "@/lib/api/journal/journal.constants";
+import { decryptJournalEntry, encryptJournalEntry } from "@/lib/api/journal/journal.crypto";
+import {
+  encryptedJournalDataSchema,
+  encryptedJournalEntrySchema,
+  journalEntryContentSchema,
+} from "@/lib/api/journal/journal.schema";
+import type {
+  ApiCreateJournalEntryRequest,
+  EncryptedJournalEntry,
+  JournalEntryContent,
+} from "@/lib/api/journal/journal.type";
+import { JOURNAL_CLIENT_ERROR_CODES } from "@/lib/api/journal/journal-client.error";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/lib/api/transport.constants";
 import type { Base64 } from "@/types/base64";
 
 const encoder = new TextEncoder();

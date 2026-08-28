@@ -1,17 +1,17 @@
 import "server-only";
 
 import sodium from "libsodium-wrappers-sumo";
-import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/api/auth/auth.error";
+import { AUTH_ERROR_CODES, type AuthErrorCode } from "@/lib/api/auth/auth.error";
 import {
   createAccountRequestSchema,
   requiredUsernameSchema,
   saltRequestSchema,
   verifyCredentialsRequestSchema,
-} from "@/api/auth/auth.schema";
-import type { ApiAuthSession, ApiSaltResponse } from "@/api/auth/auth.type";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
-import type { ApiUser } from "@/api/auth/user.type";
-import { hasOwn } from "@/global-utils";
+} from "@/lib/api/auth/auth.schema";
+import type { ApiAuthSession, ApiSaltResponse } from "@/lib/api/auth/auth.type";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
+import type { ApiUser } from "@/lib/api/auth/user.type";
+import { hasOwn } from "@/lib/global-utils";
 import { deriveAuthSalt } from "@/server/auth/auth-salt";
 import { createSessionToken, toSessionHash } from "@/server/auth/session";
 import {

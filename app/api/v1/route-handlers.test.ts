@@ -1,13 +1,5 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it, vi } from "vitest";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import type { ApiCreateAccountRequest } from "@/api/auth/auth.type";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
-import { JOURNAL_ENTRY_ENCRYPTION_VERSION } from "@/api/journal/journal.constants";
-import type {
-  ApiUpdateJournalEntryRequest,
-  EncryptedJournalData,
-} from "@/api/journal/journal.type";
 import { POST as createAccountRoute } from "@/app/api/v1/auth/accounts/route";
 import {
   DELETE as deleteEntryRoute,
@@ -20,6 +12,14 @@ import {
   AES_GCM_IV_BYTES,
   AES_KW_WRAPPED_KEY_BYTES,
 } from "@/crypto/encrypt.constants";
+import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
+import type { ApiCreateAccountRequest } from "@/lib/api/auth/auth.type";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
+import { JOURNAL_ENTRY_ENCRYPTION_VERSION } from "@/lib/api/journal/journal.constants";
+import type {
+  ApiUpdateJournalEntryRequest,
+  EncryptedJournalData,
+} from "@/lib/api/journal/journal.type";
 
 const authMocks = vi.hoisted(() => ({
   createAccount: vi.fn(),

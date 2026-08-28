@@ -4,17 +4,17 @@ import { PersonIcon } from "@radix-ui/react-icons";
 import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { login } from "@/api/auth/auth";
+import { useAppToast } from "@/hooks/use-app-toast";
+import { useStartJournalSession } from "@/hooks/use-start-journal-session";
+import { Link as NavigationLink } from "@/i18n/navigation";
+import { login } from "@/lib/api/auth/auth";
 import {
   MAX_PASSWORD_LENGTH,
   MAX_USERNAME_LENGTH,
   MIN_PASSWORD_LENGTH,
   USERNAME_PATTERN_SOURCE,
-} from "@/api/auth/auth.constants";
-import type { ClientLoginRequest } from "@/api/auth/auth.type";
-import { useAppToast } from "@/hooks/use-app-toast";
-import { useStartJournalSession } from "@/hooks/use-start-journal-session";
-import { Link as NavigationLink } from "@/i18n/navigation";
+} from "@/lib/api/auth/auth.constants";
+import type { ClientLoginRequest } from "@/lib/api/auth/auth.type";
 import { LabeledInput } from "./labeled-input";
 import { PasswordInput } from "./password-input";
 

@@ -1,4 +1,4 @@
-import { ClientError, type ClientErrorOptions } from "@/client.error";
+import { ClientError, type ClientErrorOptions } from "@/lib/client.error";
 
 export const AUTH_CLIENT_ERROR_CODES = {
   passwordRequired: "AUTH_CLIENT_PASSWORD_REQUIRED",

@@ -2,8 +2,8 @@ import { CheckCircledIcon, Pencil2Icon } from "@radix-ui/react-icons";
 import { Badge, Flex, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useId } from "react";
-import { MAX_JOURNAL_ENTRY_TITLE_CHARACTERS } from "@/api/journal/journal.constants";
-import type { JournalEntry } from "@/api/journal/journal.type";
+import { MAX_JOURNAL_ENTRY_TITLE_CHARACTERS } from "@/lib/api/journal/journal.constants";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type JournalEditorDocumentHeaderProps = {
   draftDirty: boolean;

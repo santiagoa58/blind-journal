@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback } from "react";
-import type { ClientUser } from "@/api/auth/user.type";
 import { useAppSession } from "@/client-state/app-session.state";
 import { useRouter } from "@/i18n/navigation";
+import type { ClientUser } from "@/lib/api/auth/user.type";
 
 export function useStartJournalSession() {
   const router = useRouter();

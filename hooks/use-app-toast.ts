@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { API_ERROR_CODES } from "@/api/error";
-import { isCodedError, reportClientError } from "@/client.error";
 import { useErrorMessage } from "@/i18n/error-message";
+import { API_ERROR_CODES } from "@/lib/api/error";
+import { isCodedError, reportClientError } from "@/lib/client.error";
 
 export function useAppToast() {
   const t = useTranslations("api.errors");

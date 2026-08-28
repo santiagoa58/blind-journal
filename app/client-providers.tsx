@@ -5,12 +5,12 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@ta
 import { ThemeProvider } from "next-themes";
 import { type PropsWithChildren, useState } from "react";
 import { Toaster } from "sonner";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import { isCodedError } from "@/client.error";
 import { clearClientSession } from "@/client-state/client-session";
 import { AppLockBoundary } from "@/components/auth/app-lock-boundary";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { useRouter } from "@/i18n/navigation";
+import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
+import { isCodedError } from "@/lib/client.error";
 
 type ProvidersProps = PropsWithChildren<{ nonce?: string | undefined }>;
 

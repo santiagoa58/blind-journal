@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { AUTH_ERROR_CODES } from "@/api/auth/auth.error";
-import { CURRENT_AUTH_KEY_SCHEDULE } from "@/api/auth/auth-key-schedule";
 import { toBase64 } from "@/crypto/base64";
+import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
+import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
 import { createAccount, getAuthSalt, verifyCredentials } from "@/server/auth/auth";
 import type { StoredUser } from "@/server/database/accounts";
 

@@ -1,8 +1,8 @@
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { NextRequest, NextResponse } from "next/server";
 import { describe, expect, it, vi } from "vitest";
-import { REQUEST_ID_HEADER } from "@/api/observability";
-import { createContentSecurityPolicy } from "@/content-security-policy";
+import { REQUEST_ID_HEADER } from "@/lib/api/observability";
+import { createContentSecurityPolicy } from "@/lib/content-security-policy";
 import proxy, { config } from "@/proxy";
 
 const middlewareMocks = vi.hoisted(() => ({ request: undefined as NextRequest | undefined }));

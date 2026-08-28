@@ -3,7 +3,7 @@
 import { DownloadIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import type { UnreadableJournalEntry } from "@/api/journal/journal.type";
+import type { UnreadableJournalEntry } from "@/lib/api/journal/journal.type";
 
 type UnreadableEntriesNoticeProps = {
   entries: readonly UnreadableJournalEntry[];

@@ -3,17 +3,17 @@ import {
   logoutResponseSchema,
   passwordSchema,
   saltResponseSchema,
-} from "@/api/auth/auth.schema";
+} from "@/lib/api/auth/auth.schema";
 import type {
   ApiCreateAccountRequest,
   ApiSaltRequest,
   ApiVerifyCredentialsRequest,
   ClientCreateAccountRequest,
   ClientLoginRequest,
-} from "@/api/auth/auth.type";
-import { AUTH_CLIENT_ERROR_CODES, AuthClientError } from "@/api/auth/auth-client.error";
-import { deriveAuthUserKeysInWorker } from "@/api/auth/auth-worker-client";
-import { api } from "@/api/http";
+} from "@/lib/api/auth/auth.type";
+import { AUTH_CLIENT_ERROR_CODES, AuthClientError } from "@/lib/api/auth/auth-client.error";
+import { deriveAuthUserKeysInWorker } from "@/lib/api/auth/auth-worker-client";
+import { api } from "@/lib/api/http";
 
 function assertValidPassword(password: string): void {
   const result = passwordSchema.safeParse(password);

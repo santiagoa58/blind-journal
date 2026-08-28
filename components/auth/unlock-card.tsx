@@ -3,12 +3,12 @@
 import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
-import { login } from "@/api/auth/auth";
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/api/auth/auth.constants";
-import type { ApiUser } from "@/api/auth/user.type";
 import { useAppSession } from "@/client-state/app-session.state";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { useLogout } from "@/hooks/use-logout";
+import { login } from "@/lib/api/auth/auth";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/lib/api/auth/auth.constants";
+import type { ApiUser } from "@/lib/api/auth/user.type";
 import { PasswordInput } from "./password-input";
 
 export function UnlockCard({ user }: { user: ApiUser }) {

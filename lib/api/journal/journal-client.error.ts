@@ -1,4 +1,4 @@
-import { ClientError, type ClientErrorOptions } from "@/client.error";
+import { ClientError, type ClientErrorOptions } from "@/lib/client.error";
 
 export const JOURNAL_CLIENT_ERROR_CODES = {
   documentTooLarge: "JOURNAL_CLIENT_DOCUMENT_TOO_LARGE",

@@ -5,8 +5,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { JournalEntry } from "@/api/journal/journal.type";
 import { EntryList } from "@/components/journal/entry-list";
+import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import entryListMessages from "@/messages/en/entry-list.json";
 
 const firstEntry = {

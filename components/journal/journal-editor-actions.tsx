@@ -5,14 +5,14 @@ import { Box, Button, Flex, IconButton, Tooltip } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
-import type { ClientUser } from "@/api/auth/user.type";
-import { createJournalEntry, updateJournalEntry } from "@/api/journal/journal";
+import { useAppToast } from "@/hooks/use-app-toast";
+import type { ClientUser } from "@/lib/api/auth/user.type";
+import { createJournalEntry, updateJournalEntry } from "@/lib/api/journal/journal";
 import type {
   ClientCreateJournalEntryRequest,
   ClientUpdateJournalEntryRequest,
   JournalEntry,
-} from "@/api/journal/journal.type";
-import { useAppToast } from "@/hooks/use-app-toast";
+} from "@/lib/api/journal/journal.type";
 import { journalEntriesQueryKey } from "./journal-query";
 
 type JournalEditorActionsProps = {

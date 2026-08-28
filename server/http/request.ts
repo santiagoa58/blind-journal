@@ -1,6 +1,6 @@
 import "server-only";
 
-import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/api/request.error";
+import { REQUEST_ERROR_CODES, type RequestErrorCode } from "@/lib/api/request.error";
 
 const JSON_CONTENT_TYPE = "application/json";
 
