@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   success: vi.fn(),
 }));
 
-vi.mock("@/api/journal/journal", () => ({
+vi.mock("@/lib/api/journal/journal", () => ({
   deleteJournalEntry: mocks.deleteJournalEntry,
 }));
 vi.mock("@/hooks/use-app-toast", () => ({

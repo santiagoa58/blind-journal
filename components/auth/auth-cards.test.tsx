@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   unlock: vi.fn(),
 }));
 
-vi.mock("@/api/auth/auth", () => ({
+vi.mock("@/lib/api/auth/auth", () => ({
   createAccount: mocks.createAccount,
   login: mocks.login,
 }));

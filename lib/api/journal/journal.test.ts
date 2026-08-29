@@ -30,7 +30,7 @@ const apiMocks = vi.hoisted(() => ({
   postJson: vi.fn(),
 }));
 
-vi.mock("@/api/http", () => ({
+vi.mock("@/lib/api/http", () => ({
   api: {
     delete: apiMocks.delete,
     get: apiMocks.get,

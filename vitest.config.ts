@@ -15,7 +15,7 @@ export default defineConfig({
         "vitest*.config.ts",
       ],
       include: [
-        "api/**/*.{ts,tsx}",
+        "lib/api/**/*.{ts,tsx}",
         "app/**/*.{ts,tsx}",
         "client-state/**/*.{ts,tsx}",
         "components/**/*.{ts,tsx}",

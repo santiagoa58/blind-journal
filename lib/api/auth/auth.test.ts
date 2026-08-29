@@ -7,8 +7,8 @@ import { CURRENT_AUTH_KEY_SCHEDULE } from "@/lib/api/auth/auth-key-schedule";
 const apiMocks = vi.hoisted(() => ({ post: vi.fn() }));
 const workerMocks = vi.hoisted(() => ({ deriveAuthUserKeysInWorker: vi.fn() }));
 
-vi.mock("@/api/http", () => ({ api: { post: apiMocks.post } }));
-vi.mock("@/api/auth/auth-worker-client", () => ({
+vi.mock("@/lib/api/http", () => ({ api: { post: apiMocks.post } }));
+vi.mock("@/lib/api/auth/auth-worker-client", () => ({
   deriveAuthUserKeysInWorker: workerMocks.deriveAuthUserKeysInWorker,
 }));
 

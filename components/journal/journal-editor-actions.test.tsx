@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   success: vi.fn(),
 }));
 
-vi.mock("@/api/journal/journal", () => ({
+vi.mock("@/lib/api/journal/journal", () => ({
   createJournalEntry: mocks.createJournalEntry,
   updateJournalEntry: mocks.updateJournalEntry,
 }));

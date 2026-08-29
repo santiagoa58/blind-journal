@@ -16,10 +16,10 @@ const mocks = vi.hoisted(() => ({
   reportClientError: vi.fn(),
 }));
 
-vi.mock("@/api/journal/journal", () => ({
+vi.mock("@/lib/api/journal/journal", () => ({
   listJournalEntriesPage: mocks.listJournalEntriesPage,
 }));
-vi.mock("@/client.error", async (importOriginal) => ({
+vi.mock("@/lib/client.error", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/client.error")>()),
   reportClientError: mocks.reportClientError,
 }));

@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 
-vi.mock("@/api/auth/auth", () => ({ logout: mocks.logout }));
+vi.mock("@/lib/api/auth/auth", () => ({ logout: mocks.logout }));
 vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }) }));
 
 let control: ReturnType<typeof useLogout>;

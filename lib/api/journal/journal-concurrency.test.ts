@@ -11,11 +11,11 @@ const mocks = vi.hoisted(() => ({
   json: vi.fn(),
 }));
 
-vi.mock("@/api/http", () => ({
+vi.mock("@/lib/api/http", () => ({
   api: { get: mocks.get },
 }));
 
-vi.mock("@/api/journal/journal.crypto", () => ({
+vi.mock("@/lib/api/journal/journal.crypto", () => ({
   decryptJournalEntry: mocks.decryptJournalEntry,
   encryptJournalEntry: vi.fn(),
 }));
