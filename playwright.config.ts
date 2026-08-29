@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { requireDatabaseTestUrl } from "./test/database-test-url";
+
+const databaseTestUrl = requireDatabaseTestUrl();
+const e2eAuthSaltSecret = "YmxpbmQtam91cm5hbC1lMmUtYXV0aC1zYWx0LXNlY3JldA";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -17,10 +21,21 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
   webServer: {
-    command:
-      "AUTH_SALT_SECRET=YmxpbmQtam91cm5hbC1lMmUtYXV0aC1zYWx0LXNlY3JldA pnpm start --hostname localhost --port 3100",
+    command: "pnpm build && pnpm start --hostname localhost --port 3100",
+    env: {
+      AUTH_SALT_SECRET: e2eAuthSaltSecret,
+      DATABASE_URL: databaseTestUrl,
+    },
     timeout: 120_000,
     url: "http://localhost:3100",
   },

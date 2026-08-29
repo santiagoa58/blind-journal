@@ -4,9 +4,11 @@ import { Theme } from "@radix-ui/themes";
 import { act, type RenderResult, render, screen, waitFor } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
+import { NextIntlClientProvider } from "next-intl";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JournalEditor } from "@/components/journal/journal-editor";
+import { englishMessages } from "@/i18n/messages";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
@@ -22,14 +24,6 @@ const mocks = vi.hoisted(() => ({
   editor: null as Editor | null,
 }));
 
-vi.mock("next-intl", () => ({
-  useFormatter: () => ({
-    dateTime: () => "date",
-    relativeTime: () => "recently",
-  }),
-  useNow: () => new Date("2026-01-01T00:00:00.000Z"),
-  useTranslations: () => (key: string) => key,
-}));
 vi.mock("@/components/journal/journal-editor-toolbar", () => ({
   JournalEditorToolbar: ({ editor }: { editor: Editor | null }) => {
     mocks.editor = editor;
@@ -71,23 +65,30 @@ function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
   const [draftDirty, setDraftDirty] = useState(false);
 
   return (
-    <Theme>
-      <JournalEditor
-        draftDirty={draftDirty}
-        entry={newEntry ? undefined : entry}
-        navigationOpen
-        onDeleteEntry={vi.fn()}
-        onDraftChange={setDraftDirty}
-        onSaved={onSaved}
-        onShowNavigation={vi.fn()}
-        user={user}
-      />
-    </Theme>
+    <NextIntlClientProvider
+      locale="en"
+      messages={englishMessages}
+      now={new Date("2026-01-01T00:00:00.000Z")}
+      timeZone="UTC"
+    >
+      <Theme>
+        <JournalEditor
+          draftDirty={draftDirty}
+          entry={newEntry ? undefined : entry}
+          navigationOpen
+          onDeleteEntry={vi.fn()}
+          onDraftChange={setDraftDirty}
+          onSaved={onSaved}
+          onShowNavigation={vi.fn()}
+          user={user}
+        />
+      </Theme>
+    </NextIntlClientProvider>
   );
 }
 
 async function changeTitle(user: UserEvent, value: string) {
-  const title = screen.getByRole("textbox", { name: "entryTitleLabel" });
+  const title = screen.getByRole("textbox", { name: "Entry title" });
   await user.clear(title);
   await user.type(title, value);
 }
@@ -97,7 +98,12 @@ function expectDirty(dirty: boolean) {
 }
 
 function expectDocumentStatus(status: "saved" | "saving" | "unsaved") {
-  expect(screen.getByText(`documentStatus.${status}`)).toBeInTheDocument();
+  const label = {
+    saved: "Saved and encrypted",
+    saving: "Encrypting and saving…",
+    unsaved: "Unsaved changes",
+  }[status];
+  expect(screen.getByText(label)).toBeInTheDocument();
 }
 
 beforeEach(async () => {
@@ -110,7 +116,7 @@ beforeEach(async () => {
 describe("JournalEditor draft state", () => {
   it("uses a labeled Radix title field and focuses the editor from the document surface", async () => {
     const user = userEvent.setup();
-    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" });
+    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "Entry title" });
     const article = screen.getByRole("article", { name: entry.title });
     if (!mocks.editor) throw new Error("Missing editor");
 
@@ -142,14 +148,13 @@ describe("JournalEditor draft state", () => {
 
   it("normalizes a blank title to the journal default on blur", async () => {
     const user = userEvent.setup();
-    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "entryTitleLabel" });
+    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "Entry title" });
 
     await changeTitle(user, "   ");
     expectDirty(true);
 
-    await user.click(title);
-    await user.click(document.body);
-    expect(title).toHaveValue("newEntry.title");
+    await user.tab({ shift: true });
+    expect(title).toHaveValue("Untitled entry");
     expectDirty(true);
   });
 
@@ -204,7 +209,7 @@ describe("JournalEditor draft state", () => {
     view.rerender(<TestEditor key="new" newEntry />);
     await waitFor(() => expect(mocks.editor).not.toBeNull());
 
-    expect(screen.getByRole("textbox", { name: "entryTitleLabel" })).toHaveValue("newEntry.title");
+    expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue("Untitled entry");
     expectDocumentStatus("unsaved");
   });
 });

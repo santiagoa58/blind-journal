@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Editor } from "@tiptap/react";
+import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JournalEditorActions } from "@/components/journal/journal-editor-actions";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
+import { englishMessages } from "@/i18n/messages";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
@@ -24,8 +26,6 @@ vi.mock("@/lib/api/journal/journal", () => ({
 vi.mock("@/hooks/use-app-toast", () => ({
   useAppToast: () => ({ error: vi.fn(), success: mocks.success }),
 }));
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
-
 const user = {
   id: "user-one",
   username: "user-one",
@@ -52,21 +52,23 @@ function renderActions(
   currentEntry: JournalEntry | null = entry,
 ) {
   return render(
-    <QueryClientProvider client={queryClient}>
-      <Theme>
-        <JournalEditorActions
-          defaultTitle="Untitled entry"
-          draftDirty={draftDirty}
-          editor={editor}
-          entry={currentEntry ?? undefined}
-          onDeleteEntry={onDeleteEntry}
-          onSaved={onSaved}
-          onSavingChange={onSavingChange}
-          title={title}
-          user={user}
-        />
-      </Theme>
-    </QueryClientProvider>,
+    <NextIntlClientProvider locale="en" messages={englishMessages} timeZone="UTC">
+      <QueryClientProvider client={queryClient}>
+        <Theme>
+          <JournalEditorActions
+            defaultTitle="Untitled entry"
+            draftDirty={draftDirty}
+            editor={editor}
+            entry={currentEntry ?? undefined}
+            onDeleteEntry={onDeleteEntry}
+            onSaved={onSaved}
+            onSavingChange={onSavingChange}
+            title={title}
+            user={user}
+          />
+        </Theme>
+      </QueryClientProvider>
+    </NextIntlClientProvider>,
   );
 }
 
@@ -89,7 +91,7 @@ describe("journal entry writes", () => {
       .spyOn(queryClient, "invalidateQueries")
       .mockReturnValue(refresh.promise);
     mocks.updateJournalEntry.mockReturnValueOnce(update.promise);
-    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
+    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "Save changes" });
     await userEventController.click(saveButton);
     await waitFor(() => expect(saveButton).toBeDisabled());
     await userEventController.click(saveButton);
@@ -110,7 +112,7 @@ describe("journal entry writes", () => {
 
   it("disables save for a clean draft", async () => {
     renderActions(false);
-    expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
   });
 
   it("normalizes a blank title before saving", async () => {
@@ -119,7 +121,7 @@ describe("journal entry writes", () => {
     mocks.updateJournalEntry.mockResolvedValueOnce(savedEntry);
 
     renderActions(true, "   ");
-    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
+    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "Save changes" });
     expect(saveButton).toBeEnabled();
 
     await userEventController.click(saveButton);
@@ -136,7 +138,7 @@ describe("journal entry writes", () => {
     mocks.createJournalEntry.mockResolvedValueOnce(createdEntry);
 
     renderActions(true, "   ", null);
-    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "save" });
+    const saveButton = screen.getByRole<HTMLButtonElement>("button", { name: "Save changes" });
     expect(saveButton).toBeEnabled();
     expect(mocks.createJournalEntry).not.toHaveBeenCalled();
 
@@ -148,8 +150,8 @@ describe("journal entry writes", () => {
       user,
     );
     expect(mocks.updateJournalEntry).not.toHaveBeenCalled();
-    expect(mocks.success).toHaveBeenCalledWith("success.created");
-    expect(screen.queryByRole("button", { name: "deleteEntry" })).not.toBeInTheDocument();
+    expect(mocks.success).toHaveBeenCalledWith("New entry created.");
+    expect(screen.queryByRole("button", { name: "Delete entry" })).not.toBeInTheDocument();
   });
 });
 
@@ -157,7 +159,7 @@ describe("journal entry deletion", () => {
   it("delegates deletion of the current entry", async () => {
     const userEventController = userEvent.setup();
     renderActions();
-    await userEventController.click(screen.getByRole("button", { name: "deleteEntry" }));
+    await userEventController.click(screen.getByRole("button", { name: "Delete entry" }));
 
     expect(onDeleteEntry).toHaveBeenCalledExactlyOnceWith(entry);
   });

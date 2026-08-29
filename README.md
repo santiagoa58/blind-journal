@@ -261,6 +261,11 @@ is never used as a persistence fallback.
 The database still cannot decrypt journal content because it never receives the key-encryption key
 or an unwrapped entry key.
 
+The Neon database was configured manually. The
+[Neon database record](./docs/neon-database.md) documents the final tables, trigger, privileges,
+and branch arrangement for reference only; application code does not execute it as a schema or
+migration source.
+
 ## Technology
 
 | Responsibility | Technology | Why it is used |
@@ -413,6 +418,7 @@ The following are outside its scope:
 ## Further reading
 
 - [Engineering standards](./ENGINEERING_STANDARDS.md)
+- [Manual Neon database record](./docs/neon-database.md)
 - [Next.js documentation](https://nextjs.org/docs)
 - [next-intl documentation](https://next-intl.dev/docs/getting-started/app-router)
 - [Radix Themes documentation](https://www.radix-ui.com/themes/docs/overview/getting-started)

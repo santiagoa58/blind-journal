@@ -1,41 +1,39 @@
 // @vitest-environment jsdom
 
 import { renderHook } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import type { PropsWithChildren } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAppToast } from "@/hooks/use-app-toast";
+import { englishMessages } from "@/i18n/messages";
+import { API_ERROR_CODES } from "@/lib/api/error";
 
 const mocks = vi.hoisted(() => ({
   reportClientError: vi.fn(),
   toastError: vi.fn(),
 }));
 
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
-}));
-
 vi.mock("sonner", () => ({
   toast: { error: mocks.toastError, success: vi.fn() },
 }));
 
-vi.mock("@/client.error", async (importOriginal) => ({
+vi.mock("@/lib/client.error", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/client.error")>()),
   reportClientError: mocks.reportClientError,
 }));
 
-vi.mock("@/i18n/error-message", () => ({
-  useErrorMessage: () => (error: unknown) => {
-    const code = (error as { code?: string }).code;
-    if (code === "KNOWN_ERROR") {
-      return "mapped message";
-    }
-    return code === "API_UNEXPECTED" ? "unexpected message" : undefined;
-  },
-}));
-
 let appToast: ReturnType<typeof useAppToast>;
 
+function IntlProvider({ children }: PropsWithChildren) {
+  return (
+    <NextIntlClientProvider locale="en" messages={englishMessages} timeZone="UTC">
+      {children}
+    </NextIntlClientProvider>
+  );
+}
+
 beforeEach(() => {
-  appToast = renderHook(() => useAppToast()).result.current;
+  appToast = renderHook(() => useAppToast(), { wrapper: IntlProvider }).result.current;
 });
 
 describe("useAppToast", () => {
@@ -45,25 +43,31 @@ describe("useAppToast", () => {
     appToast.error(error);
 
     expect(mocks.reportClientError).toHaveBeenCalledExactlyOnceWith(error);
-    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("unexpected");
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith(
+      "Something went wrong. Please try again.",
+    );
   });
 
   it("does not report an error with a known message mapping", () => {
-    appToast.error(Object.assign(new Error("known"), { code: "KNOWN_ERROR" }));
+    appToast.error(Object.assign(new Error("known"), { code: API_ERROR_CODES.networkUnavailable }));
 
     expect(mocks.reportClientError).not.toHaveBeenCalled();
-    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("mapped message");
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith(
+      "We could not reach the server. Check your connection and try again.",
+    );
   });
 
   it("reports an unexpected API error even though it has a fallback message", () => {
     const error = Object.assign(new Error("unexpected"), {
-      code: "API_UNEXPECTED",
+      code: API_ERROR_CODES.unexpected,
       requestId: "server-request-id",
     });
 
     appToast.error(error);
 
     expect(mocks.reportClientError).toHaveBeenCalledExactlyOnceWith(error);
-    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith("unexpected message");
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith(
+      "Something went wrong. Please try again.",
+    );
   });
 });

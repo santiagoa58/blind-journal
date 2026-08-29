@@ -4,8 +4,10 @@ import { Theme } from "@radix-ui/themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { englishMessages } from "@/i18n/messages";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import { CreateAccountCard } from "./create-account-card";
 import { LoginCard } from "./login-card";
@@ -42,10 +44,6 @@ vi.mock("@/i18n/navigation", () => ({
     <a href={href}>{children}</a>
   ),
 }));
-vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
-}));
-
 const USER = {
   id: "user-one",
   username: "journal-user",
@@ -57,9 +55,11 @@ const PASSPHRASE = "correct horse battery staple";
 function renderCard(card: ReactNode) {
   const queryClient = new QueryClient();
   render(
-    <QueryClientProvider client={queryClient}>
-      <Theme>{card}</Theme>
-    </QueryClientProvider>,
+    <NextIntlClientProvider locale="en" messages={englishMessages} timeZone="UTC">
+      <QueryClientProvider client={queryClient}>
+        <Theme>{card}</Theme>
+      </QueryClientProvider>
+    </NextIntlClientProvider>,
   );
   return queryClient;
 }
@@ -75,14 +75,11 @@ describe("authentication cards", () => {
     mocks.createAccount.mockReturnValueOnce(accountCreation.promise);
     renderCard(<CreateAccountCard />);
 
-    await user.type(
-      screen.getByRole("textbox", { name: "createAccount.usernameLabel" }),
-      USER.username,
-    );
-    await user.type(screen.getByLabelText("createAccount.passwordLabel"), PASSPHRASE);
-    await user.type(screen.getByLabelText("createAccount.confirmPasswordLabel"), PASSPHRASE);
+    await user.type(screen.getByRole("textbox", { name: "Username" }), USER.username);
+    await user.type(screen.getByLabelText("Passphrase"), PASSPHRASE);
+    await user.type(screen.getByLabelText("Confirm passphrase"), PASSPHRASE);
     const submit = screen.getByRole<HTMLButtonElement>("button", {
-      name: "createAccount.submit",
+      name: "Create account",
     });
     await user.click(submit);
 
@@ -99,7 +96,9 @@ describe("authentication cards", () => {
 
     accountCreation.resolve(USER);
     await waitFor(() => expect(mocks.startJournalSession).toHaveBeenCalledExactlyOnceWith(USER));
-    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("success.accountCreated");
+    expect(mocks.success).toHaveBeenCalledExactlyOnceWith(
+      "Your account is ready. Welcome to Blind Journal.",
+    );
   });
 
   it("signs in with the entered credentials without retaining them in the mutation cache", async () => {
@@ -107,9 +106,9 @@ describe("authentication cards", () => {
     mocks.login.mockResolvedValueOnce(USER);
     const queryClient = renderCard(<LoginCard />);
 
-    await user.type(screen.getByRole("textbox", { name: "signIn.usernameLabel" }), USER.username);
-    await user.type(screen.getByLabelText("signIn.passwordLabel"), PASSPHRASE);
-    await user.click(screen.getByRole("button", { name: "signIn.submit" }));
+    await user.type(screen.getByRole("textbox", { name: "Username" }), USER.username);
+    await user.type(screen.getByLabelText("Passphrase"), PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() => expect(mocks.login).toHaveBeenCalledOnce());
     expect(mocks.login.mock.calls[0]?.[0]).toEqual({
@@ -117,7 +116,7 @@ describe("authentication cards", () => {
       password: PASSPHRASE,
     });
     expect(mocks.startJournalSession).toHaveBeenCalledExactlyOnceWith(USER);
-    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("success.signedIn");
+    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("Welcome back. Your journal is ready.");
     await waitFor(() => expect(queryClient.getMutationCache().getAll()).toHaveLength(0));
   });
 
@@ -126,8 +125,8 @@ describe("authentication cards", () => {
     mocks.login.mockResolvedValueOnce(USER);
     renderCard(<UnlockCard user={USER} />);
 
-    await user.type(screen.getByLabelText("unlock.passwordLabel"), PASSPHRASE);
-    await user.click(screen.getByRole("button", { name: "unlock.submit" }));
+    await user.type(screen.getByLabelText("Passphrase"), PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: "Unlock journal" }));
 
     await waitFor(() =>
       expect(mocks.login).toHaveBeenCalledExactlyOnceWith({
@@ -136,9 +135,9 @@ describe("authentication cards", () => {
       }),
     );
     expect(mocks.unlock).toHaveBeenCalledExactlyOnceWith(USER);
-    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("success.unlocked");
+    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("Your journal is unlocked.");
 
-    await user.click(screen.getByRole("button", { name: "unlock.signOut" }));
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(mocks.signOut).toHaveBeenCalledOnce();
   });
 });

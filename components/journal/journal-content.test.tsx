@@ -65,6 +65,14 @@ function renderContent() {
   );
 }
 
+async function makeCurrentEntryDirty(userEventController: ReturnType<typeof userEvent.setup>) {
+  const title = screen.getByRole<HTMLInputElement>("textbox", { name: "Entry title" });
+  await userEventController.clear(title);
+  await userEventController.type(title, "Unsaved title");
+  expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+  return title;
+}
+
 beforeEach(() => {
   vi.stubGlobal(
     "ResizeObserver",
@@ -80,12 +88,7 @@ describe("JournalContent", () => {
   it("keeps an unsaved entry open until the user confirms a real entry selection", async () => {
     const userEventController = userEvent.setup();
     renderContent();
-    const title = screen.getByRole<HTMLInputElement>("textbox", { name: "Entry title" });
-
-    expect(title).toHaveValue(firstEntry.title);
-    await userEventController.clear(title);
-    await userEventController.type(title, "Unsaved title");
-    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+    const title = await makeCurrentEntryDirty(userEventController);
 
     const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
     const secondEntryOption = within(navigation).getByRole("radio", {
@@ -103,5 +106,68 @@ describe("JournalContent", () => {
       expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue(secondEntry.title),
     );
     expect(secondEntryOption).toBeChecked();
+  });
+
+  it("keeps an unsaved entry open until the user confirms creating a new entry", async () => {
+    const userEventController = userEvent.setup();
+    renderContent();
+    const title = await makeCurrentEntryDirty(userEventController);
+    const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
+
+    await userEventController.click(within(navigation).getByRole("button", { name: "New entry" }));
+
+    expect(
+      screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),
+    ).toBeInTheDocument();
+    expect(title).toHaveValue("Unsaved title");
+
+    await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue("Untitled entry"),
+    );
+  });
+
+  it("does not change locale until the user discards the unsaved entry", async () => {
+    const userEventController = userEvent.setup();
+    renderContent();
+    await makeCurrentEntryDirty(userEventController);
+    const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
+
+    await userEventController.click(
+      within(navigation).getByRole("button", { name: user.displayName }),
+    );
+    const languageMenuItem = screen.getByRole("menuitem", { name: "Language: English" });
+    languageMenuItem.focus();
+    await userEventController.keyboard("{ArrowRight}");
+    await userEventController.click(await screen.findByRole("menuitemradio", { name: "Español" }));
+
+    expect(
+      screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),
+    ).toBeInTheDocument();
+    expect(mocks.replaceRoute).not.toHaveBeenCalled();
+
+    await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
+    expect(mocks.replaceRoute).toHaveBeenCalledOnce();
+    expect(mocks.replaceRoute).toHaveBeenCalledWith("/journal", { locale: "es" });
+  });
+
+  it("does not sign out until the user discards the unsaved entry", async () => {
+    const userEventController = userEvent.setup();
+    renderContent();
+    await makeCurrentEntryDirty(userEventController);
+    const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
+
+    await userEventController.click(
+      within(navigation).getByRole("button", { name: user.displayName }),
+    );
+    await userEventController.click(screen.getByRole("menuitem", { name: "Sign out" }));
+
+    expect(
+      screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),
+    ).toBeInTheDocument();
+    expect(mocks.signOut).not.toHaveBeenCalled();
+
+    await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
+    expect(mocks.signOut).toHaveBeenCalledOnce();
   });
 });

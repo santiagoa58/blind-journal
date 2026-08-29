@@ -4,9 +4,11 @@ import { Theme } from "@radix-ui/themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAppSession } from "@/client-state/app-session.state";
 import { JournalWorkspace } from "@/components/journal/journal-workspace";
+import { englishMessages } from "@/i18n/messages";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import type { Base64Url } from "@/types/base64";
@@ -22,12 +24,6 @@ vi.mock("@/lib/api/journal/journal", () => ({
 vi.mock("@/lib/client.error", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/client.error")>()),
   reportClientError: mocks.reportClientError,
-}));
-vi.mock("next-intl", () => ({
-  useTranslations:
-    (namespace = "") =>
-    (key: string) =>
-      namespace.length > 0 ? `${namespace}.${key}` : key,
 }));
 vi.mock("@/components/journal/journal-content", () => ({
   JournalContent: ({
@@ -69,11 +65,13 @@ const nextCursor = "next-page" as Base64Url;
 function renderWorkspace() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={queryClient}>
-      <Theme>
-        <JournalWorkspace />
-      </Theme>
-    </QueryClientProvider>,
+    <NextIntlClientProvider locale="en" messages={englishMessages} timeZone="UTC">
+      <QueryClientProvider client={queryClient}>
+        <Theme>
+          <JournalWorkspace />
+        </Theme>
+      </QueryClientProvider>
+    </NextIntlClientProvider>,
   );
 }
 
@@ -90,10 +88,12 @@ describe("JournalWorkspace", () => {
       .mockResolvedValueOnce({ entries: [], unreadableEntries: [], nextCursor: null });
     renderWorkspace();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("api.errors.unexpected");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Something went wrong. Please try again.",
+    );
     expect(mocks.reportClientError).toHaveBeenCalledExactlyOnceWith(error);
 
-    await userEventController.click(screen.getByRole("button", { name: "common.actions.retry" }));
+    await userEventController.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("region", { name: "journal content" })).toBeInTheDocument();
   });
 

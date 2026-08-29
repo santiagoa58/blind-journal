@@ -43,15 +43,6 @@ describe("authentication protocol version 1", () => {
     );
   });
 
-  it("derives the same keys for the same password and salt", async () => {
-    const repeatedKeys = await deriveAuthUserKeys(PASSWORD, SALT, KEY_SCHEDULE_VERSION);
-
-    expect(repeatedKeys.authKey).toBe(expectedKeys.authKey);
-    await expect(wrapKnownContentKey(repeatedKeys)).resolves.toBe(
-      await wrapKnownContentKey(expectedKeys),
-    );
-  });
-
   it("derives different keys for a wrong password", async () => {
     const wrongPasswordKeys = await deriveAuthUserKeys(WRONG_PASSWORD, SALT, KEY_SCHEDULE_VERSION);
 

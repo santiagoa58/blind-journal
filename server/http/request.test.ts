@@ -1,11 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 import { REQUEST_ERROR_CODES } from "@/lib/api/request.error";
-import { readJsonBody } from "@/server/http/request";
+import { isSameOrigin, readJsonBody } from "@/server/http/request";
 
 vi.mock("server-only", () => ({}));
 
 const REQUEST_URL = "https://blind-journal.test/api/v1/example";
 const encoder = new TextEncoder();
+
+describe("same-origin requests", () => {
+  it("accepts an exact request origin", () => {
+    const request = new Request(REQUEST_URL, {
+      headers: { Origin: "https://blind-journal.test" },
+    });
+
+    expect(isSameOrigin(request)).toBe(true);
+  });
+
+  it.each([
+    ["a missing origin", undefined],
+    ["another host", "https://attacker.test"],
+    ["another scheme", "http://blind-journal.test"],
+    ["another port", "https://blind-journal.test:444"],
+  ])("rejects %s", (_case, origin) => {
+    const request = new Request(REQUEST_URL, {
+      ...(origin === undefined ? {} : { headers: { Origin: origin } }),
+    });
+
+    expect(isSameOrigin(request)).toBe(false);
+  });
+});
 
 function jsonRequest(body: string, contentType = "application/json") {
   return new Request(REQUEST_URL, {

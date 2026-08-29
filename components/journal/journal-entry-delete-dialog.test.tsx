@@ -4,9 +4,11 @@ import { Theme } from "@radix-ui/themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import { JournalEntryDeleteDialog } from "@/components/journal/journal-entry-delete-dialog";
 import { journalEntriesQueryKey } from "@/components/journal/journal-query";
+import { englishMessages } from "@/i18n/messages";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { ApiDeleteJournalEntryResponse, JournalEntry } from "@/lib/api/journal/journal.type";
 
@@ -21,8 +23,6 @@ vi.mock("@/lib/api/journal/journal", () => ({
 vi.mock("@/hooks/use-app-toast", () => ({
   useAppToast: () => ({ error: vi.fn(), success: mocks.success }),
 }));
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
-
 const user = {
   id: "user-one",
   username: "user-one",
@@ -48,23 +48,29 @@ describe("JournalEntryDeleteDialog", () => {
     mocks.deleteJournalEntry.mockReturnValueOnce(deletion.promise);
 
     render(
-      <QueryClientProvider client={queryClient}>
-        <Theme>
-          <JournalEntryDeleteDialog
-            entry={entry}
-            includesUnsavedChanges
-            onDeleted={onDeleted}
-            onOpenChange={onOpenChange}
-            open
-            user={user}
-          />
-        </Theme>
-      </QueryClientProvider>,
+      <NextIntlClientProvider locale="en" messages={englishMessages} timeZone="UTC">
+        <QueryClientProvider client={queryClient}>
+          <Theme>
+            <JournalEntryDeleteDialog
+              entry={entry}
+              includesUnsavedChanges
+              onDeleted={onDeleted}
+              onOpenChange={onOpenChange}
+              open
+              user={user}
+            />
+          </Theme>
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
     );
 
-    expect(screen.getByRole("alertdialog", { name: "deleteDialog.title" })).toBeInTheDocument();
-    expect(screen.getByText("deleteDialog.descriptionWithUnsavedChanges")).toBeInTheDocument();
-    const deleteButton = screen.getByRole<HTMLButtonElement>("button", { name: "delete" });
+    expect(screen.getByRole("alertdialog", { name: "Delete this entry?" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "This permanently removes the entry and its unsaved changes. This action cannot be undone.",
+      ),
+    ).toBeInTheDocument();
+    const deleteButton = screen.getByRole<HTMLButtonElement>("button", { name: "Delete" });
 
     await userEventController.click(deleteButton);
     await waitFor(() => expect(deleteButton).toBeDisabled());
@@ -78,6 +84,6 @@ describe("JournalEntryDeleteDialog", () => {
       queryKey: journalEntriesQueryKey(user.id),
     });
     expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
-    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("success.deleted");
+    expect(mocks.success).toHaveBeenCalledExactlyOnceWith("Entry deleted.");
   });
 });
