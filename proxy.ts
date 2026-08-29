@@ -27,7 +27,10 @@ export default function proxy(request: NextRequest) {
 
   // A nonce must be unique per document, otherwise an injected script could reuse a prior value.
   const nonce = toBase64(crypto.randomUUID());
-  const contentSecurityPolicy = createContentSecurityPolicy(nonce);
+  const contentSecurityPolicy = createContentSecurityPolicy(
+    nonce,
+    request.nextUrl.protocol === "https:",
+  );
   // Custom scripts need the same nonce as the CSP; the layout passes it to the provider that owns them.
   requestHeaders.set(NONCE_HEADER, nonce);
   // Next.js needs the policy during rendering to mark its own scripts as trusted.

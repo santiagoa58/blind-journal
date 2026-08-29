@@ -35,7 +35,14 @@ test.afterAll(async () => {
   }
 });
 
-test("persists created and updated content across reload and fresh sign-in", async ({ page }) => {
+test("persists created and updated content across reload and fresh sign-in", async ({
+  browserName,
+  page,
+}) => {
+  test.skip(
+    browserName === "webkit",
+    "Authenticated WebKit coverage requires an HTTPS test server for the production session cookie.",
+  );
   await createAccount(page, lifecycleUsername);
   await expect(page.getByRole("heading", { level: 1, name: "Your entries" })).toBeVisible();
   await page.getByRole("button", { name: "Create your first entry" }).click();
@@ -119,13 +126,84 @@ test("keeps unauthorized and failed authentication flows in Spanish", async ({ p
   ).toBeVisible();
 });
 
-test("uses the compact journal navigation on a mobile viewport", async ({ page }) => {
+test("renders localized not-found pages", async ({ page }) => {
+  await page.goto("/es/esta-pagina-no-existe");
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  await expect(page.getByRole("heading", { level: 1, name: "Página no encontrada" })).toBeVisible();
+  await expect(page.getByText("La página que buscas no existe.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", "/es");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+});
+
+test("applies production security headers to documents and API responses", async ({ request }) => {
+  const documentResponse = await request.get("/en");
+  const documentHeaders = documentResponse.headers();
+  const contentSecurityPolicy = documentHeaders["content-security-policy"];
+
+  expect(documentResponse.ok()).toBe(true);
+  expect(contentSecurityPolicy).toContain("default-src 'self'");
+  expect(contentSecurityPolicy).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
+  expect(contentSecurityPolicy).toContain("object-src 'none'");
+  expect(contentSecurityPolicy).toContain("frame-ancestors 'none'");
+  expect(contentSecurityPolicy).not.toContain("upgrade-insecure-requests");
+  expect(contentSecurityPolicy).not.toContain("'unsafe-eval'");
+  expect(documentHeaders["x-request-id"]).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  );
+
+  const apiResponse = await request.get("/api/v1/entries");
+  expect(apiResponse.status()).toBe(401);
+  expect(apiResponse.headers()["content-security-policy"]).toBeUndefined();
+  expect(apiResponse.headers()["x-request-id"]).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  );
+});
+
+test("uses the compact journal actions on a mobile viewport", async ({ browserName, page }) => {
+  test.skip(
+    browserName === "webkit",
+    "Authenticated WebKit coverage requires an HTTPS test server for the production session cookie.",
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   await createAccount(page, mobileUsername);
 
-  const mobileHeader = page.locator("header");
-  await expect(mobileHeader.getByRole("combobox", { name: "Journal entries" })).toBeVisible();
-  await expect(mobileHeader.getByRole("button", { name: "New entry" })).toBeVisible();
-  await expect(mobileHeader.getByRole("button", { name: "Account menu" })).toBeVisible();
+  const entrySelect = page.getByRole("combobox", { name: "Journal entries" });
+  await expect(entrySelect).toBeDisabled();
+  await expect(page.getByRole("button", { name: "New entry" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Journal navigation" })).toBeHidden();
+
+  await page.getByRole("button", { name: "New entry" }).click();
+  await page.getByRole("textbox", { name: "Entry title" }).fill("First mobile entry");
+  await page.getByRole("textbox", { name: "Journal entry" }).fill("Created on a mobile viewport");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    page.getByRole("article", { name: "First mobile entry" }).getByRole("status"),
+  ).toHaveText("Saved and encrypted");
+
+  await expect(entrySelect).toBeEnabled();
+  await page.getByRole("button", { name: "New entry" }).click();
+  await page.getByRole("textbox", { name: "Entry title" }).fill("Second mobile entry");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    page.getByRole("article", { name: "Second mobile entry" }).getByRole("status"),
+  ).toHaveText("Saved and encrypted");
+
+  await entrySelect.click();
+  await page.getByRole("option", { name: "First mobile entry" }).click();
+  await expect(page.getByRole("textbox", { name: "Entry title" })).toHaveValue(
+    "First mobile entry",
+  );
+  await expect(page.getByRole("textbox", { name: "Journal entry" })).toContainText(
+    "Created on a mobile viewport",
+  );
+
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await page.getByRole("menuitem", { name: "Language: English" }).hover();
+  await page.getByRole("menuitemradio", { name: "Español" }).click();
+
+  await expect(page).toHaveURL(/\/es\/journal$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  await expect(page.getByRole("button", { name: "Menú de la cuenta" })).toBeVisible();
 });

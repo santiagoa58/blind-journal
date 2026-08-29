@@ -21,7 +21,7 @@ describe("nonce-based content security policy", () => {
   it("uses the nonce for scripts without allowing inline script execution", () => {
     environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
 
-    const policy = createContentSecurityPolicy("test-nonce");
+    const policy = createContentSecurityPolicy("test-nonce", true);
 
     expect(policy).toContain("script-src 'self' 'nonce-test-nonce' 'strict-dynamic'");
     expect(policy).toContain("script-src-attr 'none'");
@@ -36,7 +36,7 @@ describe("nonce-based content security policy", () => {
   it("adds only the development script exception needed by Next.js", () => {
     environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "development" });
 
-    const policy = createContentSecurityPolicy("test-nonce");
+    const policy = createContentSecurityPolicy("test-nonce", true);
 
     expect(policy).toMatch(/script-src[^;]*'unsafe-eval'/);
     expect(policy).not.toContain("upgrade-insecure-requests");
@@ -51,11 +51,21 @@ describe("nonce-based content security policy", () => {
     const secondResponse = proxy(new NextRequest("https://blind-journal.test/en"));
 
     expect(firstNonce).toBeTruthy();
-    expect(firstPolicy).toBe(createContentSecurityPolicy(firstNonce ?? ""));
+    expect(firstPolicy).toBe(createContentSecurityPolicy(firstNonce ?? "", true));
     expect(middlewareMocks.request?.headers.get("content-security-policy")).toBe(
       secondResponse.headers.get("content-security-policy"),
     );
     expect(secondResponse.headers.get("content-security-policy")).not.toBe(firstPolicy);
+  });
+
+  it("does not upgrade assets when a production document is served over HTTP", () => {
+    environmentMocks.getServerEnvironment.mockReturnValue({ nodeEnvironment: "production" });
+
+    const response = proxy(new NextRequest("http://localhost:3100/en"));
+
+    expect(response.headers.get("content-security-policy")).not.toContain(
+      "upgrade-insecure-requests",
+    );
   });
 
   it("assigns a fresh request ID to API requests without invoking locale routing", () => {

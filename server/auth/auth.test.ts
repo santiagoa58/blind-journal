@@ -1,3 +1,4 @@
+import sodium from "libsodium-wrappers-sumo";
 import { describe, expect, it, vi } from "vitest";
 import { toBase64 } from "@/crypto/base64";
 import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
@@ -160,11 +161,22 @@ describe("authentication domain", () => {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
     });
+    await expect(
+      verifyCredentials({
+        username: user.username,
+        authKey: AUTH_KEY,
+        keyScheduleVersion: 2,
+      }),
+    ).resolves.toEqual({
+      success: false,
+      error: { code: AUTH_ERROR_CODES.invalidCredentials },
+    });
   });
 
-  it("performs the hash comparison even when the account does not exist", async () => {
+  it("uses the constant-time comparison path even when the account does not exist", async () => {
     accountDatabaseMocks.findUserByUsername.mockResolvedValue(undefined);
-    const digestSpy = vi.spyOn(crypto.subtle, "digest");
+    await sodium.ready;
+    const comparisonSpy = vi.spyOn(sodium, "memcmp");
 
     await expect(
       verifyCredentials({
@@ -176,7 +188,9 @@ describe("authentication domain", () => {
       success: false,
       error: { code: AUTH_ERROR_CODES.invalidCredentials },
     });
-    expect(digestSpy).toHaveBeenCalledOnce();
-    digestSpy.mockRestore();
+    expect(comparisonSpy).toHaveBeenCalledExactlyOnceWith(
+      new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(AUTH_KEY))),
+      new Uint8Array(32),
+    );
   });
 });

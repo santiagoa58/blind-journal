@@ -5,7 +5,9 @@ import type {
   ApiCreateJournalEntryRequest,
   EncryptedJournalEntry,
 } from "@/lib/api/journal/journal.type";
+import { MAX_FUNCTION_PAYLOAD_BYTES } from "@/lib/api/transport.constants";
 import { createEntry, deleteEntry, listEntries, updateEntry } from "@/server/journal/journal";
+import { encodeJournalEntriesCursor } from "@/server/journal/pagination";
 
 const journalDatabaseMocks = vi.hoisted(() => ({
   deleteJournalEntry: vi.fn(),
@@ -63,6 +65,65 @@ describe("journal domain", () => {
     await expect(listEntries("user-id", {})).resolves.toEqual({
       success: true,
       data: { records: [entry], nextCursor: null },
+    });
+  });
+
+  it("returns a continuation cursor when the next record would exceed the response limit", async () => {
+    const timestamp = "2026-01-01T00:00:00.000Z";
+    const ciphertextLength = Math.ceil(MAX_FUNCTION_PAYLOAD_BYTES / 2);
+    const firstEntry = {
+      ...createRequest("00000000-0000-4000-8000-000000000001"),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      encryptedData: {
+        ...encryptedData(1),
+        ciphertextBase64: "A".repeat(ciphertextLength),
+      },
+    } satisfies EncryptedJournalEntry;
+    const secondEntry = {
+      ...createRequest("00000000-0000-4000-8000-000000000002", 2),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      encryptedData: {
+        ...encryptedData(2),
+        ciphertextBase64: "A".repeat(ciphertextLength),
+      },
+    } satisfies EncryptedJournalEntry;
+    journalDatabaseMocks.getJournalEntriesPage.mockResolvedValue({
+      entries: [firstEntry, secondEntry],
+      nextCursor: null,
+    });
+
+    const result = await listEntries("user-id", {});
+
+    expect(result).toEqual({
+      success: true,
+      data: {
+        records: [firstEntry],
+        nextCursor: encodeJournalEntriesCursor(firstEntry),
+      },
+    });
+  });
+
+  it("rejects a page when its first record cannot fit in the response limit", async () => {
+    const timestamp = "2026-01-01T00:00:00.000Z";
+    const oversizedEntry = {
+      ...createRequest("00000000-0000-4000-8000-000000000001"),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      encryptedData: {
+        ...encryptedData(1),
+        ciphertextBase64: "A".repeat(MAX_FUNCTION_PAYLOAD_BYTES),
+      },
+    } satisfies EncryptedJournalEntry;
+    journalDatabaseMocks.getJournalEntriesPage.mockResolvedValue({
+      entries: [oversizedEntry],
+      nextCursor: null,
+    });
+
+    await expect(listEntries("user-id", {})).resolves.toEqual({
+      success: false,
+      error: { code: JOURNAL_ERROR_CODES.invalidEntry },
     });
   });
 

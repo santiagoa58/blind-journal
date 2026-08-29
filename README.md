@@ -355,14 +355,16 @@ every deployed environment must use HTTPS.
 
 | Variable | Purpose |
 | --- | --- |
-| `AUTH_SALT_SECRET` | Base64URL-encoded server secret of at least 32 decoded bytes, used to derive enumeration-resistant salt metadata. Required in production; local development and tests have a deterministic non-production fallback. |
-| `DATABASE_URL` | Server-only Neon connection string using the restricted `blind_journal_app` role and pooled endpoint. Required in every environment. |
+| `AUTH_SALT_SECRET` | Base64URL-encoded server secret of at least 32 decoded bytes, used to derive enumeration-resistant salt metadata. Required in every environment. |
+| `DATABASE_URL` | Server-only, credentialed PostgreSQL connection string for the current runtime environment. Required in every environment. |
+| `DATABASE_TEST_URL` | Local-only, credentialed PostgreSQL connection string for live database and E2E tests. |
 
 The server validates all environment configuration together before it starts accepting requests.
-Generate independent production secrets, keep `AUTH_SALT_SECRET` stable for the lifetime of stored
-accounts, and never expose either value to the browser. Server modules consume the validated values
-from `server/environment.ts`; Biome rejects direct `process.env` access outside that boundary and
-the narrowly scoped startup and integration-test exceptions.
+Generate independent secrets for local development, Preview, and Production; keep each
+`AUTH_SALT_SECRET` stable for its environment, and never expose any of them to the browser. Keep the
+local value in an ignored environment file. Server modules consume the validated values from
+`server/environment.ts`; Biome rejects direct `process.env` access outside that boundary and the
+narrowly scoped startup and integration-test exceptions.
 
 The browser calls the built-in `/api/v1` Route Handlers on the same origin. A separately deployed
 browser API is not part of this architecture.

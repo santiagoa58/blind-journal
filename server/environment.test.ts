@@ -3,8 +3,7 @@ import { validateServerEnvironment } from "@/server/environment";
 
 vi.mock("server-only", () => ({}));
 
-const DATABASE_URL =
-  "postgresql://blind_journal_app:password@example-pooler.us-east-2.aws.neon.tech/neondb";
+const DATABASE_URL = "postgresql://runtime_user:password@database.example.com/journal";
 const AUTH_SALT_SECRET = Buffer.alloc(32, 1).toString("base64url");
 
 function validEnvironment(): NodeJS.ProcessEnv {
@@ -39,7 +38,7 @@ describe("server environment", () => {
       new Error(
         "Invalid server environment:\n" +
           "- NODE_ENV must be development, production, or test.\n" +
-          "- DATABASE_URL must be a valid pooled PostgreSQL connection URL.\n" +
+          "- DATABASE_URL must be a valid PostgreSQL connection URL.\n" +
           "- AUTH_SALT_SECRET must be Base64URL encoded.",
       ),
     );
@@ -55,39 +54,32 @@ describe("server environment", () => {
     }
   });
 
-  it("requires every production secret", () => {
+  it("requires every server secret", () => {
     expect(() => validateServerEnvironment({ NODE_ENV: "production" })).toThrowError(
       "Invalid server environment:\n" +
         "- DATABASE_URL is required.\n" +
-        "- AUTH_SALT_SECRET is required in production.",
+        "- AUTH_SALT_SECRET is required.",
     );
   });
 
-  it("uses the deterministic non-production salt secret when none is configured", () => {
-    const environment = validateServerEnvironment({
-      NODE_ENV: "development",
-      DATABASE_URL,
-    });
-
-    expect(environment.authSaltSecret.byteLength).toBeGreaterThanOrEqual(32);
-  });
+  it.each(["development", "test"] as const)(
+    "requires the auth salt secret in %s",
+    (nodeEnvironment) => {
+      expect(() =>
+        validateServerEnvironment({
+          NODE_ENV: nodeEnvironment,
+          DATABASE_URL,
+        }),
+      ).toThrow("AUTH_SALT_SECRET is required.");
+    },
+  );
 
   it.each([
+    ["postgresql://:password@database.example.com/journal", "include a database username"],
+    ["postgresql://runtime_user@database.example.com/journal", "include a database password"],
     [
-      "postgresql://neondb_owner:password@example-pooler.us-east-2.aws.neon.tech/neondb",
-      "restricted blind_journal_app role",
-    ],
-    [
-      "postgresql://blind_journal_app@example-pooler.us-east-2.aws.neon.tech/neondb",
-      "include a database password",
-    ],
-    [
-      "postgresql://blind_journal_app:password@example.us-east-2.aws.neon.tech/neondb",
-      "valid pooled PostgreSQL connection URL",
-    ],
-    [
-      "mysql://blind_journal_app:password@example-pooler.us-east-2.aws.neon.tech/neondb",
-      "valid pooled PostgreSQL connection URL",
+      "mysql://runtime_user:password@database.example.com/journal",
+      "valid PostgreSQL connection URL",
     ],
   ])("rejects an unsafe database connection", (databaseUrl, expectedMessage) => {
     expect(() =>

@@ -2,7 +2,7 @@ import "server-only";
 
 import { getServerEnvironment } from "@/server/environment";
 
-export function createContentSecurityPolicy(nonce: string) {
+export function createContentSecurityPolicy(nonce: string, secureRequest: boolean) {
   const isDevelopment = getServerEnvironment().nodeEnvironment === "development";
   const directives = [
     // Allows unspecified resources only from this website.
@@ -36,8 +36,8 @@ export function createContentSecurityPolicy(nonce: string) {
     "frame-src 'none'",
     // Blocks other websites from embedding this page in a frame.
     "frame-ancestors 'none'",
-    // Upgrades HTTP resource URLs to HTTPS in production.
-    ...(isDevelopment ? [] : ["upgrade-insecure-requests"]),
+    // Upgrades HTTP resource URLs only when the document itself was securely delivered.
+    ...(!isDevelopment && secureRequest ? ["upgrade-insecure-requests"] : []),
   ];
 
   return directives.join("; ");

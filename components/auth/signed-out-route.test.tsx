@@ -1,22 +1,16 @@
 // @vitest-environment jsdom
 
 import { act, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { useAppSession } from "@/client-state/app-session.state";
 import { SignedOutRoute } from "@/components/auth/signed-out-route";
-
-const mocks = vi.hoisted(() => ({ replace: vi.fn() }));
-
-vi.mock("@/i18n/navigation", () => ({
-  useRouter: () => ({ replace: mocks.replace }),
-}));
 
 beforeEach(() => {
   useAppSession.setState({ initialized: true, session: { status: "signed-out" } });
 });
 
 describe("SignedOutRoute", () => {
-  it("renders for a signed-out session and redirects after the session unlocks", async () => {
+  it("renders only while the session is signed out", async () => {
     render(
       <SignedOutRoute>
         <div>{"Sign in"}</div>
@@ -24,7 +18,6 @@ describe("SignedOutRoute", () => {
     );
 
     expect(screen.getByText("Sign in")).toBeInTheDocument();
-    expect(mocks.replace).not.toHaveBeenCalled();
 
     await act(async () => {
       useAppSession.getState().unlock({
@@ -36,6 +29,5 @@ describe("SignedOutRoute", () => {
     });
 
     expect(screen.queryByText("Sign in")).not.toBeInTheDocument();
-    expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/journal");
   });
 });

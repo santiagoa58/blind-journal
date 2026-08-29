@@ -1,8 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
-import { requireDatabaseTestUrl } from "./test/database-test-url";
+import { requireDatabaseTestUrl, TEST_AUTH_SALT_SECRET } from "./test/live-test-environment";
 
 const databaseTestUrl = requireDatabaseTestUrl();
-const e2eAuthSaltSecret = "YmxpbmQtam91cm5hbC1lMmUtYXV0aC1zYWx0LXNlY3JldA";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -33,7 +32,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm build && pnpm start --hostname localhost --port 3100",
     env: {
-      AUTH_SALT_SECRET: e2eAuthSaltSecret,
+      AUTH_SALT_SECRET: TEST_AUTH_SALT_SECRET,
       DATABASE_URL: databaseTestUrl,
     },
     timeout: 120_000,

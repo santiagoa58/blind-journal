@@ -2,8 +2,6 @@ import "server-only";
 
 import { z } from "zod";
 
-const APPLICATION_DATABASE_ROLE = "blind_journal_app";
-const DEVELOPMENT_AUTH_SALT_SECRET = "blind-journal-development-only-auth-salt-secret";
 const MINIMUM_AUTH_SALT_SECRET_BYTES = 32;
 
 type EnvironmentSource = Readonly<Record<string, string | undefined>>;
@@ -20,13 +18,12 @@ const databaseUrlSchema = z
   .pipe(
     z.url({
       protocol: /^postgres(?:ql)?$/,
-      hostname: /-pooler\./,
-      error: "DATABASE_URL must be a valid pooled PostgreSQL connection URL.",
+      error: "DATABASE_URL must be a valid PostgreSQL connection URL.",
     }),
   )
   .transform((value) => ({ value, url: new URL(value) }))
-  .refine(({ url }) => url.username === APPLICATION_DATABASE_ROLE, {
-    error: `DATABASE_URL must use the restricted ${APPLICATION_DATABASE_ROLE} role.`,
+  .refine(({ url }) => url.username.length > 0, {
+    error: "DATABASE_URL must include a database username.",
   })
   .refine(({ url }) => url.password.length > 0, {
     error: "DATABASE_URL must include a database password.",
@@ -34,8 +31,8 @@ const databaseUrlSchema = z
   .transform(({ value }) => value);
 
 const configuredAuthSaltSecretSchema = z
-  .string({ error: "AUTH_SALT_SECRET is required in production." })
-  .min(1, "AUTH_SALT_SECRET is required in production.")
+  .string({ error: "AUTH_SALT_SECRET is required." })
+  .min(1, "AUTH_SALT_SECRET is required.")
   .regex(/^[A-Za-z0-9_-]+$/, "AUTH_SALT_SECRET must be Base64URL encoded.")
   .transform((value, context) => {
     const secret = Buffer.from(value, "base64url");
@@ -49,16 +46,6 @@ const configuredAuthSaltSecretSchema = z
     return secret;
   });
 
-function authSaltSecretSchema(nodeEnvironment: string | undefined) {
-  return z.preprocess((value) => {
-    if (value) return value;
-    if (nodeEnvironment === "development" || nodeEnvironment === "test") {
-      return Buffer.from(DEVELOPMENT_AUTH_SALT_SECRET).toString("base64url");
-    }
-    return value;
-  }, configuredAuthSaltSecretSchema);
-}
-
 export type ServerEnvironment = {
   authSaltSecret: z.output<typeof configuredAuthSaltSecretSchema>;
   databaseUrl: z.output<typeof databaseUrlSchema>;
@@ -68,9 +55,7 @@ export type ServerEnvironment = {
 export function validateServerEnvironment(source: EnvironmentSource): ServerEnvironment {
   const nodeEnvironment = nodeEnvironmentSchema.safeParse(source["NODE_ENV"]);
   const databaseUrl = databaseUrlSchema.safeParse(source["DATABASE_URL"]);
-  const authSaltSecret = authSaltSecretSchema(source["NODE_ENV"]).safeParse(
-    source["AUTH_SALT_SECRET"],
-  );
+  const authSaltSecret = configuredAuthSaltSecretSchema.safeParse(source["AUTH_SALT_SECRET"]);
 
   if (!nodeEnvironment.success || !databaseUrl.success || !authSaltSecret.success) {
     const issues: string[] = [];
