@@ -106,8 +106,8 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(vitest@4.1.10)
       hono:
-        specifier: ^4.13.4
-        version: 4.13.4
+        specifier: ^4.13.5
+        version: 4.13.5
       husky:
         specifier: 9.1.7
         version: 9.1.7
@@ -116,7 +116,7 @@ importers:
         version: 29.1.1
       neon:
         specifier: ^4.1.0
-        version: 4.1.0(hono@4.13.4)(supports-color@7.2.0)
+        version: 4.1.0(hono@4.13.5)(supports-color@7.2.0)
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -2486,8 +2486,8 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  hono@4.13.4:
-    resolution: {integrity: sha512-AGEwKIyRMHRv1t8Wjwa3LHxQ61X5CqrdFT+4BRNTpqS5aJNnpl5WLjADb7vFlJzI/8uK7T5QLVApCMQKNa3LgQ==}
+  hono@4.13.5:
+    resolution: {integrity: sha512-O6+/eCYRkzzzy0rPWwKLiGBR1nFuUPZynnwjxN1MBA62NNqbT0wQEzQyK2gSO5yDIDB336sXQleAhOHrzlYyKw==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -3732,9 +3732,9 @@ snapshots:
     dependencies:
       '@formatjs/fast-memoize': 3.1.7
 
-  '@hono/node-server@2.0.4(hono@4.13.4)':
+  '@hono/node-server@2.0.4(hono@4.13.5)':
     dependencies:
-      hono: 4.13.4
+      hono: 4.13.5
 
   '@iarna/toml@2.2.5': {}
 
@@ -5572,7 +5572,7 @@ snapshots:
 
   has-flag@4.0.0: {}
 
-  hono@4.13.4: {}
+  hono@4.13.5: {}
 
   html-encoding-sniffer@6.0.0:
     dependencies:
@@ -5790,11 +5790,11 @@ snapshots:
 
   negotiator@1.0.0: {}
 
-  neon@4.1.0(hono@4.13.4)(supports-color@7.2.0):
+  neon@4.1.0(hono@4.13.5)(supports-color@7.2.0):
     dependencies:
       '@clack/core': 0.4.2
       '@clack/prompts': 0.10.1
-      '@hono/node-server': 2.0.4(hono@4.13.4)
+      '@hono/node-server': 2.0.4(hono@4.13.5)
       '@neon/config': 1.0.2
       '@neon/config-runtime': 1.0.2(supports-color@7.2.0)
       '@neon/sdk': 2.2.0
