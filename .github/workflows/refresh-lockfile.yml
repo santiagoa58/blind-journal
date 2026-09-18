@@ -1,7 +1,9 @@
 name: Refresh dependency lockfile
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - security/dependency-and-ci-hardening
 
 permissions:
   contents: write
