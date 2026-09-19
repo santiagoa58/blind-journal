@@ -14,6 +14,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
 import type { Locale } from "@/i18n/routing";
@@ -81,10 +82,20 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 {t("structure.contentPlaceholder")}
               </Text>
             </Flex>
-            <EducationalFigurePlaceholder
-              placeholderLabel={t("structure.figurePlaceholder")}
-              caption={t("figures.bigPicture")}
-            />
+            <figure>
+              <Box asChild width="100%">
+                <Image
+                  src="/images/how-it-works/local-encryption-flow.webp"
+                  alt={t("figures.bigPictureAlt")}
+                  width={1400}
+                  height={788}
+                  sizes="(min-width: 1024px) 58vw, 100vw"
+                />
+              </Box>
+              <Text asChild size="2" color="gray" mt="2" align="center">
+                <figcaption>{t("figures.bigPicture")}</figcaption>
+              </Text>
+            </figure>
           </Grid>
         </Container>
       </Section>

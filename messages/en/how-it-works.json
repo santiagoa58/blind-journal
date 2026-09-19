@@ -49,7 +49,8 @@
     "bigPicture": "Browser and server security-boundary figure",
     "authentication": "Authentication and decryption key-purpose figure",
     "saving": "Encrypted journal save-flow figure",
-    "architecture": "Blind Journal architecture figure"
+    "architecture": "Blind Journal architecture figure",
+    "bigPictureAlt": "A readable journal and key remain in the browser, the journal is encrypted locally, and encrypted data is stored on the server."
   },
   "structure": {
     "contentPlaceholder": "Content will be added in the next phase.",
