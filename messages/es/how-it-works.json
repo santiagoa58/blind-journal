@@ -49,7 +49,8 @@
     "bigPicture": "Figura del límite de seguridad entre navegador y servidor",
     "authentication": "Figura de los propósitos de las claves de autenticación y descifrado",
     "saving": "Figura del flujo de guardado cifrado del diario",
-    "architecture": "Figura de la arquitectura de Blind Journal"
+    "architecture": "Figura de la arquitectura de Blind Journal",
+    "bigPictureAlt": "El diario legible y la clave permanecen en el navegador, el diario se cifra localmente y los datos cifrados se almacenan en el servidor."
   },
   "structure": {
     "contentPlaceholder": "El contenido se añadirá en la siguiente fase.",
