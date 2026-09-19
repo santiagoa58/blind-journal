@@ -1,4 +1,4 @@
-import { ChevronDownIcon, ExitIcon, GlobeIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ExitIcon, GlobeIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 import { Avatar, Box, Button, DropdownMenu, Grid, IconButton, Text } from "@radix-ui/themes";
 import { hasLocale, useLocale, useTranslations } from "next-intl";
 import { LOCALE_NAMES, type Locale, routing } from "@/i18n/routing";
@@ -7,6 +7,7 @@ import type { ClientUser } from "@/lib/api/auth/user.type";
 type JournalAccountMenuProps = {
   compact?: boolean;
   currentUser: ClientUser;
+  onHowItWorks: () => void;
   onLocaleChange: (locale: Locale) => void;
   onSignOut: () => void;
 };
@@ -14,10 +15,12 @@ type JournalAccountMenuProps = {
 export function JournalAccountMenu({
   compact = false,
   currentUser,
+  onHowItWorks,
   onLocaleChange,
   onSignOut,
 }: JournalAccountMenuProps) {
   const t = useTranslations("sidebar");
+  const tHowItWorks = useTranslations("how-it-works");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const avatar = (
@@ -75,6 +78,10 @@ export function JournalAccountMenu({
             </DropdownMenu.RadioGroup>
           </DropdownMenu.SubContent>
         </DropdownMenu.Sub>
+        <DropdownMenu.Item onSelect={onHowItWorks}>
+          <InfoCircledIcon aria-hidden />
+          {tHowItWorks("navigation.howItWorks")}
+        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item color="red" onSelect={onSignOut}>
           <ExitIcon aria-hidden />

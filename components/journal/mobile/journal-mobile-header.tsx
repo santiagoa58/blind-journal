@@ -15,6 +15,7 @@ type JournalMobileHeaderProps = {
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
   onCreateEntry: () => void;
+  onHowItWorks: () => void;
   onLocaleChange: (locale: Locale) => void;
   onSelectEntry: (entryId: string) => void;
   onSignOut: () => void;
@@ -39,6 +40,7 @@ export function JournalMobileHeader({
   loadingMoreEntries,
   loadMoreEntries,
   onCreateEntry,
+  onHowItWorks,
   onLocaleChange,
   onSelectEntry,
   onSignOut,
@@ -78,6 +80,7 @@ export function JournalMobileHeader({
             <JournalAccountMenu
               compact
               currentUser={currentUser}
+              onHowItWorks={onHowItWorks}
               onLocaleChange={onLocaleChange}
               onSignOut={onSignOut}
             />
