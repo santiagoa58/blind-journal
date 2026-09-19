@@ -20,7 +20,6 @@ export function JournalAccountMenu({
   onSignOut,
 }: JournalAccountMenuProps) {
   const t = useTranslations("sidebar");
-  const tHowItWorks = useTranslations("how-it-works");
   const tCommon = useTranslations("common");
   const locale = useLocale();
   const avatar = (
