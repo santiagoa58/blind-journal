@@ -15,10 +15,7 @@ import {
 } from "@radix-ui/themes";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { BrandMark } from "@/components/brand-mark";
 import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
-import { LanguageSelector } from "@/components/language-selector";
-import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 
 type HowItWorksPageProps = {
@@ -33,17 +30,6 @@ export async function generateMetadata({ params }: HowItWorksPageProps): Promise
     title: t("title"),
     description: t("description"),
   };
-}
-
-function HeaderBrand() {
-  return (
-    <BrandMark.Root>
-      <BrandMark.Avatar />
-      <Box asChild display={{ initial: "none", sm: "inline" }}>
-        <BrandMark.Name />
-      </Box>
-    </BrandMark.Root>
-  );
 }
 
 export default async function HowItWorksPage({ params }: HowItWorksPageProps) {

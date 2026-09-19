@@ -1,3 +1,4 @@
+import { Flex } from "@radix-ui/themes";
 import { setRequestLocale } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginCard } from "@/components/auth/login-card";
@@ -10,11 +11,13 @@ export default async function Home({ params }: { params: Promise<{ locale: Local
 
   return (
     <SignedOutRoute>
-      <main>
-        <AuthShell>
-          <LoginCard />
-        </AuthShell>
-      </main>
+      <Flex asChild direction="column" flexGrow="1">
+        <main>
+          <AuthShell>
+            <LoginCard />
+          </AuthShell>
+        </main>
+      </Flex>
     </SignedOutRoute>
   );
 }
