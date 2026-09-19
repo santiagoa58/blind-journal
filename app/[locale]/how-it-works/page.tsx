@@ -16,8 +16,10 @@ import {
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import localEncryptionFlow from "@/assets/how-it-works/local-encryption-flow.webp";
 import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
 import type { Locale } from "@/i18n/routing";
+import styles from "./how-it-works.module.css";
 
 type HowItWorksPageProps = {
   params: Promise<{ locale: Locale }>;
@@ -82,20 +84,19 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 {t("structure.contentPlaceholder")}
               </Text>
             </Flex>
-            <figure>
-              <Box asChild width="100%">
+            <Box asChild m="0" minWidth="0" width="100%">
+              <figure>
                 <Image
-                  src="/images/how-it-works/local-encryption-flow.webp"
+                  className={styles.figureImage}
+                  src={localEncryptionFlow}
                   alt={t("figures.bigPictureAlt")}
-                  width={1400}
-                  height={788}
                   sizes="(min-width: 1024px) 58vw, 100vw"
                 />
-              </Box>
-              <Text asChild size="2" color="gray" mt="2" align="center">
-                <figcaption>{t("figures.bigPicture")}</figcaption>
-              </Text>
-            </figure>
+                <Text asChild size="2" color="gray" mt="2" align="center">
+                  <figcaption>{t("figures.bigPicture")}</figcaption>
+                </Text>
+              </figure>
+            </Box>
           </Grid>
         </Container>
       </Section>
