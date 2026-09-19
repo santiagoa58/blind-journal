@@ -35,7 +35,7 @@ export function AppHeader() {
               </Button>
 
               <Flex align="center" gap={{ initial: "2", sm: "3" }} flexShrink="0">
-                <TabNav.Root size={{ initial: "1", sm: "2" }} aria-label={t("label")} highContrast>
+                <TabNav.Root size={{ initial: "1", sm: "2" }} aria-label={t("label")}>
                   <TabNav.Link asChild active={pathname === "/journal"}>
                     <GuardedLink href="/journal">{t("journal")}</GuardedLink>
                   </TabNav.Link>

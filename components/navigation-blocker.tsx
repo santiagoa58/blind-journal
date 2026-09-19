@@ -109,7 +109,7 @@ export function useNavigationBlocker() {
   return context;
 }
 
-type GuardedLinkProps = Omit<ComponentProps<typeof Link>, "onNavigate">;
+type GuardedLinkProps = Omit<ComponentProps<typeof Link>, "href" | "onNavigate"> & { href: string };
 
 export function GuardedLink({ href, ...props }: GuardedLinkProps) {
   const router = useRouter();
