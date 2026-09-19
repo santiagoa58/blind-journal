@@ -57,9 +57,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       <DocumentLocale locale={locale} />
       <Providers nonce={nonce}>
         <NavigationBlockerProvider>
-          <Flex direction="column" height="100dvh" overflow="hidden">
+          <Flex direction="column" minHeight="100dvh">
             <AppHeader />
-            <Flex direction="column" flexGrow="1" minHeight="0" overflow="hidden">
+            <Flex direction="column" flexGrow="1" minHeight="0">
               <AppLockBoundary>{children}</AppLockBoundary>
             </Flex>
           </Flex>
