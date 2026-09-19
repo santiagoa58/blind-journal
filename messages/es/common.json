@@ -10,5 +10,10 @@
     "currentLanguage": "Idioma: {language}",
     "language": "Idioma",
     "loading": "Cargando…"
+  },
+  "navigation": {
+    "homeLabel": "Inicio de Blind Journal",
+    "label": "Navegación principal",
+    "howItWorks": "Cómo funciona"
   }
-}
+}\n
