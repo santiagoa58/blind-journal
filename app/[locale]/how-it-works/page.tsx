@@ -38,31 +38,6 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
   const t = await getTranslations("how-it-works");
 
   return (
-    <>
-      <Box asChild py="3">
-        <header>
-          <Container size="4" px={{ initial: "4", sm: "6" }}>
-            <Flex align="center" justify="between" gap="3">
-              <Button asChild size="2" variant="ghost" color="gray">
-                <Link href="/" aria-label={t("navigation.homeLabel")}>
-                  <HeaderBrand />
-                </Link>
-              </Button>
-
-              <Flex asChild align="center" gap="2" flexShrink="0">
-                <nav aria-label={t("navigation.pageNavigationLabel")}>
-                  <Button asChild size="2">
-                    <Link href="/journal">{t("navigation.openJournal")}</Link>
-                  </Button>
-                  <LanguageSelector compact />
-                </nav>
-              </Flex>
-            </Flex>
-          </Container>
-        </header>
-      </Box>
-      <Separator size="4" />
-
       <main>
         <Section size="3">
           <Container size="3" px={{ initial: "4", sm: "6" }}>
@@ -319,6 +294,5 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
           </Container>
         </Section>
       </main>
-    </>
   );
 }
