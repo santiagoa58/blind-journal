@@ -3,8 +3,6 @@
 import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Box, Button, Flex, IconButton, Separator, Tooltip } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import { BrandMark } from "@/components/brand-mark";
-import type { Locale } from "@/i18n/routing";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import { EntryList } from "./entry-list";
@@ -18,22 +16,11 @@ type JournalDesktopSidebarProps = {
   loadMoreEntries: () => void;
   onCollapse: () => void;
   onCreateEntry: () => void;
-  onHowItWorks: () => void;
-  onLocaleChange: (locale: Locale) => void;
   onDeleteEntry: (entry: JournalEntry) => void;
   onSelectEntry: (entryId: string) => void;
   onSignOut: () => void;
   selectedEntryId: string | undefined;
 };
-
-function Brand() {
-  return (
-    <BrandMark.Root>
-      <BrandMark.Avatar />
-      <BrandMark.Name />
-    </BrandMark.Root>
-  );
-}
 
 export function JournalDesktopSidebar({
   currentUser,
@@ -43,8 +30,6 @@ export function JournalDesktopSidebar({
   loadMoreEntries,
   onCollapse,
   onCreateEntry,
-  onHowItWorks,
-  onLocaleChange,
   onDeleteEntry,
   onSelectEntry,
   onSignOut,
@@ -62,9 +47,8 @@ export function JournalDesktopSidebar({
       display={{ initial: "none", lg: "flex" }}
     >
       <aside aria-label={t("journalNavigationLabel")}>
-        <Flex direction="column" gap="4" p="4" pb="0">
-          <Flex align="center" justify="between" gap="3">
-            <Brand />
+        <Flex direction="column" gap="3" p="4" pb="0">
+          <Flex justify="end">
             {entries.length > 0 ? (
               <Tooltip content={t("hideEntries")}>
                 <IconButton
@@ -98,12 +82,7 @@ export function JournalDesktopSidebar({
 
         <Box px="3" pb="3">
           <Separator size="4" mb="3" />
-          <JournalAccountMenu
-            currentUser={currentUser}
-            onHowItWorks={onHowItWorks}
-            onLocaleChange={onLocaleChange}
-            onSignOut={onSignOut}
-          />
+          <JournalAccountMenu currentUser={currentUser} onSignOut={onSignOut} />
         </Box>
       </aside>
     </Flex>

@@ -30,7 +30,7 @@ function JournalWorkspaceLoading() {
   const tCommon = useTranslations("common");
 
   return (
-    <Flex role="status" align="center" justify="center" gap="3" height="100dvh">
+    <Flex role="status" align="center" justify="center" gap="3" height="100%">
       <Spinner aria-hidden />
       <Text color="gray">{tCommon("labels.loading")}</Text>
     </Flex>
