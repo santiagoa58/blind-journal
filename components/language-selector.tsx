@@ -1,13 +1,13 @@
 "use client";
 
 import { GlobeIcon } from "@radix-ui/react-icons";
-import { Flex, Select, Text } from "@radix-ui/themes";
+import { Box, Flex, Select, Text } from "@radix-ui/themes";
 import { hasLocale, useLocale, useTranslations } from "next-intl";
 import { useId } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { LOCALE_NAMES, routing } from "@/i18n/routing";
 
-export function LanguageSelector() {
+type LanguageSelectorProps = {\n  compact?: boolean;\n};\n\nexport function LanguageSelector({ compact = false }: LanguageSelectorProps) {
   const t = useTranslations("common");
   const locale = useLocale();
   const pathname = usePathname();
@@ -24,13 +24,29 @@ export function LanguageSelector() {
 
   return (
     <Flex align="center" gap="2">
-      <GlobeIcon aria-hidden />
-      <Text as="label" htmlFor={selectId} size="2" color="gray">
-        {t("labels.language")}
-      </Text>
+      {compact ? null : (
+        <>
+          <GlobeIcon aria-hidden />
+          <Text as="label" htmlFor={selectId} size="2" color="gray">
+            {t("labels.language")}
+          </Text>
+        </>
+      )}
       <Select.Root value={locale} size="2" onValueChange={selectLocale}>
         <Select.Trigger id={selectId} variant="soft" aria-label={t("labels.language")}>
-          {LOCALE_NAMES[locale]}
+          {compact ? (
+            <Flex align="center" gap="2">
+              <GlobeIcon aria-hidden />
+              <Box as="span" display={{ initial: "inline", sm: "none" }}>
+                {locale.toUpperCase()}
+              </Box>
+              <Box as="span" display={{ initial: "none", sm: "inline" }}>
+                {LOCALE_NAMES[locale]}
+              </Box>
+            </Flex>
+          ) : (
+            LOCALE_NAMES[locale]
+          )}
         </Select.Trigger>
         <Select.Content position="popper" align="end">
           {routing.locales.map((supportedLocale) => (
