@@ -7,7 +7,6 @@
     "save": "Save changes"
   },
   "labels": {
-    "currentLanguage": "Language: {language}",
     "language": "Language",
     "loading": "Loading…"
   },
