@@ -1,34 +1,16 @@
 import { LockClosedIcon } from "@radix-ui/react-icons";
-import { Box, Button, Callout, Card, Container, Flex, Grid, Section, Text } from "@radix-ui/themes";
+import { Box, Callout, Card, Container, Grid, Section, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
-import { BrandMark } from "@/components/brand-mark";
-import { LanguageSelector } from "@/components/language-selector";
-import { Link } from "@/i18n/navigation";
 
 type AuthShellProps = PropsWithChildren;
 
-function Brand() {
-  return (
-    <BrandMark.Root>
-      <BrandMark.Avatar />
-      <BrandMark.Name />
-    </BrandMark.Root>
-  );
-}
 export function AuthShell({ children }: AuthShellProps) {
   const t = useTranslations("auth");
-  const tHowItWorks = useTranslations("how-it-works");
 
   return (
-    <Section size={{ initial: "2", md: "3" }} minHeight="100dvh">
+    <Section size={{ initial: "2", md: "3" }} flexGrow="1">
       <Container size="4" px={{ initial: "4", sm: "6" }}>
-        <Flex justify="end" align="center" gap="3" mb={{ initial: "4", md: "5" }}>
-          <Button asChild size="2" variant="ghost" color="gray">
-            <Link href="/how-it-works">{tHowItWorks("navigation.howItWorks")}</Link>
-          </Button>
-          <LanguageSelector />
-        </Flex>
         <Grid
           columns={{ initial: "1", md: "minmax(0, 1fr) minmax(0, 1fr)" }}
           gap={{ initial: "6", md: "8" }}
@@ -36,9 +18,7 @@ export function AuthShell({ children }: AuthShellProps) {
         >
           <Box display={{ initial: "none", md: "block" }}>
             <Card size="4" variant="surface">
-              <Grid gap={{ initial: "7", md: "9" }}>
-                <Brand />
-
+              <Grid gap={{ initial: "6", md: "8" }}>
                 <Box>
                   <Text as="p" size="2" weight="medium" color="iris">
                     {t("shell.eyebrow")}
@@ -69,9 +49,6 @@ export function AuthShell({ children }: AuthShellProps) {
           </Box>
 
           <Container size="1" width="100%">
-            <Box display={{ initial: "block", md: "none" }} mb="5">
-              <Brand />
-            </Box>
             {children}
           </Container>
         </Grid>

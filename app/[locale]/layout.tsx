@@ -1,8 +1,11 @@
+import { Flex } from "@radix-ui/themes";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { AppHeader } from "@/components/app-header";
+import { AppLockBoundary } from "@/components/auth/app-lock-boundary";
 import { DocumentLocale } from "@/components/document-locale";
 import { routing } from "@/i18n/routing";
 import { Providers } from "../client-providers";
@@ -51,7 +54,14 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   return (
     <NextIntlClientProvider>
       <DocumentLocale locale={locale} />
-      <Providers nonce={nonce}>{children}</Providers>
+      <Providers nonce={nonce}>
+        <Flex direction="column" minHeight="100dvh">
+          <AppHeader />
+          <Flex direction="column" flexGrow="1" minHeight="0">
+            <AppLockBoundary>{children}</AppLockBoundary>
+          </Flex>
+        </Flex>
+      </Providers>
     </NextIntlClientProvider>
   );
 }
