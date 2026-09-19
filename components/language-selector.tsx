@@ -37,7 +37,11 @@ export function LanguageSelector({ compact = false }: LanguageSelectorProps) {
         </>
       )}
       <Select.Root value={locale} size="2" onValueChange={selectLocale}>
-        <Select.Trigger\n          id={selectId}\n          variant={compact ? "ghost" : "soft"}\n          aria-label={t("labels.language")}\n        >
+        <Select.Trigger
+          id={selectId}
+          variant={compact ? "ghost" : "soft"}
+          aria-label={t("labels.language")}
+        >
           {compact ? (
             <Flex align="center" gap="2">
               <GlobeIcon aria-hidden />
