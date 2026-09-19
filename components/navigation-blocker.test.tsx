@@ -13,6 +13,8 @@ import {
 } from "@/components/navigation-blocker";
 import { englishMessages } from "@/i18n/messages";
 
+const HOW_IT_WORKS = "How it works";
+
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
 }));
@@ -20,15 +22,15 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/i18n/navigation", () => ({
   Link: ({
     children,
+    href,
     onNavigate,
-    ...props
   }: {
     children: ReactNode;
     href: string;
     onNavigate?: (event: { preventDefault: () => void }) => void;
   }) => (
     <a
-      {...props}
+      href={href}
       onClick={(event) => {
         onNavigate?.({ preventDefault: () => event.preventDefault() });
       }}
@@ -84,9 +86,9 @@ describe("NavigationBlockerProvider", () => {
 
   it("continues guarded navigation only after discard", async () => {
     const user = userEvent.setup();
-    renderBlocker(<GuardedLink href="/how-it-works">How it works</GuardedLink>);
+    renderBlocker(<GuardedLink href="/how-it-works">{HOW_IT_WORKS}</GuardedLink>);
 
-    await user.click(screen.getByRole("link", { name: "How it works" }));
+    await user.click(screen.getByRole("link", { name: HOW_IT_WORKS }));
 
     expect(
       screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),

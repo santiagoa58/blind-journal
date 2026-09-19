@@ -91,7 +91,7 @@ describe("JournalContent", () => {
 
     const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
     const secondEntryOption = within(navigation).getByRole("radio", {
-      name: "Open " + secondEntry.title,
+      name: `Open ${secondEntry.title}`,
     });
     await userEventController.click(secondEntryOption);
 
