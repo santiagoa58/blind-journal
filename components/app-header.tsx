@@ -21,6 +21,8 @@ function HeaderBrand() {
 export function AppHeader() {
   const t = useTranslations("common.navigation");
   const pathname = usePathname();
+  const journalActive =
+    pathname === "/" || pathname === "/sign-up" || pathname.startsWith("/journal");
 
   return (
     <>
@@ -29,14 +31,14 @@ export function AppHeader() {
           <Container size="4" px={{ initial: "4", sm: "6" }}>
             <Flex align="center" justify="between" gap="3">
               <Button asChild size="2" variant="ghost" color="gray">
-                <GuardedLink href="/" aria-label={t("homeLabel")}>
+                <GuardedLink href="/journal" aria-label={t("brandLabel")}>
                   <HeaderBrand />
                 </GuardedLink>
               </Button>
 
               <Flex align="center" gap={{ initial: "2", sm: "3" }} flexShrink="0">
                 <TabNav.Root size={{ initial: "1", sm: "2" }} aria-label={t("label")}>
-                  <TabNav.Link asChild active={pathname === "/journal"}>
+                  <TabNav.Link asChild active={journalActive}>
                     <GuardedLink href="/journal">{t("journal")}</GuardedLink>
                   </TabNav.Link>
                   <TabNav.Link asChild active={pathname === "/how-it-works"}>

@@ -11,9 +11,9 @@
     "loading": "Cargando…"
   },
   "navigation": {
-    "homeLabel": "Inicio de Blind Journal",
     "label": "Navegación principal",
     "howItWorks": "Cómo funciona",
-    "journal": "Diario"
+    "journal": "Diario",
+    "brandLabel": "Blind Journal"
   }
 }

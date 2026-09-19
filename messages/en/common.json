@@ -11,9 +11,9 @@
     "loading": "Loading…"
   },
   "navigation": {
-    "homeLabel": "Blind Journal home",
     "label": "Primary navigation",
     "howItWorks": "How it works",
-    "journal": "Journal"
+    "journal": "Journal",
+    "brandLabel": "Blind Journal"
   }
 }
