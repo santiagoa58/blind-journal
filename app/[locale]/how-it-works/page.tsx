@@ -87,7 +87,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
             <Box asChild m="0" minWidth="0" width="100%">
               <figure>
                 <Image
-                  className={styles.figureImage}
+                  className={styles["figureImage"]}
                   src={localEncryptionFlow}
                   alt={t("figures.bigPictureAlt")}
                   sizes="(min-width: 1024px) 58vw, 100vw"
