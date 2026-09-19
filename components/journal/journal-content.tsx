@@ -27,6 +27,7 @@ type JournalContentProps = {
 
 type PendingIntent =
   | { type: "create" }
+  | { type: "how-it-works" }
   | { type: "locale"; locale: Locale }
   | { type: "logout" }
   | { type: "select"; entryId: string };
@@ -63,6 +64,8 @@ export function JournalContent({
         setDraftDirty(true);
       } else if (intent.type === "locale") {
         router.replace(pathname, { locale: intent.locale });
+      } else if (intent.type === "how-it-works") {
+        router.push("/how-it-works");
       } else {
         signOut();
       }
@@ -83,6 +86,7 @@ export function JournalContent({
   }
 
   const requestCreate = () => requestIntent({ type: "create" });
+  const requestHowItWorks = () => requestIntent({ type: "how-it-works" });
   const requestLocaleChange = (nextLocale: Locale) =>
     requestIntent({ type: "locale", locale: nextLocale });
   const requestSignOut = () => requestIntent({ type: "logout" });
@@ -140,6 +144,7 @@ export function JournalContent({
         loadingMoreEntries={loadingMoreEntries}
         loadMoreEntries={loadMoreEntries}
         onCreateEntry={requestCreate}
+        onHowItWorks={requestHowItWorks}
         onLocaleChange={requestLocaleChange}
         onSelectEntry={requestSelection}
         onSignOut={requestSignOut}
@@ -158,6 +163,7 @@ export function JournalContent({
               loadMoreEntries={loadMoreEntries}
               onCollapse={() => setDesktopSidebarOpen(false)}
               onCreateEntry={requestCreate}
+              onHowItWorks={requestHowItWorks}
               onLocaleChange={requestLocaleChange}
               onDeleteEntry={setEntryPendingDeletion}
               onSelectEntry={requestSelection}

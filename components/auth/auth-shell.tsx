@@ -1,9 +1,10 @@
 import { LockClosedIcon } from "@radix-ui/react-icons";
-import { Box, Callout, Card, Container, Flex, Grid, Section, Text } from "@radix-ui/themes";
+import { Box, Button, Callout, Card, Container, Flex, Grid, Section, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { LanguageSelector } from "@/components/language-selector";
+import { Link } from "@/i18n/navigation";
 
 type AuthShellProps = PropsWithChildren;
 
@@ -17,11 +18,15 @@ function Brand() {
 }
 export function AuthShell({ children }: AuthShellProps) {
   const t = useTranslations("auth");
+  const tHowItWorks = useTranslations("how-it-works");
 
   return (
     <Section size={{ initial: "2", md: "3" }} minHeight="100dvh">
       <Container size="4" px={{ initial: "4", sm: "6" }}>
-        <Flex justify="end" mb={{ initial: "4", md: "5" }}>
+        <Flex justify="end" align="center" gap="3" mb={{ initial: "4", md: "5" }}>
+          <Button asChild size="2" variant="ghost" color="gray">
+            <Link href="/how-it-works">{tHowItWorks("navigation.howItWorks")}</Link>
+          </Button>
           <LanguageSelector />
         </Flex>
         <Grid

@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "title": "How it works",
+    "description": "How Blind Journal works."
+  },
+  "navigation": {
+    "howItWorks": "How it works",
+    "openJournal": "Open journal",
+    "technicalDocumentation": "View technical documentation"
+  },
+  "hero": {
+    "eyebrow": "How it works",
+    "title": "How Blind Journal protects your writing"
+  },
+  "sections": {
+    "bigPicture": {
+      "eyebrow": "The big picture",
+      "title": "Where does my journal get encrypted?"
+    },
+    "authentication": {
+      "eyebrow": "Authentication",
+      "title": "How can the server sign me in without being able to read my journal?"
+    },
+    "saving": {
+      "eyebrow": "Saving",
+      "title": "What happens when I press Save?"
+    },
+    "visibility": {
+      "eyebrow": "Visibility",
+      "title": "What can the server actually see?",
+      "observableTitle": "The server can see",
+      "privateTitle": "The server does not receive"
+    },
+    "zeroKnowledge": {
+      "eyebrow": "Zero knowledge",
+      "title": "What does zero knowledge mean here?"
+    },
+    "architecture": {
+      "eyebrow": "Architecture",
+      "title": "How does the whole system fit together?"
+    },
+    "technicalDepth": {
+      "eyebrow": "Technical depth",
+      "title": "Built from established cryptographic primitives"
+    },
+    "closing": {
+      "title": "Explore the implementation"
+    }
+  },
+  "figures": {
+    "bigPicture": "Browser and server security-boundary figure",
+    "authentication": "Authentication and decryption key-purpose figure",
+    "saving": "Encrypted journal save-flow figure",
+    "architecture": "Blind Journal architecture figure"
+  },
+  "structure": {
+    "contentPlaceholder": "Content will be added in the next phase.",
+    "figurePlaceholder": "Educational figure",
+    "listPlaceholder": "Structured content will be added in the next phase.",
+    "calloutPlaceholder": "Clarification content will be added in the next phase."
+  }
+}

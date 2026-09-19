@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "title": "Cómo funciona",
+    "description": "Cómo funciona Blind Journal."
+  },
+  "navigation": {
+    "howItWorks": "Cómo funciona",
+    "openJournal": "Abrir diario",
+    "technicalDocumentation": "Ver documentación técnica"
+  },
+  "hero": {
+    "eyebrow": "Cómo funciona",
+    "title": "Cómo Blind Journal protege lo que escribes"
+  },
+  "sections": {
+    "bigPicture": {
+      "eyebrow": "La idea general",
+      "title": "¿Dónde se cifra mi diario?"
+    },
+    "authentication": {
+      "eyebrow": "Autenticación",
+      "title": "¿Cómo puede el servidor iniciar mi sesión sin poder leer mi diario?"
+    },
+    "saving": {
+      "eyebrow": "Guardado",
+      "title": "¿Qué ocurre cuando presiono Guardar?"
+    },
+    "visibility": {
+      "eyebrow": "Visibilidad",
+      "title": "¿Qué puede ver realmente el servidor?",
+      "observableTitle": "El servidor puede ver",
+      "privateTitle": "El servidor no recibe"
+    },
+    "zeroKnowledge": {
+      "eyebrow": "Conocimiento cero",
+      "title": "¿Qué significa conocimiento cero aquí?"
+    },
+    "architecture": {
+      "eyebrow": "Arquitectura",
+      "title": "¿Cómo encaja todo el sistema?"
+    },
+    "technicalDepth": {
+      "eyebrow": "Detalle técnico",
+      "title": "Construido con primitivas criptográficas establecidas"
+    },
+    "closing": {
+      "title": "Explora la implementación"
+    }
+  },
+  "figures": {
+    "bigPicture": "Figura del límite de seguridad entre navegador y servidor",
+    "authentication": "Figura de los propósitos de las claves de autenticación y descifrado",
+    "saving": "Figura del flujo de guardado cifrado del diario",
+    "architecture": "Figura de la arquitectura de Blind Journal"
+  },
+  "structure": {
+    "contentPlaceholder": "El contenido se añadirá en la siguiente fase.",
+    "figurePlaceholder": "Figura educativa",
+    "listPlaceholder": "El contenido estructurado se añadirá en la siguiente fase.",
+    "calloutPlaceholder": "La aclaración se añadirá en la siguiente fase."
+  }
+}

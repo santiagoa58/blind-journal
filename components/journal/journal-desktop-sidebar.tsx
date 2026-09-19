@@ -18,6 +18,7 @@ type JournalDesktopSidebarProps = {
   loadMoreEntries: () => void;
   onCollapse: () => void;
   onCreateEntry: () => void;
+  onHowItWorks: () => void;
   onLocaleChange: (locale: Locale) => void;
   onDeleteEntry: (entry: JournalEntry) => void;
   onSelectEntry: (entryId: string) => void;
@@ -42,6 +43,7 @@ export function JournalDesktopSidebar({
   loadMoreEntries,
   onCollapse,
   onCreateEntry,
+  onHowItWorks,
   onLocaleChange,
   onDeleteEntry,
   onSelectEntry,
@@ -98,6 +100,7 @@ export function JournalDesktopSidebar({
           <Separator size="4" mb="3" />
           <JournalAccountMenu
             currentUser={currentUser}
+            onHowItWorks={onHowItWorks}
             onLocaleChange={onLocaleChange}
             onSignOut={onSignOut}
           />
