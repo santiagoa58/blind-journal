@@ -81,7 +81,7 @@ export function JournalContent({
   }
 
   return (
-    <Flex direction="column" height="100%" minHeight="0" overflow="hidden">
+    <Flex direction="column" flexGrow="1" minHeight="0" overflow="hidden">
       <VisuallyHidden asChild>
         <Heading as="h1">{tEntries("title")}</Heading>
       </VisuallyHidden>
