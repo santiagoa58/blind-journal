@@ -12,7 +12,7 @@
     "check": "pnpm biome:check && pnpm i18n:check && pnpm typecheck && pnpm test",
     "check:fix": "biome check --write .",
     "i18n:check": "eloqnt lint --strict",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:database": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.database.config.ts",
