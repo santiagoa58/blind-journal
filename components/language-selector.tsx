@@ -7,7 +7,11 @@ import { useId } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { LOCALE_NAMES, routing } from "@/i18n/routing";
 
-type LanguageSelectorProps = {\n  compact?: boolean;\n};\n\nexport function LanguageSelector({ compact = false }: LanguageSelectorProps) {
+type LanguageSelectorProps = {
+  compact?: boolean;
+};
+
+export function LanguageSelector({ compact = false }: LanguageSelectorProps) {
   const t = useTranslations("common");
   const locale = useLocale();
   const pathname = usePathname();

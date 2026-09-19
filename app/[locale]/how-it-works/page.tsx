@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { EyeOpenIcon, LockClosedIcon } from "@radix-ui/react-icons";
 import {
   Avatar,
@@ -14,6 +13,7 @@ import {
   Separator,
   Text,
 } from "@radix-ui/themes";
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BrandMark } from "@/components/brand-mark";
 import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
