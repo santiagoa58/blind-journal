@@ -1,10 +1,10 @@
 {
   "metadata": {
     "title": "How it works",
-    "description": "How Blind Journal works."
+    "description": "Learn how Blind Journal encrypts journal content in your browser, separates authentication from decryption, and stores only protected records on the server."
   },
   "navigation": {
-    "technicalDocumentation": "View technical documentation"
+    "technicalDocumentation": "View source on GitHub"
   },
   "hero": {
     "eyebrow": "How it works",
@@ -20,47 +20,65 @@
     },
     "authentication": {
       "eyebrow": "Authentication",
-      "title": "How can the server sign me in without being able to read my journal?"
+      "title": "How can the server sign me in without being able to read my journal?",
+      "body": "When you enter your passphrase, Blind Journal processes it in your browser and derives separate key material for different purposes. One branch is used to authenticate with the server. Another stays in the browser and is used to unlock the keys that protect your journal.",
+      "separationBody": "The server receives the authentication key it needs to verify your sign-in, but not your passphrase or the key-encryption material that unlocks journal entry keys. Because those purposes are derived separately, the authentication key cannot be used to decrypt journal content."
     },
     "saving": {
       "eyebrow": "Saving",
-      "title": "What happens when I press Save?"
+      "title": "What happens when I press Save?",
+      "body": "When you press Save, the browser creates a fresh random key for that entry and uses it to encrypt the title and body before anything is sent.",
+      "storageBody": "That entry key is then protected with key-encryption material that remains in the browser. The server receives the encrypted entry, the protected entry key, and only the metadata needed to store and retrieve the record."
     },
     "visibility": {
       "eyebrow": "Visibility",
       "title": "What can the server actually see?",
       "observableTitle": "The server can see",
-      "privateTitle": "The server does not receive"
+      "privateTitle": "The server does not receive",
+      "body": "Encryption protects the contents of your journal, not every piece of metadata around it. The server still needs enough information to run the service, but that does not include plaintext journal content or usable journal-decryption keys.",
+      "observable": {
+        "identity": "Account identifiers such as your normalized username, display name, and opaque user ID.",
+        "authentication": "Key-schedule metadata, authentication-verifier material, and hashed session records.",
+        "records": "Entry IDs, creation and update times, ciphertext sizes, and record counts.",
+        "operations": "Request timing, IP-derived operational data, and access patterns.",
+        "signIn": "During account creation and sign-in, the derived authentication key used to verify your credentials."
+      },
+      "private": {
+        "passphrase": "Your master passphrase.",
+        "derivedKeys": "The password-derived master key or key-encryption key.",
+        "entryKeys": "Any unwrapped journal-entry key.",
+        "plaintext": "Plaintext journal titles or bodies."
+      }
     },
     "zeroKnowledge": {
       "eyebrow": "Zero knowledge",
-      "title": "What does zero knowledge mean here?"
+      "title": "What does zero knowledge mean here?",
+      "body": "In Blind Journal, zero knowledge means the server does not have the key material required to decrypt your journal. It can authenticate you, authorize requests, and store encrypted records without receiving plaintext journal content.",
+      "limitsBody": "It does not mean the server learns nothing about you. Account identifiers, record metadata, request timing, and access patterns remain observable. It also does not refer to mathematical zero-knowledge proof systems.",
+      "browserBoundary": "An unlocked journal is readable in your browser by design. Code already running in the same origin could potentially access that plaintext, so XSS prevention, dependency control, and a restrictive Content Security Policy are part of the security boundary."
     },
     "architecture": {
       "eyebrow": "Architecture",
-      "title": "How does the whole system fit together?"
+      "title": "How does the whole system fit together?",
+      "body": "The browser owns the sensitive cryptographic work: it derives keys, encrypts outgoing journal content, and decrypts entries after they are returned. The API carries authentication and session data plus protected journal records across the network.",
+      "serverBody": "The server validates and authorizes requests, manages sessions, and stores encrypted envelopes and observable metadata in the database. HTTPS protects the connection in transit; client-side encryption is what keeps journal content unreadable to the server itself."
     },
     "technicalDepth": {
       "eyebrow": "Technical depth",
-      "title": "Built from established cryptographic primitives"
+      "title": "Built from established cryptographic primitives",
+      "derivation": "Blind Journal derives a short-lived 256-bit master key with Argon2id, then uses HKDF-SHA-256 with domain separation to derive independent authentication and AES-KW key-encryption material.",
+      "entries": "Each journal entry gets a random 256-bit AES-GCM key and a fresh 96-bit IV. The entry key is wrapped before storage, and authenticated additional data binds the encrypted envelope to its protocol version, user, and entry.",
+      "implementation": "Cryptographic operations use libsodium and the Web Crypto API rather than custom algorithms. The protocol is versioned so parameters can evolve without guessing how existing records were produced."
     },
     "closing": {
-      "title": "Explore the implementation"
+      "title": "Explore the implementation",
+      "body": "Blind Journal is open source. Review the implementation, protocol details, and security assumptions in the repository."
     }
   },
   "figures": {
-    "bigPicture": "Browser and server security-boundary figure",
-    "authentication": "Authentication and decryption key-purpose figure",
-    "saving": "Encrypted journal save-flow figure",
-    "architecture": "Blind Journal architecture figure",
     "bigPictureAlt": "A readable journal and key remain in the browser, the journal is encrypted locally, and encrypted data is stored on the server.",
     "authenticationAlt": "A passphrase is processed in the browser into separate authentication and journal-unlock paths; authentication is sent to the server while journal unlock stays in the browser.",
     "savingAlt": "A journal entry and its entry key are protected locally, producing an encrypted entry and a protected key before the server stores them.",
     "architectureAlt": "Diagram showing journal content encrypted in the browser, sent over HTTPS to the server, and stored as encrypted data in the database."
-  },
-  "structure": {
-    "contentPlaceholder": "Content will be added in the next phase.",
-    "listPlaceholder": "Structured content will be added in the next phase.",
-    "calloutPlaceholder": "Clarification content will be added in the next phase."
   }
 }
