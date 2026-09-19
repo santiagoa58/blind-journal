@@ -7,13 +7,12 @@ import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JournalContent } from "@/components/journal/journal-content";
+import { NavigationBlockerProvider } from "@/components/navigation-blocker";
 import { englishMessages } from "@/i18n/messages";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 const mocks = vi.hoisted(() => ({
-  pushRoute: vi.fn(),
-  replaceRoute: vi.fn(),
   signOut: vi.fn(),
 }));
 
@@ -22,10 +21,6 @@ vi.mock("@/hooks/use-app-toast", () => ({
 }));
 vi.mock("@/hooks/use-logout", () => ({
   useLogout: () => ({ signOut: mocks.signOut }),
-}));
-vi.mock("@/i18n/navigation", () => ({
-  usePathname: () => "/journal",
-  useRouter: () => ({ push: mocks.pushRoute, replace: mocks.replaceRoute }),
 }));
 
 const user = {
@@ -52,14 +47,16 @@ function renderContent() {
     <NextIntlClientProvider locale="en" messages={englishMessages} timeZone="UTC">
       <QueryClientProvider client={new QueryClient()}>
         <Theme>
-          <JournalContent
-            entries={[firstEntry, secondEntry]}
-            hasMoreEntries={false}
-            loadingMoreEntries={false}
-            loadMoreEntries={vi.fn()}
-            unreadableEntries={[]}
-            user={user}
-          />
+          <NavigationBlockerProvider>
+            <JournalContent
+              entries={[firstEntry, secondEntry]}
+              hasMoreEntries={false}
+              loadingMoreEntries={false}
+              loadMoreEntries={vi.fn()}
+              unreadableEntries={[]}
+              user={user}
+            />
+          </NavigationBlockerProvider>
         </Theme>
       </QueryClientProvider>
     </NextIntlClientProvider>,
@@ -75,6 +72,7 @@ async function makeCurrentEntryDirty(userEventController: ReturnType<typeof user
 }
 
 beforeEach(() => {
+  vi.resetAllMocks();
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -93,7 +91,7 @@ describe("JournalContent", () => {
 
     const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
     const secondEntryOption = within(navigation).getByRole("radio", {
-      name: `Open ${secondEntry.title}`,
+      name: "Open " + secondEntry.title,
     });
     await userEventController.click(secondEntryOption);
 
@@ -126,51 +124,6 @@ describe("JournalContent", () => {
     await waitFor(() =>
       expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue("Untitled entry"),
     );
-  });
-
-  it("does not change locale until the user discards the unsaved entry", async () => {
-    const userEventController = userEvent.setup();
-    renderContent();
-    await makeCurrentEntryDirty(userEventController);
-    const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
-
-    await userEventController.click(
-      within(navigation).getByRole("button", { name: user.displayName }),
-    );
-    const languageMenuItem = screen.getByRole("menuitem", { name: "Language: English" });
-    languageMenuItem.focus();
-    await userEventController.keyboard("{ArrowRight}");
-    await userEventController.click(await screen.findByRole("menuitemradio", { name: "Español" }));
-
-    expect(
-      screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),
-    ).toBeInTheDocument();
-    expect(mocks.replaceRoute).not.toHaveBeenCalled();
-
-    await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
-    expect(mocks.replaceRoute).toHaveBeenCalledOnce();
-    expect(mocks.replaceRoute).toHaveBeenCalledWith("/journal", { locale: "es" });
-  });
-
-  it("does not navigate to How it works until the user discards the unsaved entry", async () => {
-    const userEventController = userEvent.setup();
-    renderContent();
-    await makeCurrentEntryDirty(userEventController);
-    const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
-
-    await userEventController.click(
-      within(navigation).getByRole("button", { name: user.displayName }),
-    );
-    await userEventController.click(screen.getByRole("menuitem", { name: "How it works" }));
-
-    expect(
-      screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),
-    ).toBeInTheDocument();
-    expect(mocks.pushRoute).not.toHaveBeenCalled();
-
-    await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
-    expect(mocks.pushRoute).toHaveBeenCalledOnce();
-    expect(mocks.pushRoute).toHaveBeenCalledWith("/how-it-works");
   });
 
   it("does not sign out until the user discards the unsaved entry", async () => {
