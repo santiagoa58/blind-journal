@@ -14,6 +14,7 @@
   "navigation": {
     "homeLabel": "Blind Journal home",
     "label": "Primary navigation",
-    "howItWorks": "How it works"
+    "howItWorks": "How it works",
+    "journal": "Journal"
   }
 }

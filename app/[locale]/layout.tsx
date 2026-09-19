@@ -6,7 +6,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/app-header";
 import { AppLockBoundary } from "@/components/auth/app-lock-boundary";
-import { DocumentLocale } from "@/components/document-locale";
+import { DocumentLocale } from "@/components/document-locale";\nimport { NavigationBlockerProvider } from "@/components/navigation-blocker";
 import { routing } from "@/i18n/routing";
 import { Providers } from "../client-providers";
 
@@ -55,12 +55,14 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <NextIntlClientProvider>
       <DocumentLocale locale={locale} />
       <Providers nonce={nonce}>
-        <Flex direction="column" minHeight="100dvh">
-          <AppHeader />
-          <Flex direction="column" flexGrow="1" minHeight="0">
-            <AppLockBoundary>{children}</AppLockBoundary>
+        <NavigationBlockerProvider>
+          <Flex direction="column" height="100dvh" overflow="hidden">
+            <AppHeader />
+            <Flex direction="column" flexGrow="1" minHeight="0" overflow="hidden">
+              <AppLockBoundary>{children}</AppLockBoundary>
+            </Flex>
           </Flex>
-        </Flex>
+        </NavigationBlockerProvider>
       </Providers>
     </NextIntlClientProvider>
   );
