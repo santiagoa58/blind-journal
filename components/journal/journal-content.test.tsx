@@ -12,6 +12,7 @@ import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 const mocks = vi.hoisted(() => ({
+  pushRoute: vi.fn(),
   replaceRoute: vi.fn(),
   signOut: vi.fn(),
 }));
@@ -24,7 +25,7 @@ vi.mock("@/hooks/use-logout", () => ({
 }));
 vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/journal",
-  useRouter: () => ({ replace: mocks.replaceRoute }),
+  useRouter: () => ({ push: mocks.pushRoute, replace: mocks.replaceRoute }),
 }));
 
 const user = {
@@ -149,6 +150,27 @@ describe("JournalContent", () => {
     await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
     expect(mocks.replaceRoute).toHaveBeenCalledOnce();
     expect(mocks.replaceRoute).toHaveBeenCalledWith("/journal", { locale: "es" });
+  });
+
+  it("does not navigate to How it works until the user discards the unsaved entry", async () => {
+    const userEventController = userEvent.setup();
+    renderContent();
+    await makeCurrentEntryDirty(userEventController);
+    const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
+
+    await userEventController.click(
+      within(navigation).getByRole("button", { name: user.displayName }),
+    );
+    await userEventController.click(screen.getByRole("menuitem", { name: "How it works" }));
+
+    expect(
+      screen.getByRole("alertdialog", { name: "Discard unsaved changes?" }),
+    ).toBeInTheDocument();
+    expect(mocks.pushRoute).not.toHaveBeenCalled();
+
+    await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
+    expect(mocks.pushRoute).toHaveBeenCalledOnce();
+    expect(mocks.pushRoute).toHaveBeenCalledWith("/how-it-works");
   });
 
   it("does not sign out until the user discards the unsaved entry", async () => {
