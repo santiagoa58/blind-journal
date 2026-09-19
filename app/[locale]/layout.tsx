@@ -6,7 +6,8 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/app-header";
 import { AppLockBoundary } from "@/components/auth/app-lock-boundary";
-import { DocumentLocale } from "@/components/document-locale";\nimport { NavigationBlockerProvider } from "@/components/navigation-blocker";
+import { DocumentLocale } from "@/components/document-locale";
+import { NavigationBlockerProvider } from "@/components/navigation-blocker";
 import { routing } from "@/i18n/routing";
 import { Providers } from "../client-providers";
 
