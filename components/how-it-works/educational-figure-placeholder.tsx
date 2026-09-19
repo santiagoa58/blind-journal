@@ -21,12 +21,7 @@ export function EducationalFigurePlaceholder({
           minHeight={{ initial: "11rem", md: "16rem" }}
           p={{ initial: "4", md: "6" }}
         >
-          <Avatar
-            size="3"
-            variant="soft"
-            color="gray"
-            fallback={<ImageIcon aria-hidden />}
-          />
+          <Avatar size="3" variant="soft" color="gray" fallback={<ImageIcon aria-hidden />} />
           <Text size="2" weight="medium" color="gray" align="center">
             {placeholderLabel}
           </Text>
