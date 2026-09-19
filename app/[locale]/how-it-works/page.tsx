@@ -17,9 +17,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import authenticationFlow from "@/assets/how-it-works/authentication-flow.webp";
-import localEncryptionFlow from "@/assets/how-it-works/local-encryption-flow.webp";
 import journalSaveFlow from "@/assets/how-it-works/journal-save-flow.webp";
-import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
+import localEncryptionFlow from "@/assets/how-it-works/local-encryption-flow.webp";
+import systemArchitecture from "@/assets/how-it-works/system-architecture.webp";
 import type { Locale } from "@/i18n/routing";
 import styles from "./how-it-works.module.css";
 
@@ -272,10 +272,19 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Text>
               </Flex>
             </Container>
-            <EducationalFigurePlaceholder
-              placeholderLabel={t("structure.figurePlaceholder")}
-              caption={t("figures.architecture")}
-            />
+            <Box asChild m="0" minWidth="0" width="100%">
+              <figure>
+                <Image
+                  className={styles["figureImage"]}
+                  src={systemArchitecture}
+                  alt={t("figures.architectureAlt")}
+                  sizes="(min-width: 1280px) 1200px, 100vw"
+                />
+                <Text asChild size="2" color="gray" mt="2" align="center">
+                  <figcaption>{t("figures.architecture")}</figcaption>
+                </Text>
+              </figure>
+            </Box>
           </Flex>
         </Container>
       </Section>

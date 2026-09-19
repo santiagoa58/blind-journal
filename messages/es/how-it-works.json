@@ -52,11 +52,11 @@
     "architecture": "Figura de la arquitectura de Blind Journal",
     "bigPictureAlt": "El diario legible y la clave permanecen en el navegador, el diario se cifra localmente y los datos cifrados se almacenan en el servidor.",
     "authenticationAlt": "La frase de contraseña se procesa en el navegador en rutas separadas de autenticación y desbloqueo del diario; la autenticación se envía al servidor mientras el desbloqueo del diario permanece en el navegador.",
-    "savingAlt": "Una entrada del diario y su clave se protegen localmente, produciendo una entrada cifrada y una clave protegida antes de almacenarse en el servidor."
+    "savingAlt": "Una entrada del diario y su clave se protegen localmente, produciendo una entrada cifrada y una clave protegida antes de almacenarse en el servidor.",
+    "architectureAlt": "Diagrama que muestra el contenido del diario cifrado en el navegador, enviado por HTTPS al servidor y almacenado como datos cifrados en la base de datos."
   },
   "structure": {
     "contentPlaceholder": "El contenido se añadirá en la siguiente fase.",
-    "figurePlaceholder": "Figura educativa",
     "listPlaceholder": "El contenido estructurado se añadirá en la siguiente fase.",
     "calloutPlaceholder": "La aclaración se añadirá en la siguiente fase."
   }
