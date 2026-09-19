@@ -18,14 +18,12 @@ function HeaderBrand() {
 }
 
 export function AppHeader() {
-  const t = useTranslations("how-it-works.navigation");
+  const t = useTranslations("common.navigation");
   const pathname = usePathname();
 
   if (pathname.startsWith("/journal")) {
     return null;
   }
-
-  const isHowItWorks = pathname === "/how-it-works";
 
   return (
     <>
@@ -39,17 +37,11 @@ export function AppHeader() {
                 </Link>
               </Button>
 
-              <Flex asChild align="center" gap="2" flexShrink="0">
-                <nav aria-label={t("pageNavigationLabel")}>
-                  {isHowItWorks ? (
-                    <Button asChild size="2">
-                      <Link href="/journal">{t("openJournal")}</Link>
-                    </Button>
-                  ) : (
-                    <Button asChild size="2" variant="ghost" color="gray">
-                      <Link href="/how-it-works">{t("howItWorks")}</Link>
-                    </Button>
-                  )}
+              <Flex asChild align="center" gap="1" flexShrink="0">
+                <nav aria-label={t("label")}>
+                  <Button asChild size="2" variant="ghost" color="gray">
+                    <Link href="/how-it-works">{t("howItWorks")}</Link>
+                  </Button>
                   <LanguageSelector compact />
                 </nav>
               </Flex>

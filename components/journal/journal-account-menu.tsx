@@ -80,7 +80,7 @@ export function JournalAccountMenu({
         </DropdownMenu.Sub>
         <DropdownMenu.Item onSelect={onHowItWorks}>
           <InfoCircledIcon aria-hidden />
-          {tHowItWorks("navigation.howItWorks")}
+          {tCommon("navigation.howItWorks")}
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item color="red" onSelect={onSignOut}>

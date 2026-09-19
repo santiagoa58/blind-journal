@@ -10,5 +10,10 @@
     "currentLanguage": "Language: {language}",
     "language": "Language",
     "loading": "Loading…"
+  },
+  "navigation": {
+    "homeLabel": "Blind Journal home",
+    "label": "Primary navigation",
+    "howItWorks": "How it works"
   }
-}
+}\n

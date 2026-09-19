@@ -4,11 +4,7 @@
     "description": "Cómo funciona Blind Journal."
   },
   "navigation": {
-    "howItWorks": "Cómo funciona",
-    "openJournal": "Abrir diario",
-    "technicalDocumentation": "Ver documentación técnica",
-    "homeLabel": "Inicio de Blind Journal",
-    "pageNavigationLabel": "Navegación de Cómo funciona"
+    "technicalDocumentation": "Ver documentación técnica"
   },
   "hero": {
     "eyebrow": "Cómo funciona",
@@ -61,4 +57,4 @@
     "listPlaceholder": "El contenido estructurado se añadirá en la siguiente fase.",
     "calloutPlaceholder": "La aclaración se añadirá en la siguiente fase."
   }
-}
+}\n

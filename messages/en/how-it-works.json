@@ -4,11 +4,7 @@
     "description": "How Blind Journal works."
   },
   "navigation": {
-    "howItWorks": "How it works",
-    "openJournal": "Open journal",
-    "technicalDocumentation": "View technical documentation",
-    "homeLabel": "Blind Journal home",
-    "pageNavigationLabel": "How it works navigation"
+    "technicalDocumentation": "View technical documentation"
   },
   "hero": {
     "eyebrow": "How it works",
@@ -61,4 +57,4 @@
     "listPlaceholder": "Structured content will be added in the next phase.",
     "calloutPlaceholder": "Clarification content will be added in the next phase."
   }
-}
+}\n
