@@ -85,9 +85,15 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
               <Text as="p" size="3" color="gray" wrap="pretty">
                 {t("sections.bigPicture.body")}
               </Text>
-              <Text as="p" size="3" color="gray" wrap="pretty">
-                {t("sections.bigPicture.httpsBody")}
-              </Text>
+              <Callout.Root color="iris" variant="surface">
+                <Callout.Icon>
+                  <LockClosedIcon aria-hidden />
+                </Callout.Icon>
+                <Callout.Text>
+                  <strong>{t("sections.bigPicture.httpsLabel")}</strong>{" "}
+                  {t("sections.bigPicture.httpsBody")}
+                </Callout.Text>
+              </Callout.Root>
             </Flex>
             <Box asChild m="0" minWidth="0" width="100%">
               <figure>
@@ -144,19 +150,23 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
         <Container size="4" px={{ initial: "4", sm: "6" }}>
           <Flex direction="column" gap={{ initial: "5", md: "6" }}>
             <Container size="2">
-              <Flex direction="column" align="center" gap="3">
-                <Text size="2" weight="medium" color="iris">
-                  {t("sections.saving.eyebrow")}
-                </Text>
-                <Heading id="how-it-works-saving" as="h2" size="7" align="center">
-                  {t("sections.saving.title")}
-                </Heading>
-                <Text as="p" size="3" color="gray" align="center" wrap="pretty">
-                  {t("sections.saving.body")}
-                </Text>
-                <Text as="p" size="3" color="gray" align="center" wrap="pretty">
-                  {t("sections.saving.storageBody")}
-                </Text>
+              <Flex direction="column" gap="4">
+                <Flex direction="column" align="center" gap="3">
+                  <Text size="2" weight="medium" color="iris">
+                    {t("sections.saving.eyebrow")}
+                  </Text>
+                  <Heading id="how-it-works-saving" as="h2" size="7" align="center">
+                    {t("sections.saving.title")}
+                  </Heading>
+                </Flex>
+                <Flex direction="column" gap="3">
+                  <Text as="p" size="3" color="gray" wrap="pretty">
+                    {t("sections.saving.body")}
+                  </Text>
+                  <Text as="p" size="3" color="gray" wrap="pretty">
+                    {t("sections.saving.storageBody")}
+                  </Text>
+                </Flex>
               </Flex>
             </Container>
             <Box
@@ -210,21 +220,24 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                     <Heading as="h3" size="5">
                       {t("sections.visibility.observableTitle")}
                     </Heading>
-                    <Flex asChild direction="column" gap="2" m="0" pl="4">
+                    <Flex asChild direction="column" gap="3" m="0" pl="4">
                       <ul>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.observable.identity")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
+                          <li>{t("sections.visibility.observable.derivation")}</li>
+                        </Text>
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.observable.authentication")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.observable.records")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.observable.operations")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.observable.signIn")}</li>
                         </Text>
                       </ul>
@@ -245,18 +258,21 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                     <Heading as="h3" size="5">
                       {t("sections.visibility.privateTitle")}
                     </Heading>
-                    <Flex asChild direction="column" gap="2" m="0" pl="4">
+                    <Flex asChild direction="column" gap="3" m="0" pl="4">
                       <ul>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.private.passphrase")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
-                          <li>{t("sections.visibility.private.derivedKeys")}</li>
+                        <Text asChild size="2" color="gray">
+                          <li>{t("sections.visibility.private.masterKey")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
+                          <li>{t("sections.visibility.private.keyEncryptionKey")}</li>
+                        </Text>
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.private.entryKeys")}</li>
                         </Text>
-                        <Text asChild size="3" color="gray">
+                        <Text asChild size="2" color="gray">
                           <li>{t("sections.visibility.private.plaintext")}</li>
                         </Text>
                       </ul>
@@ -288,7 +304,10 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
               <Callout.Icon>
                 <LockClosedIcon aria-hidden />
               </Callout.Icon>
-              <Callout.Text>{t("sections.zeroKnowledge.browserBoundary")}</Callout.Text>
+              <Callout.Text>
+                <strong>{t("sections.zeroKnowledge.browserBoundaryLabel")}</strong>{" "}
+                {t("sections.zeroKnowledge.browserBoundary")}
+              </Callout.Text>
             </Callout.Root>
           </Flex>
         </Container>
@@ -339,32 +358,57 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
       </Section>
 
       <Section size="2" aria-labelledby="how-it-works-technical-depth">
-        <Container size="3" px={{ initial: "4", sm: "6" }}>
-          <Grid
-            columns={{ initial: "1", md: "1fr 2fr" }}
-            gap={{ initial: "3", md: "7" }}
-            align="start"
-          >
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="medium" color="iris">
-                {t("sections.technicalDepth.eyebrow")}
-              </Text>
-              <Heading id="how-it-works-technical-depth" as="h2" size="6">
-                {t("sections.technicalDepth.title")}
-              </Heading>
-            </Flex>
-            <Flex direction="column" gap="3">
-              <Text as="p" size="3" color="gray" wrap="pretty">
-                {t("sections.technicalDepth.derivation")}
-              </Text>
-              <Text as="p" size="3" color="gray" wrap="pretty">
-                {t("sections.technicalDepth.entries")}
-              </Text>
-              <Text as="p" size="3" color="gray" wrap="pretty">
-                {t("sections.technicalDepth.implementation")}
-              </Text>
-            </Flex>
-          </Grid>
+        <Container size="4" px={{ initial: "4", sm: "6" }}>
+          <Flex direction="column" gap={{ initial: "5", md: "6" }}>
+            <Container size="2">
+              <Flex direction="column" align="center" gap="3">
+                <Text size="2" weight="medium" color="iris">
+                  {t("sections.technicalDepth.eyebrow")}
+                </Text>
+                <Heading id="how-it-works-technical-depth" as="h2" size="6" align="center">
+                  {t("sections.technicalDepth.title")}
+                </Heading>
+                <Text as="p" size="3" color="gray" align="center" wrap="pretty">
+                  {t("sections.technicalDepth.body")}
+                </Text>
+              </Flex>
+            </Container>
+
+            <Grid columns={{ initial: "1", md: "3" }} gap="4">
+              <Card size="3" variant="surface">
+                <Flex direction="column" gap="2">
+                  <Heading as="h3" size="4">
+                    {t("sections.technicalDepth.derivationTitle")}
+                  </Heading>
+                  <Text as="p" size="2" color="gray" wrap="pretty">
+                    {t("sections.technicalDepth.derivation")}
+                  </Text>
+                </Flex>
+              </Card>
+
+              <Card size="3" variant="surface">
+                <Flex direction="column" gap="2">
+                  <Heading as="h3" size="4">
+                    {t("sections.technicalDepth.entriesTitle")}
+                  </Heading>
+                  <Text as="p" size="2" color="gray" wrap="pretty">
+                    {t("sections.technicalDepth.entries")}
+                  </Text>
+                </Flex>
+              </Card>
+
+              <Card size="3" variant="surface">
+                <Flex direction="column" gap="2">
+                  <Heading as="h3" size="4">
+                    {t("sections.technicalDepth.protocolTitle")}
+                  </Heading>
+                  <Text as="p" size="2" color="gray" wrap="pretty">
+                    {t("sections.technicalDepth.protocol")}
+                  </Text>
+                </Flex>
+              </Card>
+            </Grid>
+          </Flex>
         </Container>
       </Section>
 
