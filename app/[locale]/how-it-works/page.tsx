@@ -16,6 +16,7 @@ import {
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import authenticationFlow from "@/assets/how-it-works/authentication-flow.webp";
 import localEncryptionFlow from "@/assets/how-it-works/local-encryption-flow.webp";
 import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
 import type { Locale } from "@/i18n/routing";
@@ -121,11 +122,18 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Text>
               </Flex>
             </Box>
-            <Box width={{ initial: "100%", md: "58%" }}>
-              <EducationalFigurePlaceholder
-                placeholderLabel={t("structure.figurePlaceholder")}
-                caption={t("figures.authentication")}
-              />
+            <Box asChild m="0" minWidth="0" width={{ initial: "100%", md: "58%" }}>
+              <figure>
+                <Image
+                  className={styles["figureImage"]}
+                  src={authenticationFlow}
+                  alt={t("figures.authenticationAlt")}
+                  sizes="(min-width: 1024px) 58vw, 100vw"
+                />
+                <Text asChild size="2" color="gray" mt="2" align="center">
+                  <figcaption>{t("figures.authentication")}</figcaption>
+                </Text>
+              </figure>
             </Box>
           </Flex>
         </Container>

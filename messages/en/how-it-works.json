@@ -50,7 +50,8 @@
     "authentication": "Authentication and decryption key-purpose figure",
     "saving": "Encrypted journal save-flow figure",
     "architecture": "Blind Journal architecture figure",
-    "bigPictureAlt": "A readable journal and key remain in the browser, the journal is encrypted locally, and encrypted data is stored on the server."
+    "bigPictureAlt": "A readable journal and key remain in the browser, the journal is encrypted locally, and encrypted data is stored on the server.",
+    "authenticationAlt": "A passphrase is processed in the browser into separate authentication and journal-unlock paths; authentication is sent to the server while journal unlock stays in the browser."
   },
   "structure": {
     "contentPlaceholder": "Content will be added in the next phase.",
