@@ -57,7 +57,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
             </Container>
             <Container size="2">
               <Text as="p" size="4" color="gray" align="center" wrap="pretty">
-                {t("structure.contentPlaceholder")}
+                {t("hero.body")}
               </Text>
             </Container>
           </Flex>
@@ -83,7 +83,10 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 {t("sections.bigPicture.title")}
               </Heading>
               <Text as="p" size="3" color="gray" wrap="pretty">
-                {t("structure.contentPlaceholder")}
+                {t("sections.bigPicture.body")}
+              </Text>
+              <Text as="p" size="3" color="gray" wrap="pretty">
+                {t("sections.bigPicture.httpsBody")}
               </Text>
             </Flex>
             <Box asChild m="0" minWidth="0" width="100%">

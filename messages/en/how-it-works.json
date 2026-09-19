@@ -8,12 +8,15 @@
   },
   "hero": {
     "eyebrow": "How it works",
-    "title": "How Blind Journal protects your writing"
+    "title": "How Blind Journal protects your writing",
+    "body": "Blind Journal is designed so your journal can be stored remotely without giving the server the keys needed to read it. This page walks through where encryption happens, how sign-in works, what gets stored, and what the server can and cannot see."
   },
   "sections": {
     "bigPicture": {
       "eyebrow": "The big picture",
-      "title": "Where does my journal get encrypted?"
+      "title": "Where does my journal get encrypted?",
+      "body": "Your journal is encrypted in your browser before it is sent to Blind Journal’s server. The readable version stays on your side of that boundary, while the server receives encrypted journal data instead.",
+      "httpsBody": "HTTPS protects the connection between your browser and the server, but it does not hide data from the server itself. Blind Journal encrypts your journal before it crosses that connection, so HTTPS carries encrypted journal data rather than the readable entry."
     },
     "authentication": {
       "eyebrow": "Authentication",

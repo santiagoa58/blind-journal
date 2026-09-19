@@ -8,12 +8,15 @@
   },
   "hero": {
     "eyebrow": "Cómo funciona",
-    "title": "Cómo Blind Journal protege lo que escribes"
+    "title": "Cómo Blind Journal protege lo que escribes",
+    "body": "Blind Journal está diseñado para que tu diario pueda almacenarse de forma remota sin darle al servidor las claves necesarias para leerlo. Esta página explica dónde ocurre el cifrado, cómo funciona el inicio de sesión, qué se almacena y qué puede y no puede ver el servidor."
   },
   "sections": {
     "bigPicture": {
       "eyebrow": "La idea general",
-      "title": "¿Dónde se cifra mi diario?"
+      "title": "¿Dónde se cifra mi diario?",
+      "body": "Tu diario se cifra en tu navegador antes de enviarse al servidor de Blind Journal. La versión legible permanece de tu lado de ese límite, mientras que el servidor recibe los datos cifrados del diario.",
+      "httpsBody": "HTTPS protege la conexión entre tu navegador y el servidor, pero no oculta los datos al propio servidor. Blind Journal cifra tu diario antes de que cruce esa conexión, de modo que HTTPS transporta datos cifrados del diario en lugar de la entrada legible."
     },
     "authentication": {
       "eyebrow": "Autenticación",
