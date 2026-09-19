@@ -6,7 +6,9 @@
   "navigation": {
     "howItWorks": "How it works",
     "openJournal": "Open journal",
-    "technicalDocumentation": "View technical documentation"
+    "technicalDocumentation": "View technical documentation",
+    "homeLabel": "Blind Journal home",
+    "pageNavigationLabel": "How it works navigation"
   },
   "hero": {
     "eyebrow": "How it works",
