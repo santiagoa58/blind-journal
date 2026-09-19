@@ -94,9 +94,6 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                   alt={t("figures.bigPictureAlt")}
                   sizes="(min-width: 1024px) 58vw, 100vw"
                 />
-                <Text asChild size="2" color="gray" mt="2" align="center">
-                  <figcaption>{t("figures.bigPicture")}</figcaption>
-                </Text>
               </figure>
             </Box>
           </Grid>
@@ -131,18 +128,15 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                   alt={t("figures.authenticationAlt")}
                   sizes="(min-width: 1024px) 58vw, 100vw"
                 />
-                <Text asChild size="2" color="gray" mt="2" align="center">
-                  <figcaption>{t("figures.authentication")}</figcaption>
-                </Text>
               </figure>
             </Box>
           </Flex>
         </Container>
       </Section>
 
-      <Section size="3" aria-labelledby="how-it-works-saving">
+      <Section size="2" aria-labelledby="how-it-works-saving">
         <Container size="4" px={{ initial: "4", sm: "6" }}>
-          <Flex direction="column" gap={{ initial: "5", md: "7" }}>
+          <Flex direction="column" gap={{ initial: "5", md: "6" }}>
             <Container size="2">
               <Flex direction="column" align="center" gap="3">
                 <Text size="2" weight="medium" color="iris">
@@ -156,17 +150,21 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Text>
               </Flex>
             </Container>
-            <Box asChild m="0" minWidth="0" width="100%">
+            <Box
+              asChild
+              my="0"
+              mx="auto"
+              minWidth="0"
+              width="100%"
+              maxWidth="52rem"
+            >
               <figure>
                 <Image
                   className={styles["figureImage"]}
                   src={journalSaveFlow}
                   alt={t("figures.savingAlt")}
-                  sizes="(min-width: 1280px) 1200px, 100vw"
+                  sizes="(min-width: 1024px) 52rem, 100vw"
                 />
-                <Text asChild size="2" color="gray" mt="2" align="center">
-                  <figcaption>{t("figures.saving")}</figcaption>
-                </Text>
               </figure>
             </Box>
           </Flex>
@@ -272,17 +270,21 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Text>
               </Flex>
             </Container>
-            <Box asChild m="0" minWidth="0" width="100%">
+            <Box
+              asChild
+              my="0"
+              mx="auto"
+              minWidth="0"
+              width="100%"
+              maxWidth="68rem"
+            >
               <figure>
                 <Image
                   className={styles["figureImage"]}
                   src={systemArchitecture}
                   alt={t("figures.architectureAlt")}
-                  sizes="(min-width: 1280px) 1200px, 100vw"
+                  sizes="(min-width: 1200px) 68rem, 100vw"
                 />
-                <Text asChild size="2" color="gray" mt="2" align="center">
-                  <figcaption>{t("figures.architecture")}</figcaption>
-                </Text>
               </figure>
             </Box>
           </Flex>
