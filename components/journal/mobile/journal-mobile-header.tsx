@@ -1,8 +1,6 @@
 import { PlusIcon } from "@radix-ui/react-icons";
 import { Box, Button, Flex, Separator } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import { BrandMark } from "@/components/brand-mark";
-import type { Locale } from "@/i18n/routing";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import { JournalAccountMenu } from "../journal-account-menu";
@@ -15,23 +13,10 @@ type JournalMobileHeaderProps = {
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
   onCreateEntry: () => void;
-  onHowItWorks: () => void;
-  onLocaleChange: (locale: Locale) => void;
   onSelectEntry: (entryId: string) => void;
   onSignOut: () => void;
   selectedEntryId: string | undefined;
 };
-
-function BrandMarkMobile() {
-  return (
-    <BrandMark.Root>
-      <BrandMark.Avatar />
-      <Box asChild display={{ initial: "none", sm: "inline" }}>
-        <BrandMark.Name />
-      </Box>
-    </BrandMark.Root>
-  );
-}
 
 export function JournalMobileHeader({
   currentUser,
@@ -40,8 +25,6 @@ export function JournalMobileHeader({
   loadingMoreEntries,
   loadMoreEntries,
   onCreateEntry,
-  onHowItWorks,
-  onLocaleChange,
   onSelectEntry,
   onSignOut,
   selectedEntryId,
@@ -52,10 +35,6 @@ export function JournalMobileHeader({
     <Box asChild display={{ initial: "block", lg: "none" }}>
       <header>
         <Flex align="center" gap={{ initial: "3", sm: "4" }} px={{ initial: "4", sm: "5" }} py="3">
-          <Box flexShrink="0">
-            <BrandMarkMobile />
-          </Box>
-
           <Box flexGrow="1" minWidth="0">
             <JournalEntrySelect
               entries={entries}
@@ -76,15 +55,7 @@ export function JournalMobileHeader({
             </Button>
           </Box>
 
-          <Flex align="center" flexShrink="0">
-            <JournalAccountMenu
-              compact
-              currentUser={currentUser}
-              onHowItWorks={onHowItWorks}
-              onLocaleChange={onLocaleChange}
-              onSignOut={onSignOut}
-            />
-          </Flex>
+          <JournalAccountMenu compact currentUser={currentUser} onSignOut={onSignOut} />
         </Flex>
         <Separator size="4" />
       </header>

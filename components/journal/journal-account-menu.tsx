@@ -1,27 +1,20 @@
-import { ChevronDownIcon, ExitIcon, GlobeIcon, InfoCircledIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ExitIcon } from "@radix-ui/react-icons";
 import { Avatar, Box, Button, DropdownMenu, Grid, IconButton, Text } from "@radix-ui/themes";
-import { hasLocale, useLocale, useTranslations } from "next-intl";
-import { LOCALE_NAMES, type Locale, routing } from "@/i18n/routing";
+import { useTranslations } from "next-intl";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 
 type JournalAccountMenuProps = {
   compact?: boolean;
   currentUser: ClientUser;
-  onHowItWorks: () => void;
-  onLocaleChange: (locale: Locale) => void;
   onSignOut: () => void;
 };
 
 export function JournalAccountMenu({
   compact = false,
   currentUser,
-  onHowItWorks,
-  onLocaleChange,
   onSignOut,
 }: JournalAccountMenuProps) {
   const t = useTranslations("sidebar");
-  const tCommon = useTranslations("common");
-  const locale = useLocale();
   const avatar = (
     <Avatar
       size="2"
@@ -54,33 +47,6 @@ export function JournalAccountMenu({
       </DropdownMenu.Trigger>
       <DropdownMenu.Content align="start" side={compact ? "bottom" : "top"}>
         <DropdownMenu.Label>{currentUser.username}</DropdownMenu.Label>
-        <DropdownMenu.Separator />
-        <DropdownMenu.Sub>
-          <DropdownMenu.SubTrigger>
-            <GlobeIcon aria-hidden />
-            {tCommon("labels.currentLanguage", { language: LOCALE_NAMES[locale] })}
-          </DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent>
-            <DropdownMenu.RadioGroup
-              value={locale}
-              onValueChange={(nextLocale) => {
-                if (hasLocale(routing.locales, nextLocale)) {
-                  onLocaleChange(nextLocale);
-                }
-              }}
-            >
-              {routing.locales.map((supportedLocale) => (
-                <DropdownMenu.RadioItem key={supportedLocale} value={supportedLocale}>
-                  {LOCALE_NAMES[supportedLocale]}
-                </DropdownMenu.RadioItem>
-              ))}
-            </DropdownMenu.RadioGroup>
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
-        <DropdownMenu.Item onSelect={onHowItWorks}>
-          <InfoCircledIcon aria-hidden />
-          {tCommon("navigation.howItWorks")}
-        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item color="red" onSelect={onSignOut}>
           <ExitIcon aria-hidden />

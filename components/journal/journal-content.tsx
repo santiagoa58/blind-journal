@@ -2,14 +2,12 @@
 
 import { Box, Flex, Heading, Separator, VisuallyHidden } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigationBlocker } from "@/components/navigation-blocker";
 import { useLogout } from "@/hooks/use-logout";
-import { usePathname, useRouter } from "@/i18n/navigation";
-import type { Locale } from "@/i18n/routing";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry, UnreadableJournalEntry } from "@/lib/api/journal/journal.type";
 import { JournalDesktopSidebar } from "./journal-desktop-sidebar";
-import { JournalDraftGuard } from "./journal-draft-guard";
 import { JournalEditor } from "./journal-editor";
 import { JournalEmptyCard } from "./journal-empty-card";
 import { JournalEntryDeleteDialog } from "./journal-entry-delete-dialog";
@@ -25,13 +23,6 @@ type JournalContentProps = {
   user: ClientUser;
 };
 
-type PendingIntent =
-  | { type: "create" }
-  | { type: "how-it-works" }
-  | { type: "locale"; locale: Locale }
-  | { type: "logout" }
-  | { type: "select"; entryId: string };
-
 export function JournalContent({
   entries,
   hasMoreEntries,
@@ -41,78 +32,60 @@ export function JournalContent({
   user,
 }: JournalContentProps) {
   const tEntries = useTranslations("entry-list");
-  const pathname = usePathname();
-  const router = useRouter();
   const [selectedEntryId, setSelectedEntryId] = useState<string>();
   const [draftDirty, setDraftDirty] = useState(false);
   const [editorVersion, setEditorVersion] = useState(0);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [newEntryOpen, setNewEntryOpen] = useState(false);
-  const [pendingIntent, setPendingIntent] = useState<PendingIntent | null>(null);
   const [entryPendingDeletion, setEntryPendingDeletion] = useState<JournalEntry>();
+  const { run, setBlocked } = useNavigationBlocker();
   const { signOut } = useLogout();
   const selectedEntry = entries.find(({ id }) => id === selectedEntryId) ?? entries.at(0);
   const effectiveSelectedEntryId = newEntryOpen ? undefined : selectedEntry?.id;
 
-  const executeIntent = useCallback(
-    (intent: PendingIntent) => {
-      if (intent.type === "select") {
-        setNewEntryOpen(false);
-        setSelectedEntryId(intent.entryId);
-      } else if (intent.type === "create") {
-        setNewEntryOpen(true);
-        setDraftDirty(true);
-      } else if (intent.type === "locale") {
-        router.replace(pathname, { locale: intent.locale });
-      } else if (intent.type === "how-it-works") {
-        router.push("/how-it-works");
-      } else {
-        signOut();
-      }
+  useEffect(() => {
+    setBlocked(draftDirty);
+  }, [draftDirty, setBlocked]);
+
+  useEffect(
+    () => () => {
+      setBlocked(false);
     },
-    [pathname, router, signOut],
+    [setBlocked],
   );
 
-  function requestIntent(intent: PendingIntent) {
-    if (intent.type === "select" && intent.entryId === effectiveSelectedEntryId) {
+  function requestCreate() {
+    run(() => {
+      setEditorVersion((version) => version + 1);
+      setNewEntryOpen(true);
+      setSelectedEntryId(undefined);
+      setDraftDirty(true);
+    });
+  }
+
+  function requestSelection(entryId: string) {
+    if (entryId === effectiveSelectedEntryId) {
       return;
     }
 
-    if (draftDirty) {
-      setPendingIntent(intent);
-    } else {
-      executeIntent(intent);
-    }
+    run(() => {
+      setDraftDirty(false);
+      setEditorVersion((version) => version + 1);
+      setNewEntryOpen(false);
+      setSelectedEntryId(entryId);
+    });
   }
 
-  const requestCreate = () => requestIntent({ type: "create" });
-  const requestHowItWorks = () => requestIntent({ type: "how-it-works" });
-  const requestLocaleChange = (nextLocale: Locale) =>
-    requestIntent({ type: "locale", locale: nextLocale });
-  const requestSignOut = () => requestIntent({ type: "logout" });
-  const requestSelection = (entryId: string) => requestIntent({ type: "select", entryId });
-
-  function discardDraftAndContinue() {
-    const intent = pendingIntent;
-    setPendingIntent(null);
-    setDraftDirty(false);
-    setEditorVersion((version) => version + 1);
-    if (intent) {
-      executeIntent(intent);
-    }
+  function requestSignOut() {
+    run(signOut);
   }
 
   return (
-    <Flex direction="column" height="100dvh" overflow="hidden">
+    <Flex direction="column" height="100%" minHeight="0" overflow="hidden">
       <VisuallyHidden asChild>
         <Heading as="h1">{tEntries("title")}</Heading>
       </VisuallyHidden>
-      <JournalDraftGuard
-        dirty={draftDirty}
-        open={pendingIntent !== null}
-        onCancel={() => setPendingIntent(null)}
-        onDiscard={discardDraftAndContinue}
-      />
+
       {entryPendingDeletion ? (
         <JournalEntryDeleteDialog
           entry={entryPendingDeletion}
@@ -131,12 +104,12 @@ export function JournalContent({
               setDraftDirty(false);
               setDesktopSidebarOpen(true);
               setNewEntryOpen(false);
-              setPendingIntent(null);
               setSelectedEntryId(undefined);
             }
           }}
         />
       ) : null}
+
       <JournalMobileHeader
         currentUser={user}
         entries={entries}
@@ -144,8 +117,6 @@ export function JournalContent({
         loadingMoreEntries={loadingMoreEntries}
         loadMoreEntries={loadMoreEntries}
         onCreateEntry={requestCreate}
-        onHowItWorks={requestHowItWorks}
-        onLocaleChange={requestLocaleChange}
         onSelectEntry={requestSelection}
         onSignOut={requestSignOut}
         selectedEntryId={effectiveSelectedEntryId}
@@ -163,8 +134,6 @@ export function JournalContent({
               loadMoreEntries={loadMoreEntries}
               onCollapse={() => setDesktopSidebarOpen(false)}
               onCreateEntry={requestCreate}
-              onHowItWorks={requestHowItWorks}
-              onLocaleChange={requestLocaleChange}
               onDeleteEntry={setEntryPendingDeletion}
               onSelectEntry={requestSelection}
               onSignOut={requestSignOut}
