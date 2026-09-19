@@ -22,6 +22,10 @@ vi.mock("@/hooks/use-app-toast", () => ({
 vi.mock("@/hooks/use-logout", () => ({
   useLogout: () => ({ signOut: mocks.signOut }),
 }));
+vi.mock("@/i18n/navigation", () => ({
+  Link: () => null,
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const user = {
   id: "user-one",
