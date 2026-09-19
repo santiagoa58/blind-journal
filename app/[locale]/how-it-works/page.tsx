@@ -18,6 +18,7 @@ import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import authenticationFlow from "@/assets/how-it-works/authentication-flow.webp";
 import localEncryptionFlow from "@/assets/how-it-works/local-encryption-flow.webp";
+import journalSaveFlow from "@/assets/how-it-works/journal-save-flow.webp";
 import { EducationalFigurePlaceholder } from "@/components/how-it-works/educational-figure-placeholder";
 import type { Locale } from "@/i18n/routing";
 import styles from "./how-it-works.module.css";
@@ -155,10 +156,19 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Text>
               </Flex>
             </Container>
-            <EducationalFigurePlaceholder
-              placeholderLabel={t("structure.figurePlaceholder")}
-              caption={t("figures.saving")}
-            />
+            <Box asChild m="0" minWidth="0" width="100%">
+              <figure>
+                <Image
+                  className={styles["figureImage"]}
+                  src={journalSaveFlow}
+                  alt={t("figures.savingAlt")}
+                  sizes="(min-width: 1280px) 1200px, 100vw"
+                />
+                <Text asChild size="2" color="gray" mt="2" align="center">
+                  <figcaption>{t("figures.saving")}</figcaption>
+                </Text>
+              </figure>
+            </Box>
           </Flex>
         </Container>
       </Section>
