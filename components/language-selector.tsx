@@ -4,7 +4,7 @@ import { GlobeIcon } from "@radix-ui/react-icons";
 import { Box, Flex, Select, Text } from "@radix-ui/themes";
 import { hasLocale, useLocale, useTranslations } from "next-intl";
 import { useId } from "react";
-import { usePathname, useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";\nimport { useNavigationBlocker } from "@/components/navigation-blocker";
 import { LOCALE_NAMES, routing } from "@/i18n/routing";
 
 type LanguageSelectorProps = {
@@ -16,14 +16,14 @@ export function LanguageSelector({ compact = false }: LanguageSelectorProps) {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
-  const selectId = useId();
+  const selectId = useId();\n  const { run } = useNavigationBlocker();
 
   function selectLocale(nextLocale: string) {
     if (!hasLocale(routing.locales, nextLocale) || nextLocale === locale) {
       return;
     }
 
-    router.replace(pathname, { locale: nextLocale });
+    run(() => router.replace(pathname, { locale: nextLocale }));
   }
 
   return (
