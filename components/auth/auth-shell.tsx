@@ -21,7 +21,7 @@ export function AuthShell({ children }: AuthShellProps) {
             <Card size="4" variant="surface">
               <Grid gap={{ initial: "6", md: "8" }}>
                 <BrandMark.Root>
-                  <BrandMark.Icon size={32} priority />
+                  <BrandMark.Icon size={32} />
                   <BrandMark.Name />
                 </BrandMark.Root>
 
