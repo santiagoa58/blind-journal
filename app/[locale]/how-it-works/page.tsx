@@ -3,7 +3,6 @@ import {
   Avatar,
   Box,
   Button,
-  Callout,
   Card,
   Container,
   Flex,
@@ -85,16 +84,16 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
               <Text as="p" size="3" color="gray" wrap="pretty">
                 {t("sections.bigPicture.body")}
               </Text>
-              <Callout.Root color="iris" variant="surface">
-                <Callout.Icon>
-                  <LockClosedIcon aria-hidden />
-                </Callout.Icon>
-                <Callout.Text>
-                  <strong>{t("sections.bigPicture.httpsLabel")}</strong>{" "}
+              <Flex direction="column" gap="1">
+                <Text as="p" size="3" weight="medium">
+                  {t("sections.bigPicture.httpsTitle")}
+                </Text>
+                <Text as="p" size="3" color="gray" wrap="pretty">
                   {t("sections.bigPicture.httpsBody")}
-                </Callout.Text>
-              </Callout.Root>
+                </Text>
+              </Flex>
             </Flex>
+
             <Box asChild m="0" minWidth="0" width="100%">
               <figure>
                 <Image
@@ -132,6 +131,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Text>
               </Flex>
             </Box>
+
             <Box asChild m="0" minWidth="0" width={{ initial: "100%", md: "58%" }}>
               <figure>
                 <Image
@@ -169,6 +169,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Flex>
               </Flex>
             </Container>
+
             <Box
               asChild
               my="0"
@@ -186,6 +187,17 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 />
               </figure>
             </Box>
+
+            <Container size="2">
+              <Flex direction="column" gap="2">
+                <Heading as="h3" size="4">
+                  {t("sections.saving.openingTitle")}
+                </Heading>
+                <Text as="p" size="3" color="gray" wrap="pretty">
+                  {t("sections.saving.openingBody")}
+                </Text>
+              </Flex>
+            </Container>
           </Flex>
         </Container>
       </Section>
@@ -222,23 +234,17 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                     </Heading>
                     <Flex asChild direction="column" gap="3" m="0" pl="4">
                       <ul>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.observable.identity")}</li>
                         </Text>
-                        <Text asChild size="2" color="gray">
-                          <li>{t("sections.visibility.observable.derivation")}</li>
-                        </Text>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.observable.authentication")}</li>
                         </Text>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.observable.records")}</li>
                         </Text>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.observable.operations")}</li>
-                        </Text>
-                        <Text asChild size="2" color="gray">
-                          <li>{t("sections.visibility.observable.signIn")}</li>
                         </Text>
                       </ul>
                     </Flex>
@@ -260,19 +266,16 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                     </Heading>
                     <Flex asChild direction="column" gap="3" m="0" pl="4">
                       <ul>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.private.passphrase")}</li>
                         </Text>
-                        <Text asChild size="2" color="gray">
-                          <li>{t("sections.visibility.private.masterKey")}</li>
+                        <Text asChild size="3" color="gray">
+                          <li>{t("sections.visibility.private.journalKey")}</li>
                         </Text>
-                        <Text asChild size="2" color="gray">
-                          <li>{t("sections.visibility.private.keyEncryptionKey")}</li>
-                        </Text>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.private.entryKeys")}</li>
                         </Text>
-                        <Text asChild size="2" color="gray">
+                        <Text asChild size="3" color="gray">
                           <li>{t("sections.visibility.private.plaintext")}</li>
                         </Text>
                       </ul>
@@ -281,34 +284,12 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                 </Flex>
               </Card>
             </Grid>
-          </Flex>
-        </Container>
-      </Section>
 
-      <Section size="2" aria-labelledby="how-it-works-zero-knowledge">
-        <Container size="2" px={{ initial: "4", sm: "6" }}>
-          <Flex direction="column" gap="4">
-            <Text size="2" weight="medium" color="iris">
-              {t("sections.zeroKnowledge.eyebrow")}
-            </Text>
-            <Heading id="how-it-works-zero-knowledge" as="h2" size="7">
-              {t("sections.zeroKnowledge.title")}
-            </Heading>
-            <Text as="p" size="3" color="gray" wrap="pretty">
-              {t("sections.zeroKnowledge.body")}
-            </Text>
-            <Text as="p" size="3" color="gray" wrap="pretty">
-              {t("sections.zeroKnowledge.limitsBody")}
-            </Text>
-            <Callout.Root color="iris" variant="surface">
-              <Callout.Icon>
-                <LockClosedIcon aria-hidden />
-              </Callout.Icon>
-              <Callout.Text>
-                <strong>{t("sections.zeroKnowledge.browserBoundaryLabel")}</strong>{" "}
-                {t("sections.zeroKnowledge.browserBoundary")}
-              </Callout.Text>
-            </Callout.Root>
+            <Container size="2">
+              <Text as="p" size="3" weight="medium" align="center" wrap="pretty">
+                {t("sections.visibility.summary")}
+              </Text>
+            </Container>
           </Flex>
         </Container>
       </Section>
@@ -332,10 +313,11 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
                   {t("sections.architecture.body")}
                 </Text>
                 <Text as="p" size="3" color="gray" wrap="pretty">
-                  {t("sections.architecture.serverBody")}
+                  {t("sections.architecture.flowBody")}
                 </Text>
               </Flex>
             </Container>
+
             <Box
               asChild
               my="0"
@@ -357,69 +339,36 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
         </Container>
       </Section>
 
-      <Section size="2" aria-labelledby="how-it-works-technical-depth">
-        <Container size="4" px={{ initial: "4", sm: "6" }}>
-          <Flex direction="column" gap={{ initial: "5", md: "6" }}>
-            <Container size="2">
-              <Flex direction="column" align="center" gap="3">
-                <Text size="2" weight="medium" color="iris">
-                  {t("sections.technicalDepth.eyebrow")}
-                </Text>
-                <Heading id="how-it-works-technical-depth" as="h2" size="6" align="center">
-                  {t("sections.technicalDepth.title")}
-                </Heading>
-                <Text as="p" size="3" color="gray" align="center" wrap="pretty">
-                  {t("sections.technicalDepth.body")}
-                </Text>
-              </Flex>
-            </Container>
-
-            <Grid columns={{ initial: "1", md: "3" }} gap="4">
-              <Card size="3" variant="surface">
-                <Flex direction="column" gap="2">
-                  <Heading as="h3" size="4">
-                    {t("sections.technicalDepth.derivationTitle")}
-                  </Heading>
-                  <Text as="p" size="2" color="gray" wrap="pretty">
-                    {t("sections.technicalDepth.derivation")}
-                  </Text>
-                </Flex>
-              </Card>
-
-              <Card size="3" variant="surface">
-                <Flex direction="column" gap="2">
-                  <Heading as="h3" size="4">
-                    {t("sections.technicalDepth.entriesTitle")}
-                  </Heading>
-                  <Text as="p" size="2" color="gray" wrap="pretty">
-                    {t("sections.technicalDepth.entries")}
-                  </Text>
-                </Flex>
-              </Card>
-
-              <Card size="3" variant="surface">
-                <Flex direction="column" gap="2">
-                  <Heading as="h3" size="4">
-                    {t("sections.technicalDepth.protocolTitle")}
-                  </Heading>
-                  <Text as="p" size="2" color="gray" wrap="pretty">
-                    {t("sections.technicalDepth.protocol")}
-                  </Text>
-                </Flex>
-              </Card>
-            </Grid>
+      <Section size="2" aria-labelledby="how-it-works-zero-knowledge">
+        <Container size="2" px={{ initial: "4", sm: "6" }}>
+          <Flex direction="column" gap="3">
+            <Text size="2" weight="medium" color="iris">
+              {t("sections.zeroKnowledge.eyebrow")}
+            </Text>
+            <Heading id="how-it-works-zero-knowledge" as="h2" size="6">
+              {t("sections.zeroKnowledge.title")}
+            </Heading>
+            <Text as="p" size="3" color="gray" wrap="pretty">
+              {t("sections.zeroKnowledge.body")}
+            </Text>
+            <Text as="p" size="3" color="gray" wrap="pretty">
+              {t("sections.zeroKnowledge.limitsBody")}
+            </Text>
           </Flex>
         </Container>
       </Section>
 
-      <Section size="3" aria-labelledby="how-it-works-closing">
+      <Section size="3" aria-labelledby="how-it-works-technical-depth">
         <Container size="2" px={{ initial: "4", sm: "6" }}>
           <Flex direction="column" align="center" gap="4">
-            <Heading id="how-it-works-closing" as="h2" size="6" align="center">
-              {t("sections.closing.title")}
+            <Text size="2" weight="medium" color="iris">
+              {t("sections.technicalDepth.eyebrow")}
+            </Text>
+            <Heading id="how-it-works-technical-depth" as="h2" size="6" align="center">
+              {t("sections.technicalDepth.title")}
             </Heading>
             <Text as="p" size="3" color="gray" align="center" wrap="pretty">
-              {t("sections.closing.body")}
+              {t("sections.technicalDepth.body")}
             </Text>
             <Button asChild variant="surface">
               <a
