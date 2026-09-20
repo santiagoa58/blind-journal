@@ -1,4 +1,4 @@
-import { Flex, Text } from "@radix-ui/themes";
+import { Flex, Text, type TextProps } from "@radix-ui/themes";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
@@ -24,11 +24,11 @@ function BrandMarkIcon({ size = 28 }: { size?: number }) {
   );
 }
 
-function BrandMarkName() {
+function BrandMarkName(props: TextProps) {
   const t = useTranslations("brand");
 
   return (
-    <Text size="3" weight="bold">
+    <Text size="3" weight="bold" {...props}>
       {t("name")}
     </Text>
   );
