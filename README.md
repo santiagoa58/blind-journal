@@ -20,7 +20,7 @@ Blind Journal provides a complete, secure journaling experience:
 - Strict isolation between users at the API, service, and database layers.
 - Responsive desktop and mobile layouts.
 - English and Spanish interfaces with locale-aware routes, messages, dates, times, and metadata.
-- Installable PWA branding and light and dark themes.
+- PWA manifest and branding, plus light and dark themes.
 
 There are no built-in accounts or default credentials. Every user begins with **Create account**.
 
@@ -28,9 +28,8 @@ There are no built-in accounts or default credentials. Every user begins with **
 
 Blind Journal separates authentication from decryption:
 
-1. The browser derives independent authentication and encryption keys from the user's password.
-2. The authentication key proves that the user knows the password, but it cannot decrypt the
-   journal.
+1. The browser derives independent authentication and encryption keys from the user's passphrase.
+2. The authentication key lets the server verify sign-in, but it cannot decrypt the journal.
 3. The key-encryption key stays in browser memory and unwraps entry keys locally.
 4. Journal titles and bodies are encrypted before they cross the client boundary.
 5. The server stores ciphertext and authenticates future requests with an opaque session cookie.
@@ -131,8 +130,10 @@ how keys, versions, and encrypted envelopes fit together.
    `Secure`, `HttpOnly`, appropriately `SameSite` cookie.
 7. The browser uses the rederived key-encryption key to unwrap each entry key locally.
 
-Salt lookup, account creation, and sign-in are protected by distributed rate limits. Credential
-failures remain generic so the API does not reveal whether a username or password was incorrect.
+Credential failures remain generic so the API does not reveal whether a username or passphrase was
+incorrect. The public salt, account-creation, and sign-in routes are same-origin checked and use
+bounded request bodies. A distributed rate limit is not currently enforced by repository code and
+remains a production release requirement.
 
 Blind Journal uses opaque sessions instead of JWTs. This keeps authorization state revocable and
 avoids placing unnecessary claims in a client-held token. The database stores only a one-way hash of
@@ -146,12 +147,12 @@ each bearer session identifier.
 - The entry key is wrapped with the user's AES-KW key-encryption key.
 - AAD binds the ciphertext to the envelope version, user identifier, and entry identifier.
 - The server stores the ciphertext, IV, wrapped key, protocol version, and minimum record metadata
-  in a single authorized transaction.
+  in user-scoped records.
 - The title filter operates only on entries already decrypted and loaded in the browser; plaintext
   titles are not stored in a server index.
 
-Passwords, raw keys, plaintext content, and bearer session identifiers never enter logs, URLs,
-query keys, analytics, or server persistence.
+Application code does not intentionally place passphrases, raw keys, plaintext journal content, or
+bearer session identifiers in logs, URLs, query keys, analytics, or server persistence.
 
 ### Sign out and lock
 
@@ -165,21 +166,6 @@ always requires the password again before encrypted entries can be opened.
 JavaScript cannot guarantee that garbage-collected memory is overwritten immediately. Blind Journal
 minimizes the lifetime and number of copies of passwords, plaintext, and raw key bytes instead of
 claiming perfect memory erasure.
-
-## Delete an account
-
-Account deletion permanently removes the account and all of its journal data:
-
-1. The signed-in user opens the destructive account action and re-enters the master password.
-2. The browser derives the authentication key locally and submits a deletion request over HTTPS.
-3. The server verifies the current credentials and requires an explicit confirmation.
-4. In one database transaction, the server deletes every entry and session owned by the user, then
-   deletes the user record.
-5. The response expires the session cookie, and the browser clears the unlocked key, private query
-   data, drafts, and user state.
-
-Deletion is irreversible. Blind Journal has no password recovery or retained copy of a deleted
-journal.
 
 ## Architecture
 
@@ -208,13 +194,12 @@ flowchart LR
 
 ### Boundary rules
 
-- UI components call endpoint functions under `api/`. They never import Route Handlers, server
-  services, or persistence code.
-- `api/` owns browser endpoint functions and types or schemas shared across the HTTP boundary.
+- UI components call endpoint functions under `lib/api/`. They never import Route Handlers,
+  server services, or persistence code.
+- `lib/api/` owns browser endpoint functions and types or schemas shared across the HTTP boundary.
 - Ky provides a thin, same-origin transport layer with credentials and stable headers.
 - `app/api/v1/` contains thin Route Handlers that apply HTTP concerns and call server services.
-- `server/` owns authentication, authorization, sessions, journal services, account deletion, and
-  persistence.
+- `server/` owns authentication, authorization, sessions, journal services, and persistence.
 - Untrusted API bodies and database rows are validated at their trust boundaries.
 - The database implementation stays behind the server boundary.
 
@@ -254,9 +239,9 @@ The server uses a durable transactional database as the authoritative store. It 
 - Encrypted journal envelopes and ownership metadata.
 
 The schema enforces username uniqueness, user-entry ownership, bounded values, and referential
-integrity. Every journal query is scoped by the authenticated user ID, and multi-step writes are
-atomic. Deleting a user removes their entries and sessions in the same transaction. Process memory
-is never used as a persistence fallback.
+integrity. Every journal query is scoped by the authenticated user ID, and multi-step writes use
+database transactions where atomicity is required. Process memory is never used as a persistence
+fallback.
 
 The database still cannot decrypt journal content because it never receives the key-encryption key
 or an unwrapped entry key.
@@ -278,7 +263,7 @@ migration source.
 | Server-state management | TanStack Query | Requests, caching, mutations, and invalidation |
 | Shared unlocked state | Zustand | Small in-memory user and key state shared across the interface |
 | Runtime validation | Zod | Validation at API and database boundaries |
-| Password derivation | libsodium | Audited Argon2id, secure randomness, encodings, and constant-time operations |
+| Password derivation | libsodium | Audited Argon2id plus constant-time comparison and memory-clearing helpers |
 | Key derivation and encryption | Web Crypto | Native HKDF-SHA-256, AES-KW, and AES-256-GCM |
 | Database | Neon | Hosted PostgreSQL for durable application data |
 | Localization | next-intl and Eloqnt | Locale routing, formatting, and synchronized message catalogs |
@@ -293,16 +278,20 @@ unexpected usage charges. Exact dependency and package-manager versions are pinn
 ## Repository map
 
 ```text
-api/                    Browser endpoint functions and shared API contracts
 app/                    Pages, layouts, providers, metadata, and v1 Route Handlers
+assets/                 Source-controlled application illustrations
+client-state/           Small in-memory Zustand stores
 components/             UI grouped by product domain
 crypto/                 Low-level encryption and encoding adapters
+docs/                   Supporting operational records and reference material
 hooks/                  Small reusable React hooks
 i18n/                   Locale routing, message loading, navigation, and error mapping
+lib/api/                 Browser endpoint functions and shared API contracts
 messages/               Translation catalogs under messages/{locale}/{feature}.json
 public/                 Brand and install assets
 server/                 Server-only services, HTTP helpers, sessions, and persistence
-client-state/           Small in-memory Zustand stores
+test/                    Shared live-test setup
+tests/                  End-to-end browser tests
 types/                  String type aliases for Base64 and Base64Url values
 ```
 
@@ -325,9 +314,9 @@ the design system cannot express, such as the rich-text editing canvas.
 
 ## PWA behavior
 
-Blind Journal includes installable, theme-aware metadata and branded icons. Installation does not
-imply offline journal access. Offline caching and background synchronization require a separate
-security design so decrypted data is never placed outside the encrypted storage protocol.
+Blind Journal includes a web app manifest, theme-aware metadata, and branded icons. It does not
+implement offline journal caching or background synchronization. Those features would require a
+separate security design so decrypted data is never placed outside the encrypted storage protocol.
 
 ## Getting started
 
@@ -379,10 +368,10 @@ browser API is not part of this architecture.
 | `pnpm check` | Run Biome, localization checks, TypeScript, and the test suite |
 | `pnpm check:fix` | Apply safe Biome formatting, lint, and import fixes |
 | `pnpm i18n:check` | Validate message usage and catalog consistency in strict mode |
-| `pnpm typecheck` | Run TypeScript without emitting files |
+| `pnpm typecheck` | Generate Next.js route types, then run TypeScript without emitting files |
 | `pnpm test` | Run the Vitest suite once |
 | `pnpm test:database` | Run the real Neon integration test using the local environment files |
-| `pnpm test:e2e` | Build the app and run the critical Chromium journey using the local environment files |
+| `pnpm test:e2e` | Build the app and run the Playwright browser journeys using the local environment files |
 | `pnpm test:watch` | Run Vitest in watch mode |
 
 Before handing off a change, run:
@@ -395,20 +384,24 @@ pnpm build
 ## Testing approach
 
 Tests cover cryptographic round trips and tampering, key-schedule behavior, session creation,
-expiration, and revocation, request validation, database constraints, per-user authorization,
-cross-user isolation, query-cache cleanup, account deletion, and critical account and journal flows
-through the real application boundaries.
+expiration and revocation, request validation, database constraints, per-user authorization,
+cross-user isolation, query-cache cleanup, and critical account and journal flows through the real
+application boundaries.
 
 Test code does not maintain a separate fake API implementation. `pnpm test:database` exercises the
-real database contract separately from the deterministic unit suite. `pnpm test:e2e` runs one
-critical account and journal journey against a production build in Chromium.
+real database contract separately from the deterministic unit suite. `pnpm test:e2e` runs the
+Playwright end-to-end suite against a production build in Chromium, Firefox, and WebKit; authenticated
+WebKit cases that require a secure-cookie HTTPS environment are skipped by the local HTTP test
+server.
 
 ## Scope
 
 Blind Journal focuses on private personal journaling with remote accounts, server persistence, and
 client-side encryption.
 
-The following are outside its scope:
+Account deletion is not currently exposed as an application workflow.
+
+The following are outside its current scope:
 
 - Sharing and multi-user collaboration
 - Attachments
