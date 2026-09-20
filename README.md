@@ -131,9 +131,14 @@ how keys, versions, and encrypted envelopes fit together.
 7. The browser uses the rederived key-encryption key to unwrap each entry key locally.
 
 Credential failures remain generic so the API does not reveal whether a username or passphrase was
-incorrect. The public salt, account-creation, and sign-in routes are same-origin checked and use
-bounded request bodies. A distributed rate limit is not currently enforced by repository code and
-remains a production release requirement.
+incorrect. The authentication routes are same-origin checked and use bounded request bodies.
+
+Production deployments should enforce distributed throttling with Vercel Firewall. Use one
+fixed-window rule for `POST /api/v1/auth/*`, keyed by source IP, with a limit of **20 requests per
+60 seconds** and a **429 Too Many Requests** response after the limit is reached. A normal sign-in or
+unlock uses two requests (`/auth/salt` followed by `/auth/login`), so this allows up to ten complete
+attempts per minute from one IP while still bounding automated abuse. The same rule also covers
+account creation and logout without adding per-instance rate-limit state to the application.
 
 Blind Journal uses opaque sessions instead of JWTs. This keeps authorization state revocable and
 avoids placing unnecessary claims in a client-held token. The database stores only a one-way hash of
