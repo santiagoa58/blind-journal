@@ -170,14 +170,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
               </Flex>
             </Container>
 
-            <Box
-              asChild
-              my="0"
-              mx="auto"
-              minWidth="0"
-              width="100%"
-              maxWidth="52rem"
-            >
+            <Box asChild my="0" mx="auto" minWidth="0" width="100%" maxWidth="52rem">
               <figure>
                 <Image
                   className={styles["figureImage"]}
@@ -318,14 +311,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
               </Flex>
             </Container>
 
-            <Box
-              asChild
-              my="0"
-              mx="auto"
-              minWidth="0"
-              width="100%"
-              maxWidth="68rem"
-            >
+            <Box asChild my="0" mx="auto" minWidth="0" width="100%" maxWidth="68rem">
               <figure>
                 <Image
                   className={styles["figureImage"]}
