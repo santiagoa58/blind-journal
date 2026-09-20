@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
   <title id="title">Blind Journal</title>
-  <desc id="description">A maskable app icon with a purple journal, eye, and keyhole.</desc>
-  <rect width="512" height="512" fill="#f0f0ff"/>
-  <path fill="#1f2a44" d="M128 116h34v280h-34c-15.5 0-28-12.5-28-28V144c0-15.5 12.5-28 28-28Z"/>
-  <path fill="#5b5bd6" d="M184 116h200c15.5 0 28 12.5 28 28v224c0 15.5-12.5 28-28 28H184V116Z"/>
-  <path fill="none" stroke="#fff" stroke-linejoin="miter" stroke-width="20" d="M212 256c18-21 44-36 71-36s53 15 71 36c-18 21-44 36-71 36s-53-15-71-36Z"/>
-  <path fill="#1f2a44" d="M282.8 226c-18.8 0-34 15.2-34 34 0 11.7 5.9 22 14.9 28.1L253.2 340h59.2l-10.5-51.9a33.9 33.9 0 0 0 14.9-28.1c0-18.8-15.2-34-34-34Z"/>
+  <desc id="description">Maskable Blind Journal app icon.</desc>
+  <rect width="512" height="512" fill="#F0F0FF"/>
+  <g transform="translate(71.68 71.68) scale(.72)">
+    <path fill="#F7F7FF" d="M116 64h278c25.4 0 46 20.6 46 46v310c0 25.4-20.6 46-46 46H116c-24.3 0-44-19.7-44-44V108c0-24.3 19.7-44 44-44Z"/>
+    <path fill="#5B5BD6" d="M104 48h274c25.4 0 46 20.6 46 46v310c0 25.4-20.6 46-46 46H104c-24.3 0-44-19.7-44-44V92c0-24.3 19.7-44 44-44Z"/>
+    <path fill="#1F2A44" d="M104 48h58v402h-58c-24.3 0-44-19.7-44-44V92c0-24.3 19.7-44 44-44Z"/>
+    <rect x="338" y="48" width="38" height="402" rx="19" fill="#1F2A44"/>
+  </g>
 </svg>
