@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { Flex, Text } from "@radix-ui/themes";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
 
