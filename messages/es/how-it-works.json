@@ -1,92 +1,80 @@
 {
   "metadata": {
     "title": "Cómo Blind Journal protege lo que escribes",
-    "description": "Descubre cómo Blind Journal separa la autenticación del descifrado, cifra las entradas en el navegador y almacena únicamente registros protegidos en el servidor."
+    "description": "Descubre cómo Blind Journal cifra las entradas en tu navegador, separa el inicio de sesión del desbloqueo del diario y almacena únicamente datos protegidos en el servidor."
   },
   "navigation": {
-    "technicalDocumentation": "Revisar el código en GitHub"
+    "technicalDocumentation": "Revisar la documentación técnica"
   },
   "hero": {
     "eyebrow": "Cómo funciona",
     "title": "Cómo Blind Journal protege lo que escribes",
-    "body": "Blind Journal separa la autenticación del descifrado. Tu navegador conserva el material de clave necesario para abrir tu diario; el servidor gestiona cuentas, sesiones y almacenamiento cifrado. Sigues teniendo un inicio de sesión normal y almacenamiento remoto sin entregar al backend las claves necesarias para leer tus entradas."
+    "body": "Blind Journal está diseñado para que tu diario pueda almacenarse de forma remota sin darle al servidor lo que necesita para leerlo. Tu navegador deriva las claves, cifra las entradas antes de enviarlas y las descifra cuando vuelves a abrirlas. El servidor gestiona cuentas, sesiones y almacenamiento, pero el contenido del diario le llega ya cifrado y el material de clave necesario para leerlo permanece en tu navegador."
   },
   "sections": {
     "bigPicture": {
       "eyebrow": "La idea general",
       "title": "¿Dónde se cifra mi diario?",
-      "body": "Mientras lees o editas una entrada, su texto legible existe en el navegador. Antes de enviar el título o el cuerpo a ningún sitio, Blind Journal los cifra localmente. El servidor recibe texto cifrado en lugar de la entrada legible.",
-      "httpsBody": "En una aplicación web típica, TLS termina en el servidor y la aplicación puede leer el contenido en texto legible. Blind Journal envía los datos del diario ya cifrados a través de esa conexión HTTPS, por lo que el servidor sigue recibiendo texto cifrado cuando termina el cifrado de transporte.",
-      "httpsLabel": "HTTPS protege el trayecto, no el destino."
+      "body": "Mientras lees o editas una entrada, la versión legible existe en tu navegador. Antes de que el título o el cuerpo salgan del navegador, Blind Journal los cifra. El servidor recibe la versión cifrada en lugar de la entrada legible.",
+      "httpsTitle": "¿Y HTTPS?",
+      "httpsBody": "HTTPS protege la información mientras viaja entre tu navegador y el servidor. Blind Journal cifra el diario antes de que comience ese trayecto, por lo que HTTPS transporta una entrada que ya está cifrada hasta el servidor."
     },
     "authentication": {
       "eyebrow": "Autenticación",
       "title": "¿Cómo puede el servidor iniciar mi sesión sin poder leer mi diario?",
-      "body": "Cuando introduces tu frase de contraseña, Blind Journal la procesa en el navegador y deriva dos ramas independientes a partir de la misma raíz: una para autenticación y otra para desbloquear las claves del diario.",
-      "separationBody": "Solo la rama de autenticación cruza la red. El servidor la usa para verificar tu inicio de sesión, guarda un verificador unidireccional y crea una sesión opaca. La rama que desbloquea el diario permanece en la memoria del navegador. Como ambas ramas se derivan para propósitos distintos, la clave de autenticación no puede descifrar las entradas del diario."
+      "body": "Tu frase de contraseña sirve para dos trabajos distintos: demostrarle al servidor que puedes iniciar sesión y desbloquear tu diario. Blind Journal mantiene esos trabajos separados. Cuando introduces tu frase de contraseña, el navegador deriva material de clave independiente para la autenticación y para desbloquear el diario.",
+      "separationBody": "La clave de autenticación se envía al servidor para que pueda verificar tu inicio de sesión y crear una sesión. La clave que desbloquea el diario permanece en tu navegador. No cifra directamente todas las entradas: cada entrada tiene su propia clave, y la clave del diario se utiliza para proteger y desbloquear esas claves individuales. Como ambos propósitos están separados, la información que el servidor usa para iniciar tu sesión no le permite descifrar tu diario. Tu frase de contraseña nunca se envía al servidor."
     },
     "saving": {
       "eyebrow": "Guardado",
       "title": "¿Qué ocurre cuando presiono Guardar?",
-      "body": "Cada entrada se cifra de forma independiente. Cuando presionas Guardar, el navegador genera una clave aleatoria nueva para esa entrada y la usa para cifrar su título y su cuerpo.",
-      "storageBody": "Después, el navegador envuelve esa clave con el material de clave que desbloquea tu diario. Lo que sale del navegador es un sobre cifrado: texto cifrado, una copia protegida de la clave de la entrada, el IV y la versión del protocolo, además de los metadatos mínimos necesarios para almacenar y recuperar el registro. El servidor nunca recibe la entrada en texto legible ni la clave de la entrada sin proteger."
+      "body": "Cada entrada del diario recibe su propia clave de cifrado aleatoria. Cuando presionas Guardar, tu navegador usa esa clave para cifrar el título y el cuerpo y, después, protege la propia clave de la entrada usando la clave que desbloquea tu diario.",
+      "storageBody": "El servidor recibe la entrada cifrada, la clave protegida de la entrada y la información básica del registro necesaria para almacenarlo y recuperarlo. Nunca recibe la entrada legible ni una clave de entrada desbloqueada.",
+      "openingTitle": "¿Qué ocurre cuando vuelvo a abrirla?",
+      "openingBody": "El proceso se ejecuta al revés. El servidor devuelve la entrada cifrada y su clave protegida al navegador. Tu navegador usa la clave del diario para desbloquear la clave de la entrada y, después, usa esa clave para descifrar el diario localmente."
     },
     "visibility": {
       "eyebrow": "Visibilidad",
       "title": "¿Qué puede ver realmente el servidor?",
-      "observableTitle": "El servidor puede observar",
-      "privateTitle": "El servidor nunca recibe",
-      "body": "El cifrado oculta el contenido de tu diario, no el hecho de que exista una cuenta o un registro cifrado. Blind Journal mantiene ese límite explícito: el servidor recibe los datos operativos que necesita para prestar el servicio, pero no los secretos necesarios para convertir los registros almacenados en entradas legibles.",
+      "body": "El cifrado protege el contenido de tu diario, no todos los aspectos de usar un servicio en línea. El servidor sigue necesitando información para gestionar cuentas, autenticar solicitudes y almacenar registros cifrados. El límite importante es si esa información puede utilizarse para leer el diario.",
+      "observableTitle": "El servidor puede ver",
+      "privateTitle": "El servidor no recibe",
       "observable": {
-        "identity": "Identidad de la cuenta: nombre de usuario normalizado, nombre visible e identificador opaco del usuario.",
-        "derivation": "Metadatos de derivación: salt de la cuenta y versión del esquema de claves.",
-        "authentication": "Datos de autenticación: un verificador unidireccional y registros de sesión con hash.",
-        "records": "Metadatos de registros cifrados: identificadores de entradas, marcas de tiempo, tamaños del texto cifrado y número de registros.",
-        "operations": "Metadatos operativos: tiempos de solicitudes, datos derivados de la dirección IP y patrones de acceso.",
-        "signIn": "Durante la creación de la cuenta y el inicio de sesión: la clave de autenticación derivada que viaja en la solicitud."
+        "identity": "Información de la cuenta: tu nombre de usuario, nombre visible e identificador interno de la cuenta.",
+        "authentication": "Información de inicio de sesión: la clave de autenticación derivada durante la creación de la cuenta y el inicio de sesión, un verificador unidireccional, registros de sesión y los ajustes públicos que el navegador necesita para volver a derivar las mismas claves.",
+        "records": "Información de entradas cifradas: identificadores, fechas de creación y actualización, tamaños cifrados y número de registros.",
+        "operations": "Actividad normal de red: solicitudes, tiempos, patrones de acceso y datos operativos derivados de la dirección IP."
       },
       "private": {
-        "passphrase": "Tu frase de contraseña maestra.",
-        "masterKey": "La clave maestra derivada de la contraseña.",
-        "keyEncryptionKey": "La clave de cifrado usada para desbloquear las claves de las entradas.",
-        "entryKeys": "Cualquier clave de entrada sin proteger.",
-        "plaintext": "Títulos o cuerpos del diario en texto legible."
-      }
-    },
-    "zeroKnowledge": {
-      "eyebrow": "Conocimiento cero",
-      "title": "¿Qué significa conocimiento cero aquí?",
-      "body": "Aquí, conocimiento cero describe un límite concreto del sistema: el backend puede autenticarte, autorizar solicitudes y almacenar tu diario sin poseer el material de clave necesario para descifrar su contenido.",
-      "limitsBody": "No significa que el servidor no aprenda nada. Los identificadores de la cuenta, los tamaños de los registros, las marcas de tiempo, los tiempos de las solicitudes y los patrones de acceso siguen siendo observables. Tampoco significa que Blind Journal utilice un sistema formal de pruebas de conocimiento cero.",
-      "browserBoundary": "Un diario desbloqueado existe en texto legible en tu navegador. El código que se ejecute en el mismo origen podría leerlo. Por eso, un servidor comprometido que pueda modificar el JavaScript entregado a una futura sesión representa una amenaza distinta de una base de datos o un backend que simplemente almacena registros cifrados. La prevención de XSS, el control de dependencias y una Content Security Policy restrictiva importan aquí.",
-      "browserBoundaryLabel": "El navegador forma parte del límite de confianza."
+        "passphrase": "Tu frase de contraseña.",
+        "journalKey": "El material de clave utilizado para desbloquear tu diario.",
+        "entryKeys": "Una clave de entrada desbloqueada.",
+        "plaintext": "Títulos o cuerpos del diario en formato legible."
+      },
+      "summary": "El servidor puede saber que existen datos cifrados del diario sin tener lo necesario para convertir esos datos de nuevo en tu diario."
     },
     "architecture": {
       "eyebrow": "Arquitectura",
       "title": "¿Cómo encaja todo el sistema?",
-      "body": "Visto en conjunto, el diseño reparte cuatro responsabilidades. El navegador deriva claves y maneja el texto legible. HTTPS protege el tráfico mientras se mueve. El servidor autentica usuarios, autoriza solicitudes y gestiona sesiones. La base de datos conserva los sobres cifrados del diario y los metadatos observables.",
-      "serverBody": "Al abrir una entrada, el proceso se ejecuta al revés: el texto cifrado vuelve a un navegador desbloqueado, la clave protegida de la entrada se desenvuelve localmente y solo entonces se descifra el diario. Ninguna capa del servidor tiene a la vez el registro almacenado y el material de clave necesario para convertirlo en contenido legible."
+      "body": "Visto en conjunto, cada parte tiene una función. El navegador deriva y conserva las claves necesarias para leer tu diario y se encarga del cifrado y descifrado. El servidor gestiona cuentas, autenticación, sesiones, autorización y almacenamiento. La base de datos guarda la información de la cuenta que necesita el servicio junto con los registros protegidos del diario.",
+      "flowBody": "Guardar mueve datos protegidos desde el navegador hacia el servidor y la base de datos. Abrir una entrada trae esos datos protegidos de vuelta al navegador, donde se desbloquean y descifran. El servidor almacena el diario, pero el navegador conserva lo necesario para leerlo."
+    },
+    "zeroKnowledge": {
+      "eyebrow": "Conocimiento cero",
+      "title": "¿Por qué Blind Journal se considera de conocimiento cero?",
+      "body": "Puede que veas a Blind Journal descrito como una aplicación de conocimiento cero. Aquí significa que el servidor puede autenticarte y almacenar tu diario sin poseer las claves necesarias para leerlo.",
+      "limitsBody": "No significa que el servidor no vea nada. Como explicamos arriba, la información de la cuenta, los metadatos de los registros cifrados y la actividad normal de red siguen siendo visibles. Lo importante es que el servidor puede almacenar y gestionar el diario sin poder descifrar su contenido."
     },
     "technicalDepth": {
-      "eyebrow": "Detalle técnico",
-      "title": "Construido con primitivas criptográficas establecidas",
-      "derivation": "Argon2id deriva una clave maestra temporal de 256 bits a partir de la frase de contraseña y el salt de la cuenta. Después, HKDF-SHA-256 deriva de forma separada el material de autenticación y la clave AES-KW que protege las claves.",
-      "entries": "Cada entrada recibe una clave AES-GCM aleatoria de 256 bits y un IV nuevo de 96 bits. Los datos autenticados adicionales vinculan el sobre cifrado con la versión del protocolo, el usuario y la entrada, y la clave de la entrada se envuelve antes de almacenarse.",
-      "body": "El diseño utiliza primitivas estándar y ampliamente desplegadas a través de libsodium y Web Crypto. La parte propia de Blind Journal es el protocolo que las compone, no los algoritmos criptográficos.",
-      "derivationTitle": "Contraseña y derivación de claves",
-      "entriesTitle": "Cifrado de entradas",
-      "protocolTitle": "Disciplina del protocolo",
-      "protocol": "El esquema de claves y el formato de las entradas cifradas están versionados. Las operaciones criptográficas provienen de libsodium y Web Crypto, los objetos CryptoKey derivados no son extraíbles cuando es posible y el material de clave sin procesar permanece en memoria solo el tiempo necesario."
-    },
-    "closing": {
-      "title": "Explora la implementación",
-      "body": "¿Quieres verificar los detalles? El repositorio documenta el protocolo, los límites de amenaza y la implementación que respaldan cada afirmación de esta página."
+      "eyebrow": "Detalles técnicos",
+      "title": "¿Quieres profundizar?",
+      "body": "Esta página explica el sistema a nivel conceptual. El README del proyecto documenta los algoritmos criptográficos, la derivación de claves, el protocolo de autenticación, el formato de los registros cifrados y los supuestos de seguridad que hay detrás."
     }
   },
   "figures": {
     "bigPictureAlt": "Diagrama que muestra una entrada del diario cifrada dentro del navegador antes de enviar los datos cifrados al servidor.",
-    "authenticationAlt": "Diagrama que muestra una frase de contraseña procesada en el navegador en ramas separadas de autenticación y desbloqueo del diario. Solo la rama de autenticación llega al servidor.",
+    "authenticationAlt": "Diagrama que muestra una frase de contraseña procesada en el navegador en rutas separadas de autenticación y desbloqueo del diario. Solo la ruta de autenticación llega al servidor.",
     "savingAlt": "Diagrama que muestra una entrada del diario cifrada con su propia clave y enviada al servidor como una entrada cifrada junto con una clave protegida.",
-    "architectureAlt": "Diagrama que muestra la derivación de claves y el cifrado en el navegador, el transporte por HTTPS hasta el servidor y los registros protegidos almacenados en la base de datos."
+    "architectureAlt": "Diagrama que muestra el manejo de claves y el cifrado en el navegador, los datos protegidos enviados a través del servidor y los registros cifrados almacenados en la base de datos."
   }
 }
