@@ -3,11 +3,6 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
 
-type BrandMarkIconProps = {
-  size?: number;
-  priority?: boolean;
-};
-
 function BrandMarkRoot({ children }: PropsWithChildren) {
   return (
     <Flex align="center" gap="2">
@@ -16,7 +11,7 @@ function BrandMarkRoot({ children }: PropsWithChildren) {
   );
 }
 
-function BrandMarkIcon({ size = 28, priority = false }: BrandMarkIconProps) {
+function BrandMarkIcon({ size = 28 }: { size?: number }) {
   return (
     <Image
       src="/brand/blind-journal-mark.svg"
@@ -24,7 +19,7 @@ function BrandMarkIcon({ size = 28, priority = false }: BrandMarkIconProps) {
       aria-hidden
       width={size}
       height={size}
-      priority={priority}
+      loading="eager"
     />
   );
 }
