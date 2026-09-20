@@ -1,11 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
   <title id="title">Blind Journal</title>
-  <desc id="description">Maskable Blind Journal app icon.</desc>
-  <rect width="512" height="512" fill="#F0F0FF"/>
+  <desc id="description">Maskable Blind Journal application icon.</desc>
+  <rect width="512" height="512" fill="#5B5BD6"/>
   <g transform="translate(71.68 71.68) scale(.72)">
-    <path fill="#F7F7FF" d="M116 64h278c25.4 0 46 20.6 46 46v310c0 25.4-20.6 46-46 46H116c-24.3 0-44-19.7-44-44V108c0-24.3 19.7-44 44-44Z"/>
-    <path fill="#5B5BD6" d="M104 48h274c25.4 0 46 20.6 46 46v310c0 25.4-20.6 46-46 46H104c-24.3 0-44-19.7-44-44V92c0-24.3 19.7-44 44-44Z"/>
-    <path fill="#1F2A44" d="M104 48h58v402h-58c-24.3 0-44-19.7-44-44V92c0-24.3 19.7-44 44-44Z"/>
-    <rect x="338" y="48" width="38" height="402" rx="19" fill="#1F2A44"/>
+    <defs>
+      <mask id="page-cutouts">
+        <rect width="512" height="512" fill="white"/>
+        <path fill="black" d="M160 140h200l26 24H160zM160 212h200l26 24H160zM160 284h200l26 24H160zM160 356h200l26 24H160z"/>
+      </mask>
+    </defs>
+    <path fill="#fff" d="M104 48h32v416h-32c-30.9 0-56-25.1-56-56V104c0-30.9 25.1-56 56-56Z"/>
+    <path fill="#fff" mask="url(#page-cutouts)" d="M160 48h248c30.9 0 56 25.1 56 56v304c0 30.9-25.1 56-56 56H160V48Z"/>
   </g>
 </svg>

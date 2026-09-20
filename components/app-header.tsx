@@ -10,7 +10,7 @@ import { usePathname } from "@/i18n/navigation";
 function HeaderBrand() {
   return (
     <BrandMark.Root>
-      <BrandMark.Avatar />
+      <BrandMark.Icon priority />
       <Box asChild display={{ initial: "none", sm: "inline" }}>
         <BrandMark.Name />
       </Box>

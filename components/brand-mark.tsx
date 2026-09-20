@@ -1,7 +1,12 @@
-import { LockClosedIcon } from "@radix-ui/react-icons";
-import { Avatar, type AvatarProps, Flex, Text } from "@radix-ui/themes";
+import Image from "next/image";
+import { Flex, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
+
+type BrandMarkIconProps = {
+  size?: number;
+  priority?: boolean;
+};
 
 function BrandMarkRoot({ children }: PropsWithChildren) {
   return (
@@ -11,18 +16,19 @@ function BrandMarkRoot({ children }: PropsWithChildren) {
   );
 }
 
-function BrandMarkAvatar(props: Omit<AvatarProps, "src" | "fallback">) {
+function BrandMarkIcon({ size = 28, priority = false }: BrandMarkIconProps) {
   return (
-    <Avatar
-      size="2"
-      radius="large"
-      alt="Logo"
-      {...props}
+    <Image
       src="/brand/blind-journal-mark.svg"
-      fallback={<LockClosedIcon aria-hidden width={16} height={16} strokeWidth={2.25} />}
+      alt=""
+      aria-hidden
+      width={size}
+      height={size}
+      priority={priority}
     />
   );
 }
+
 function BrandMarkName() {
   const t = useTranslations("brand");
 
@@ -35,6 +41,6 @@ function BrandMarkName() {
 
 export const BrandMark = {
   Root: BrandMarkRoot,
+  Icon: BrandMarkIcon,
   Name: BrandMarkName,
-  Avatar: BrandMarkAvatar,
 };

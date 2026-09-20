@@ -2,6 +2,7 @@ import { LockClosedIcon } from "@radix-ui/react-icons";
 import { Box, Callout, Card, Container, Grid, Section, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
+import { BrandMark } from "@/components/brand-mark";
 
 type AuthShellProps = PropsWithChildren;
 
@@ -19,6 +20,11 @@ export function AuthShell({ children }: AuthShellProps) {
           <Box display={{ initial: "none", md: "block" }}>
             <Card size="4" variant="surface">
               <Grid gap={{ initial: "6", md: "8" }}>
+                <BrandMark.Root>
+                  <BrandMark.Icon size={32} priority />
+                  <BrandMark.Name />
+                </BrandMark.Root>
+
                 <Box>
                   <Text as="p" size="2" weight="medium" color="iris">
                     {t("shell.eyebrow")}
