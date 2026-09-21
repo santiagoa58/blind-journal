@@ -22,6 +22,7 @@ const onSaved = vi.fn();
 const mocks = vi.hoisted(() => ({
   actions: undefined as EditorActions | undefined,
   editor: null as Editor | null,
+  saveShortcut: vi.fn(),
 }));
 
 vi.mock("@/components/journal/journal-editor-toolbar", () => ({
@@ -38,9 +39,24 @@ vi.mock("@/components/journal/journal-editor-actions", async () => {
       draftDirty,
       onSaved,
       onSavingChange,
-    }: EditorActions & { draftDirty: boolean }) => {
+      saveButtonRef,
+    }: EditorActions & { draftDirty: boolean; saveButtonRef?: React.Ref<HTMLButtonElement> }) => {
       mocks.actions = { onSaved, onSavingChange };
-      return React.createElement("output", { "aria-label": "draft state" }, `dirty:${draftDirty}`);
+      return React.createElement(
+        React.Fragment,
+        null,
+        React.createElement("output", { "aria-label": "draft state" }, `dirty:${draftDirty}`),
+        React.createElement(
+          "button",
+          {
+            ref: saveButtonRef,
+            type: "button",
+            disabled: !draftDirty,
+            onClick: mocks.saveShortcut,
+          },
+          "Save changes",
+        ),
+      );
     },
   };
 });
@@ -109,6 +125,7 @@ function expectDocumentStatus(status: "saved" | "saving" | "unsaved") {
 beforeEach(async () => {
   mocks.actions = undefined;
   mocks.editor = null;
+  mocks.saveShortcut.mockReset();
   view = render(<TestEditor />);
   await waitFor(() => expect(mocks.editor).not.toBeNull());
 });
@@ -146,7 +163,7 @@ describe("JournalEditor draft state", () => {
     expectDirty(false);
   });
 
-  it("normalizes a blank title to the journal default on blur", async () => {
+  it("keeps an empty title as a placeholder on blur", async () => {
     const user = userEvent.setup();
     const title = screen.getByRole<HTMLInputElement>("textbox", { name: "Entry title" });
 
@@ -154,7 +171,8 @@ describe("JournalEditor draft state", () => {
     expectDirty(true);
 
     await user.tab({ shift: true });
-    expect(title).toHaveValue("Untitled entry");
+    expect(title).toHaveValue("");
+    expect(title).toHaveAttribute("placeholder", "Untitled entry");
     expectDirty(true);
   });
 
@@ -209,7 +227,25 @@ describe("JournalEditor draft state", () => {
     view.rerender(<TestEditor key="new" newEntry />);
     await waitFor(() => expect(mocks.editor).not.toBeNull());
 
-    expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue("Untitled entry");
+    expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue("");
+    expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveAttribute(
+      "placeholder",
+      "Untitled entry",
+    );
+    expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveFocus();
     expectDocumentStatus("unsaved");
+  });
+
+  it("uses the existing save action for Ctrl+S and Meta+S", async () => {
+    const user = userEvent.setup();
+    const title = screen.getByRole("textbox", { name: "Entry title" });
+    await user.click(title);
+    await user.keyboard("{Control>}s{/Control}");
+    expect(mocks.saveShortcut).not.toHaveBeenCalled();
+
+    await user.type(title, " updated");
+    await user.keyboard("{Control>}s{/Control}");
+    await user.keyboard("{Meta>}s{/Meta}");
+    expect(mocks.saveShortcut).toHaveBeenCalledTimes(2);
   });
 });

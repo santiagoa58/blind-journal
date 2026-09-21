@@ -34,7 +34,7 @@ export function JournalMobileHeader({
   return (
     <Box asChild display={{ initial: "block", lg: "none" }}>
       <header>
-        <Flex align="center" gap={{ initial: "3", sm: "4" }} px={{ initial: "4", sm: "5" }} py="3">
+        <Flex align="center" gap={{ initial: "2", sm: "3" }} px={{ initial: "3", sm: "5" }} py="2">
           <Box flexGrow="1" minWidth="0">
             <JournalEntrySelect
               entries={entries}

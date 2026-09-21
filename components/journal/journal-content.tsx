@@ -1,7 +1,6 @@
 "use client";
 
-import { Box, Flex, Heading, Separator, VisuallyHidden } from "@radix-ui/themes";
-import { useTranslations } from "next-intl";
+import { Box, Flex, Separator } from "@radix-ui/themes";
 import { useEffect, useState } from "react";
 import { useNavigationBlocker } from "@/components/navigation-blocker";
 import { useLogout } from "@/hooks/use-logout";
@@ -31,7 +30,6 @@ export function JournalContent({
   unreadableEntries,
   user,
 }: JournalContentProps) {
-  const tEntries = useTranslations("entry-list");
   const [selectedEntryId, setSelectedEntryId] = useState<string>();
   const [draftDirty, setDraftDirty] = useState(false);
   const [editorVersion, setEditorVersion] = useState(0);
@@ -82,10 +80,6 @@ export function JournalContent({
 
   return (
     <Flex direction="column" flexGrow="1" minHeight="0" overflow="hidden">
-      <VisuallyHidden asChild>
-        <Heading as="h1">{tEntries("title")}</Heading>
-      </VisuallyHidden>
-
       {entryPendingDeletion ? (
         <JournalEntryDeleteDialog
           entry={entryPendingDeletion}

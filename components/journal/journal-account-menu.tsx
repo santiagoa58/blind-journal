@@ -28,7 +28,7 @@ export function JournalAccountMenu({
     <DropdownMenu.Root>
       <DropdownMenu.Trigger>
         {compact ? (
-          <IconButton size="2" variant="surface" color="iris" aria-label={t("account.menuLabel")}>
+          <IconButton size="3" variant="surface" color="iris" aria-label={t("account.menuLabel")}>
             {avatar}
           </IconButton>
         ) : (

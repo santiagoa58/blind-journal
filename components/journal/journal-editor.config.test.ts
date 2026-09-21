@@ -57,11 +57,15 @@ afterEach(() => {
 
 describe("journal rich-text schema", () => {
   it("allows only the nodes, marks, and heading levels exposed by the editor", () => {
-    const editor = createEditor("<h3>Allowed heading</h3><h4>Unsupported heading</h4>");
+    const editor = createEditor(
+      "<h2>Section</h2><h3>Allowed heading</h3><h1>Title in body</h1><h4>Unsupported heading</h4>",
+    );
 
     expect(Object.keys(editor.schema.nodes).toSorted()).toEqual(allowedNodes);
     expect(Object.keys(editor.schema.marks).toSorted()).toEqual(allowedMarks);
-    expect(editor.getHTML()).toBe("<h3>Allowed heading</h3><p>Unsupported heading</p>");
+    expect(editor.getHTML()).toBe(
+      "<h2>Section</h2><h3>Allowed heading</h3><p>Title in body</p><p>Unsupported heading</p>",
+    );
   });
 
   it("normalizes malicious decrypted HTML before rendering it", () => {

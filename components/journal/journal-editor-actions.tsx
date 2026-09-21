@@ -5,6 +5,7 @@ import { Box, Button, Flex, IconButton, Tooltip } from "@radix-ui/themes";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
+import type { Ref } from "react";
 import { useAppToast } from "@/hooks/use-app-toast";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import { createJournalEntry, updateJournalEntry } from "@/lib/api/journal/journal";
@@ -23,6 +24,7 @@ type JournalEditorActionsProps = {
   onDeleteEntry: (entry: JournalEntry) => void;
   onSaved: (entry: JournalEntry) => void;
   onSavingChange: (saving: boolean) => void;
+  saveButtonRef?: Ref<HTMLButtonElement>;
   title: string;
   user: ClientUser;
 };
@@ -35,6 +37,7 @@ export function JournalEditorActions({
   onDeleteEntry,
   onSaved,
   onSavingChange,
+  saveButtonRef,
   title,
   user,
 }: JournalEditorActionsProps) {
@@ -74,7 +77,8 @@ export function JournalEditorActions({
   return (
     <Flex align="center" gap="3" flexShrink="0" px="3">
       <Button
-        size="2"
+        ref={saveButtonRef}
+        size={{ initial: "3", sm: "2" }}
         aria-label={tActions("save")}
         onClick={saveEntry}
         loading={saveMutation.isPending}
@@ -89,7 +93,7 @@ export function JournalEditorActions({
       {entry ? (
         <Tooltip content={t("deleteEntry")}>
           <IconButton
-            size="2"
+            size={{ initial: "3", sm: "2" }}
             variant="ghost"
             color="red"
             aria-label={t("deleteEntry")}

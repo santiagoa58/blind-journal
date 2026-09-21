@@ -126,7 +126,7 @@ describe("JournalContent", () => {
 
     await userEventController.click(screen.getByRole("button", { name: "Discard changes" }));
     await waitFor(() =>
-      expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue("Untitled entry"),
+      expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue(""),
     );
   });
 

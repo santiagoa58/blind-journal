@@ -1,5 +1,14 @@
 import { CheckCircledIcon, Pencil2Icon } from "@radix-ui/react-icons";
-import { Badge, Flex, Separator, Spinner, Text, TextField } from "@radix-ui/themes";
+import {
+  Badge,
+  Flex,
+  Heading,
+  Separator,
+  Spinner,
+  Text,
+  TextField,
+  VisuallyHidden,
+} from "@radix-ui/themes";
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useId } from "react";
 import { MAX_JOURNAL_ENTRY_TITLE_CHARACTERS } from "@/lib/api/journal/journal.constants";
@@ -11,6 +20,7 @@ type JournalEditorDocumentHeaderProps = {
   onTitleBlur: () => void;
   onTitleChange: (title: string) => void;
   onTitleSubmit: () => void;
+  focusTitle: boolean;
   saving: boolean;
   title: string;
   titlePlaceholder: string;
@@ -57,6 +67,7 @@ export function JournalEditorDocumentHeader({
   onTitleBlur,
   onTitleChange,
   onTitleSubmit,
+  focusTitle,
   saving,
   title,
   titlePlaceholder,
@@ -96,6 +107,9 @@ export function JournalEditorDocumentHeader({
         ) : null}
       </Flex>
 
+      <VisuallyHidden asChild>
+        <Heading as="h1">{title.trim() || titlePlaceholder}</Heading>
+      </VisuallyHidden>
       <Text as="label" htmlFor={titleId} size="1" color="gray" weight="medium">
         {t("entryTitleLabel")}
       </Text>
@@ -106,6 +120,7 @@ export function JournalEditorDocumentHeader({
         variant="surface"
         value={title}
         placeholder={titlePlaceholder}
+        autoFocus={focusTitle}
         maxLength={MAX_JOURNAL_ENTRY_TITLE_CHARACTERS}
         disabled={saving}
         onChange={(event) => onTitleChange(event.target.value)}

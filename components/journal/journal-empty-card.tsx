@@ -15,7 +15,7 @@ export function JournalEmptyCard({ onCreateEntry }: JournalEmptyCardProps) {
     <Card size="4" variant="surface">
       <Flex direction="column" align="center" gap="3">
         <Avatar size="4" variant="soft" color="iris" fallback={<Pencil2Icon aria-hidden />} />
-        <Heading as="h2" size="6" align="center">
+        <Heading as="h1" size="6" align="center">
           {t("empty.title")}
         </Heading>
         <Container size="1">
