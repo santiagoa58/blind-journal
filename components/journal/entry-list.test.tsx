@@ -24,12 +24,14 @@ const secondEntry = {
 } satisfies JournalEntry;
 
 function renderEntryList({
+  entries = [firstEntry, secondEntry],
   hasMoreEntries = false,
   loadingMoreEntries = false,
   loadMoreEntries = vi.fn(),
   onDeleteEntry = vi.fn(),
   onSelectEntry = vi.fn(),
 }: {
+  entries?: JournalEntry[];
   hasMoreEntries?: boolean;
   loadingMoreEntries?: boolean;
   loadMoreEntries?: () => void;
@@ -44,7 +46,7 @@ function renderEntryList({
     >
       <Theme>
         <EntryList
-          entries={[firstEntry, secondEntry]}
+          entries={entries}
           hasMoreEntries={hasMoreEntries}
           loadingMoreEntries={loadingMoreEntries}
           loadMoreEntries={loadMoreEntries}
@@ -108,13 +110,26 @@ describe("EntryList", () => {
     const user = userEvent.setup();
     const loadMoreEntries = vi.fn();
     renderEntryList({ hasMoreEntries: true, loadMoreEntries });
-    const search = screen.getByRole("searchbox", { name: "Search journal entries by title" });
+    const search = screen.getByRole("searchbox", {
+      name: "Search loaded journal entries by title",
+    });
+    expect(search).toHaveAttribute("placeholder", "Search loaded titles");
 
     await user.type(search, "missing");
     expect(screen.getByText(/No match in the loaded entries yet\./)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Load more" }));
     expect(loadMoreEntries).toHaveBeenCalledOnce();
+  });
+
+  it("does not show a no-results panel in an untouched empty journal", async () => {
+    const user = userEvent.setup();
+    renderEntryList({ entries: [] });
+
+    expect(screen.queryByText("No matching entries")).not.toBeInTheDocument();
+    const search = screen.getByRole("searchbox", { name: "Search journal entries by title" });
+    await user.type(search, "missing");
+    expect(screen.getByText("No matching entries")).toBeInTheDocument();
   });
 
   it("offers deletion from an entry context menu", async () => {

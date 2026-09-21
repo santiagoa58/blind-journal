@@ -44,6 +44,7 @@ export function EntryList({
         />
         <EntryListResults
           entries={visibleEntries}
+          hasQuery={normalizedQuery.length > 0}
           hasMoreEntries={hasMoreEntries}
           loadingMoreEntries={loadingMoreEntries}
           loadMoreEntries={loadMoreEntries}

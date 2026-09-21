@@ -36,14 +36,14 @@ export function EntryListHeader({
         <Box mt="4">
           <VisuallyHidden asChild>
             <Text as="label" htmlFor={searchId}>
-              {t("searchLabel")}
+              {t(hasMoreEntries ? "searchLoadedLabel" : "searchLabel")}
             </Text>
           </VisuallyHidden>
           <TextField.Root
             id={searchId}
             type="search"
             size="3"
-            placeholder={t("searchPlaceholder")}
+            placeholder={t(hasMoreEntries ? "searchLoadedPlaceholder" : "searchPlaceholder")}
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
           >

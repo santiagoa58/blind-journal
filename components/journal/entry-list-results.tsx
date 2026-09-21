@@ -6,6 +6,7 @@ import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type EntryListResultsProps = {
   entries: JournalEntry[];
+  hasQuery: boolean;
   hasMoreEntries: boolean;
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
@@ -16,6 +17,7 @@ type EntryListResultsProps = {
 
 export function EntryListResults({
   entries,
+  hasQuery,
   hasMoreEntries,
   loadingMoreEntries,
   loadMoreEntries,
@@ -48,7 +50,7 @@ export function EntryListResults({
             ))}
           </RadioCards.Root>
 
-          {entries.length === 0 ? (
+          {hasQuery && entries.length === 0 ? (
             <Flex direction="column" align="center" justify="center" py="9" px="5">
               <Avatar
                 size="3"

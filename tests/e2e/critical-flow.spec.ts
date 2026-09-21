@@ -44,7 +44,9 @@ test("persists created and updated content across reload and fresh sign-in", asy
     "Authenticated WebKit coverage requires an HTTPS test server for the production session cookie.",
   );
   await createAccount(page, lifecycleUsername);
-  await expect(page.getByRole("heading", { level: 1, name: "Your entries" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Your journal is ready" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Create your first entry" }).click();
 
   await page.getByRole("textbox", { name: "Entry title" }).fill("Browser test entry");
@@ -99,7 +101,7 @@ test("persists created and updated content across reload and fresh sign-in", asy
   await expect(deleteDialog).toBeVisible();
   await deleteDialog.getByRole("button", { name: "Delete" }).click();
   await expect(
-    page.getByRole("heading", { level: 2, name: "Your journal is ready" }),
+    page.getByRole("heading", { level: 1, name: "Your journal is ready" }),
   ).toBeVisible();
 });
 
@@ -168,8 +170,8 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
   await page.setViewportSize({ width: 390, height: 844 });
   await createAccount(page, mobileUsername);
 
-  const entrySelect = page.getByRole("combobox", { name: "Journal entries" });
-  await expect(entrySelect).toBeDisabled();
+  const entryPicker = page.getByRole("button", { name: "Choose an entry" });
+  await expect(entryPicker).toBeDisabled();
   await expect(page.getByRole("button", { name: "New entry" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Journal navigation" })).toBeHidden();
@@ -182,7 +184,7 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
     page.getByRole("article", { name: "First mobile entry" }).getByRole("status"),
   ).toHaveText("Saved and encrypted");
 
-  await expect(entrySelect).toBeEnabled();
+  await expect(entryPicker).toBeEnabled();
   await page.getByRole("button", { name: "New entry" }).click();
   await page.getByRole("textbox", { name: "Entry title" }).fill("Second mobile entry");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -190,8 +192,8 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
     page.getByRole("article", { name: "Second mobile entry" }).getByRole("status"),
   ).toHaveText("Saved and encrypted");
 
-  await entrySelect.click();
-  await page.getByRole("option", { name: "First mobile entry" }).click();
+  await entryPicker.click();
+  await page.getByRole("radio", { name: "Open First mobile entry" }).click();
   await expect(page.getByRole("textbox", { name: "Entry title" })).toHaveValue(
     "First mobile entry",
   );

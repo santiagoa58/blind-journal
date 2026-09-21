@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRightIcon } from "@radix-ui/react-icons";
-import { Box, Card, Flex, IconButton, Separator, Tooltip } from "@radix-ui/themes";
+import { Box, Button, Flex, Separator } from "@radix-ui/themes";
 import { Placeholder } from "@tiptap/extensions";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
@@ -44,9 +44,10 @@ export function JournalEditor({
   const tJournal = useTranslations("journal");
   const tSidebar = useTranslations("sidebar");
   const defaultTitle = tJournal("newEntry.title");
-  const [title, setTitle] = useState(entry?.title ?? defaultTitle);
+  const [title, setTitle] = useState(entry?.title ?? "");
   const [saving, setSaving] = useState(false);
-  const savedTitle = useRef(entry?.title ?? defaultTitle);
+  const savedTitle = useRef(entry?.title ?? "");
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
   const savedDocument = useRef<Editor["state"]["doc"] | null>(null);
   const entryBodyPlaceholder = t("entryBodyPlaceholder");
   const normalizedTitle = title.trim() || defaultTitle;
@@ -130,6 +131,12 @@ export function JournalEditor({
       minWidth="0"
       overflow="hidden"
       aria-busy={saving}
+      onKeyDown={(event) => {
+        if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "s") {
+          event.preventDefault();
+          saveButtonRef.current?.click();
+        }
+      }}
     >
       <Flex
         className={css.toolbarFrame}
@@ -141,18 +148,17 @@ export function JournalEditor({
         {!navigationOpen ? (
           <>
             <Flex align="center" px="2" flexShrink="0" display={{ initial: "none", lg: "flex" }}>
-              <Tooltip content={tSidebar("showEntries")}>
-                <IconButton
-                  size="2"
-                  variant="ghost"
-                  color="gray"
-                  aria-label={tSidebar("showEntries")}
-                  aria-expanded={false}
-                  onClick={onShowNavigation}
-                >
-                  <ChevronRightIcon aria-hidden />
-                </IconButton>
-              </Tooltip>
+              <Button
+                size="2"
+                variant="ghost"
+                color="gray"
+                aria-label={tSidebar("showEntries")}
+                aria-expanded={false}
+                onClick={onShowNavigation}
+              >
+                <ChevronRightIcon aria-hidden />
+                {tSidebar("showEntries")}
+              </Button>
             </Flex>
             <Box asChild display={{ initial: "none", lg: "block" }}>
               <Separator orientation="vertical" size="4" />
@@ -160,7 +166,7 @@ export function JournalEditor({
           </>
         ) : null}
 
-        <Box flexGrow="1" flexShrink="1" minWidth="0" overflowX="auto">
+        <Box flexGrow="1" flexShrink="1" minWidth="0" overflowX={{ initial: "hidden", sm: "auto" }}>
           <JournalEditorToolbar disabled={saving} editor={editor} />
         </Box>
 
@@ -172,6 +178,7 @@ export function JournalEditor({
           onDeleteEntry={onDeleteEntry}
           onSaved={handleSaved}
           onSavingChange={handleSavingChange}
+          saveButtonRef={saveButtonRef}
           defaultTitle={defaultTitle}
           title={title}
           user={user}
@@ -180,40 +187,40 @@ export function JournalEditor({
 
       <Box asChild flexGrow="1" minHeight="0" overflowY="auto">
         <div>
-          <Flex direction="column" minHeight="100%" minWidth="100%" p={{ initial: "3", sm: "5" }}>
-            <Box asChild flexGrow="1">
-              <Card asChild size={{ initial: "2", sm: "3" }} variant="surface">
-                <article
-                  className={css.documentSurface}
-                  aria-label={normalizedTitle}
-                  onPointerDown={handleDocumentPointerDown}
-                >
-                  <Flex direction="column" flexGrow="1" width="100%">
-                    <JournalEditorDocumentHeader
-                      draftDirty={draftDirty}
-                      entry={entry}
-                      saving={saving}
-                      title={title}
-                      titlePlaceholder={defaultTitle}
-                      onTitleChange={(nextTitle) => {
-                        setTitle(nextTitle);
-                        updateDirtyState(nextTitle);
-                      }}
-                      onTitleBlur={() => {
-                        if (normalizedTitle !== title) {
-                          setTitle(normalizedTitle);
-                          updateDirtyState(normalizedTitle);
-                        }
-                      }}
-                      onTitleSubmit={() => editor?.commands.focus("start")}
-                    />
+          <Flex direction="column" minHeight="100%" minWidth="100%">
+            <Box asChild flexGrow="1" p={{ initial: "4", sm: "6" }}>
+              <article
+                className={css.documentSurface}
+                aria-label={normalizedTitle}
+                onPointerDown={handleDocumentPointerDown}
+              >
+                <Flex direction="column" flexGrow="1" width="100%">
+                  <JournalEditorDocumentHeader
+                    draftDirty={draftDirty}
+                    entry={entry}
+                    saving={saving}
+                    title={title}
+                    titlePlaceholder={defaultTitle}
+                    focusTitle={entry === undefined}
+                    onTitleChange={(nextTitle) => {
+                      setTitle(nextTitle);
+                      updateDirtyState(nextTitle);
+                    }}
+                    onTitleBlur={() => {
+                      const trimmedTitle = title.trim();
+                      if (trimmedTitle !== title) {
+                        setTitle(trimmedTitle);
+                        updateDirtyState(trimmedTitle);
+                      }
+                    }}
+                    onTitleSubmit={() => editor?.commands.focus("start")}
+                  />
 
-                    <div className={css.editorBody}>
-                      <EditorContent editor={editor} />
-                    </div>
-                  </Flex>
-                </article>
-              </Card>
+                  <div className={css.editorBody}>
+                    <EditorContent editor={editor} />
+                  </div>
+                </Flex>
+              </article>
             </Box>
           </Flex>
         </div>

@@ -47,8 +47,14 @@ export function JournalDesktopSidebar({
       display={{ initial: "none", lg: "flex" }}
     >
       <aside aria-label={t("journalNavigationLabel")}>
-        <Flex direction="column" gap="3" p="4" pb="0">
-          <Flex justify="end">
+        <Flex direction="column" p="4" pb="0">
+          <Flex align="center" gap="2">
+            <Box asChild flexGrow="1">
+              <Button size="3" variant="surface" onClick={onCreateEntry}>
+                <PlusIcon aria-hidden />
+                {t("newEntry")}
+              </Button>
+            </Box>
             {entries.length > 0 ? (
               <Tooltip content={t("hideEntries")}>
                 <IconButton
@@ -64,10 +70,6 @@ export function JournalDesktopSidebar({
               </Tooltip>
             ) : null}
           </Flex>
-          <Button size="3" variant="surface" onClick={onCreateEntry}>
-            <PlusIcon aria-hidden />
-            {t("newEntry")}
-          </Button>
         </Flex>
 
         <EntryList
