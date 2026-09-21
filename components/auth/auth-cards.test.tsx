@@ -8,6 +8,8 @@ import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { englishMessages } from "@/i18n/messages";
+import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
+import { AUTH_CLIENT_ERROR_CODES } from "@/lib/api/auth/auth-client.error";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import { CreateAccountCard } from "./create-account-card";
 import { LoginCard } from "./login-card";
@@ -125,6 +127,11 @@ describe("authentication cards", () => {
     mocks.login.mockResolvedValueOnce(USER);
     renderCard(<UnlockCard user={USER} />);
 
+    const usernameField = document.querySelector<HTMLInputElement>('input[name="username"]');
+    expect(usernameField).toHaveValue(USER.username);
+    expect(usernameField).toHaveAttribute("autocomplete", "username");
+    expect(usernameField).toHaveAttribute("readonly");
+
     await user.type(screen.getByLabelText("Passphrase"), PASSPHRASE);
     await user.click(screen.getByRole("button", { name: "Unlock journal" }));
 
@@ -139,5 +146,79 @@ describe("authentication cards", () => {
 
     await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(mocks.signOut).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a generic sign-in failure in the form, associated with both credentials", async () => {
+    const user = userEvent.setup();
+    const queryClient = renderCard(<LoginCard />);
+    mocks.login.mockRejectedValueOnce(
+      Object.assign(new Error("invalid"), {
+        code: AUTH_ERROR_CODES.invalidCredentials,
+      }),
+    );
+
+    const username = screen.getByRole<HTMLInputElement>("textbox", { name: "Username" });
+    const password = screen.getByLabelText<HTMLInputElement>("Passphrase");
+    await user.type(username, USER.username);
+    await user.type(password, PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("The username or passphrase is incorrect.");
+    expect(username).toHaveAttribute("aria-invalid", "true");
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    expect(password).toHaveAttribute("aria-errormessage", alert.id);
+    await waitFor(() => expect(password).toHaveFocus());
+    expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
+
+    mocks.login.mockResolvedValueOnce(USER);
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("associates passphrase mismatch with confirmation and retains its requirements", async () => {
+    const user = userEvent.setup();
+    renderCard(<CreateAccountCard />);
+    mocks.createAccount.mockRejectedValueOnce(
+      Object.assign(new Error("mismatch"), {
+        code: AUTH_CLIENT_ERROR_CODES.passwordsMismatch,
+      }),
+    );
+
+    await user.type(screen.getByRole("textbox", { name: "Username" }), USER.username);
+    await user.type(screen.getByLabelText("Passphrase"), PASSPHRASE);
+    const confirmation = screen.getByLabelText<HTMLInputElement>("Confirm passphrase");
+    await user.type(confirmation, PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("The passphrases do not match.");
+    expect(confirmation).toHaveAttribute("aria-invalid", "true");
+    await waitFor(() => expect(confirmation).toHaveFocus());
+    expect(screen.getByLabelText("Passphrase")).toHaveAttribute(
+      "aria-describedby",
+      "password-description",
+    );
+  });
+
+  it("shows an unlock failure beside the passphrase without a second sign-in action", async () => {
+    const user = userEvent.setup();
+    renderCard(<UnlockCard user={USER} />);
+    mocks.login.mockRejectedValueOnce(
+      Object.assign(new Error("invalid"), {
+        code: AUTH_ERROR_CODES.invalidCredentials,
+      }),
+    );
+
+    const password = screen.getByLabelText<HTMLInputElement>("Passphrase");
+    await user.type(password, PASSPHRASE);
+    await user.click(screen.getByRole("button", { name: "Unlock journal" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The username or passphrase is incorrect.",
+    );
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    await waitFor(() => expect(password).toHaveFocus());
+    expect(mocks.unlock).not.toHaveBeenCalled();
   });
 });

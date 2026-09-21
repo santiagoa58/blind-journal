@@ -3,7 +3,6 @@
 import "@radix-ui/themes/styles.css";
 import "./globals.css";
 
-import { Theme } from "@radix-ui/themes";
 import { useParams } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { useEffect } from "react";
@@ -11,6 +10,8 @@ import { UnexpectedErrorPage } from "@/components/unexpected-error-page";
 import { getErrorPageMessages } from "@/i18n/error-page-messages";
 import { routing } from "@/i18n/routing";
 import { reportClientError } from "@/lib/client.error";
+import { appFont } from "./app-font";
+import { AppThemeProvider } from "./client-providers";
 
 type GlobalErrorPageProps = {
   error: Error & { digest?: string };
@@ -33,11 +34,11 @@ export default function GlobalErrorPage({ error, retry }: GlobalErrorPageProps) 
       <head>
         <title>{messages["error-page"].unexpected.title}</title>
       </head>
-      <body>
+      <body className={appFont.variable}>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Theme accentColor="iris" grayColor="slate" radius="large">
+          <AppThemeProvider>
             <UnexpectedErrorPage onRetry={retry} />
-          </Theme>
+          </AppThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

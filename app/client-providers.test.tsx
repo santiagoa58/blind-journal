@@ -110,4 +110,15 @@ describe("Providers", () => {
     expect(mocks.replace).toHaveBeenCalledExactlyOnceWith("/");
     expect(mocks.toastError).not.toHaveBeenCalled();
   });
+
+  it("leaves inline auth mutation errors to the form without a duplicate toast", async () => {
+    const error = new Error("form failure");
+    const mutation = new MutationObserver(queryClient, {
+      meta: { inlineError: true },
+      mutationFn: () => Promise.reject(error),
+    });
+
+    await expect(mutation.mutate()).rejects.toBe(error);
+    expect(mocks.toastError).not.toHaveBeenCalled();
+  });
 });

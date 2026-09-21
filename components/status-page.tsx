@@ -8,7 +8,7 @@ type StatusPageProps = PropsWithChildren<{
 
 export function StatusPage({ children, description, title }: StatusPageProps) {
   return (
-    <Flex asChild align="center" justify="center" minHeight="100dvh" p="4">
+    <Flex asChild align="center" justify="center" flexGrow="1" minHeight="0" p="4">
       <main>
         <Container size="1" width="100%">
           <Card size="4" variant="surface">

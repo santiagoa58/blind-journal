@@ -13,6 +13,9 @@ const mocks = vi.hoisted(() => ({ locale: "en" }));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ locale: mocks.locale }),
 }));
+vi.mock("@/app/app-font", () => ({
+  appFont: { variable: "font-inter-test" },
+}));
 
 beforeEach(() => {
   mocks.locale = "en";

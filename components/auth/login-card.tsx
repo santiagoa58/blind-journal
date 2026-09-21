@@ -4,6 +4,7 @@ import { PersonIcon } from "@radix-ui/react-icons";
 import { Button, Card, Flex, Grid, Heading, Separator, Text } from "@radix-ui/themes";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useRef, useState } from "react";
 import { useAppToast } from "@/hooks/use-app-toast";
 import { useStartJournalSession } from "@/hooks/use-start-journal-session";
 import { Link as NavigationLink } from "@/i18n/navigation";
@@ -15,6 +16,13 @@ import {
   USERNAME_PATTERN_SOURCE,
 } from "@/lib/api/auth/auth.constants";
 import type { ClientLoginRequest } from "@/lib/api/auth/auth.type";
+import {
+  AUTH_FORM_ERROR_ID,
+  AuthFormError,
+  type AuthFormFailure,
+  focusAuthFormFailure,
+  useAuthFormFailure,
+} from "./auth-form-error";
 import { LabeledInput } from "./labeled-input";
 import { PasswordInput } from "./password-input";
 
@@ -22,8 +30,12 @@ export function LoginCard() {
   const t = useTranslations("auth");
   const appToast = useAppToast();
   const startJournalSession = useStartJournalSession();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [formFailure, setFormFailure] = useState<AuthFormFailure | null>(null);
+  const resolveFailure = useAuthFormFailure("sign-in");
   const loginMutation = useMutation({
     gcTime: 0,
+    meta: { inlineError: true },
     mutationFn: login,
     onSuccess(user) {
       startJournalSession(user);
@@ -36,6 +48,7 @@ export function LoginCard() {
     if (loginMutation.isPending) {
       return;
     }
+    setFormFailure(null);
 
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username");
@@ -52,9 +65,14 @@ export function LoginCard() {
 
     const input: ClientLoginRequest = { username, password };
     loginMutation.mutate(input, {
-      onSettled() {
+      onSettled(_data, error) {
         // Credentials and the derived key must not remain in MutationCache after submission.
         loginMutation.reset();
+        if (error) {
+          const failure = resolveFailure(error);
+          setFormFailure(failure);
+          focusAuthFormFailure(formRef.current, failure);
+        }
       },
     });
   }
@@ -71,8 +89,9 @@ export function LoginCard() {
         {t("signIn.description")}
       </Text>
 
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         <Grid gap="4" mt="6">
+          <AuthFormError failure={formFailure} />
           <LabeledInput
             autoComplete="username"
             label={t("signIn.usernameLabel")}
@@ -84,6 +103,13 @@ export function LoginCard() {
             autoFocus
             required
             disabled={loginMutation.isPending}
+            aria-invalid={formFailure?.fields.includes("username") || undefined}
+            aria-errormessage={
+              formFailure?.fields.includes("username") ? AUTH_FORM_ERROR_ID : undefined
+            }
+            aria-describedby={
+              formFailure?.fields.includes("username") ? AUTH_FORM_ERROR_ID : undefined
+            }
           >
             <PersonIcon aria-hidden />
           </LabeledInput>
@@ -96,6 +122,13 @@ export function LoginCard() {
             maxLength={MAX_PASSWORD_LENGTH}
             required
             disabled={loginMutation.isPending}
+            aria-invalid={formFailure?.fields.includes("password") || undefined}
+            aria-errormessage={
+              formFailure?.fields.includes("password") ? AUTH_FORM_ERROR_ID : undefined
+            }
+            aria-describedby={
+              formFailure?.fields.includes("password") ? AUTH_FORM_ERROR_ID : undefined
+            }
             showPasswordLabel={t("showPassword")}
             hidePasswordLabel={t("hidePassword")}
           />
