@@ -1,12 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <title id="title">Blind Journal</title>
-  
-  <defs>
-    <mask id="page-cutouts">
-      <rect width="512" height="512" fill="white"/>
-      <path fill="black" d="M160 140h200l26 24H160zM160 212h200l26 24H160zM160 284h200l26 24H160zM160 356h200l26 24H160z"/>
-    </mask>
-  </defs>
-  <path fill="#1F2A44" d="M104 48h32v416h-32c-30.9 0-56-25.1-56-56V104c0-30.9 25.1-56 56-56Z"/>
-  <path fill="#5B5BD6" mask="url(#page-cutouts)" d="M160 48h248c30.9 0 56 25.1 56 56v304c0 30.9-25.1 56-56 56H160V48Z"/>
+  <title>Blind Journal</title>
+  <path fill="#737E98" d="M104 48h32v416h-32c-30.9 0-56-25.1-56-56V104c0-30.9 25.1-56 56-56Z"/>
+  <path fill="#5B5BD6" fill-rule="evenodd" d="M160 48h248c30.9 0 56 25.1 56 56v304c0 30.9-25.1 56-56 56H160V48ZM160 156h200l30 30H160zM160 242h200l30 30H160zM160 328h200l30 30H160z"/>
 </svg>
