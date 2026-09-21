@@ -1,8 +1,7 @@
 import { LockClosedIcon } from "@radix-ui/react-icons";
-import { Box, Callout, Card, Container, Grid, Section, Text } from "@radix-ui/themes";
+import { Box, Container, Flex, Grid, Section, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { PropsWithChildren } from "react";
-import { BrandMark } from "@/components/brand-mark";
 
 type AuthShellProps = PropsWithChildren;
 
@@ -18,40 +17,32 @@ export function AuthShell({ children }: AuthShellProps) {
           align="center"
         >
           <Box display={{ initial: "none", md: "block" }}>
-            <Card size="4" variant="surface">
-              <Grid gap={{ initial: "6", md: "8" }}>
-                <BrandMark.Root>
-                  <BrandMark.Icon size={32} />
-                  <BrandMark.Name />
-                </BrandMark.Root>
-
-                <Box>
-                  <Text as="p" size="2" weight="medium" color="iris">
-                    {t("shell.eyebrow")}
-                  </Text>
-                  <Text as="p" size={{ initial: "8", sm: "9" }} weight="bold" mt="3" wrap="balance">
-                    {t("shell.title")}
-                  </Text>
-                  <Text as="p" size="4" color="gray" mt="4" wrap="pretty">
-                    {t("shell.description")}
+            <Flex direction="column" gap="5" maxWidth="28rem">
+              <Box>
+                <Text as="p" size="2" weight="medium" color="iris">
+                  {t("shell.eyebrow")}
+                </Text>
+                <Text as="p" size={{ initial: "7", lg: "8" }} weight="bold" mt="3" wrap="balance">
+                  {t("shell.title")}
+                </Text>
+                <Text as="p" size="3" color="gray" mt="3" wrap="pretty">
+                  {t("shell.description")}
+                </Text>
+              </Box>
+              <Flex align="start" gap="3">
+                <Box pt="1">
+                  <Text as="span" color="iris">
+                    <LockClosedIcon aria-hidden />
                   </Text>
                 </Box>
-
-                <Callout.Root color="iris" variant="surface" size="2">
-                  <Callout.Icon>
-                    <LockClosedIcon aria-hidden />
-                  </Callout.Icon>
-                  <Callout.Text>
-                    <Text as="span" weight="bold">
-                      {t("shell.privacyTitle")}{" "}
-                    </Text>
-                    <Text as="span" color="gray">
-                      {t("shell.privacyDescription")}
-                    </Text>
-                  </Callout.Text>
-                </Callout.Root>
-              </Grid>
-            </Card>
+                <Text as="p" size="2" color="gray" wrap="pretty">
+                  <Text as="span" weight="bold" color="gray">
+                    {t("shell.privacyTitle")}{" "}
+                  </Text>
+                  {t("shell.privacyDescription")}
+                </Text>
+              </Flex>
+            </Flex>
           </Box>
 
           <Container size="1" width="100%">

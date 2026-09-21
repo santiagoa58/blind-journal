@@ -1,6 +1,5 @@
 import { Flex } from "@radix-ui/themes";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -43,23 +42,28 @@ export async function generateMetadata({
 }
 
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
-  const [{ locale }, requestHeaders] = await Promise.all([params, headers()]);
+  const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
   setRequestLocale(locale);
-  const nonce = requestHeaders.get("x-nonce") ?? undefined;
-
   return (
     <NextIntlClientProvider>
       <DocumentLocale locale={locale} />
-      <Providers nonce={nonce}>
+      <Providers>
         <NavigationBlockerProvider>
-          <Flex direction="column" minHeight="100dvh">
+          <Flex direction="column" height="100dvh" overflow="hidden">
             <AppHeader />
-            <Flex direction="column" flexGrow="1" minHeight="0">
+            <Flex
+              id="main-content"
+              tabIndex={-1}
+              direction="column"
+              flexGrow="1"
+              minHeight="0"
+              overflow="auto"
+            >
               <AppLockBoundary>{children}</AppLockBoundary>
             </Flex>
           </Flex>

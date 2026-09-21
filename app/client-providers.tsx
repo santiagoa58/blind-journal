@@ -11,16 +11,29 @@ import { useRouter } from "@/i18n/navigation";
 import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
 import { isCodedError } from "@/lib/client.error";
 
-type ProvidersProps = PropsWithChildren<{ nonce?: string | undefined }>;
+type AppThemeProviderProps = PropsWithChildren<{ nonce?: string | undefined }>;
 
-export function Providers({ children, nonce }: ProvidersProps) {
+export function AppThemeProvider({ children, nonce }: AppThemeProviderProps) {
+  return (
+    <ThemeProvider attribute="class" {...(nonce ? { nonce } : {})}>
+      <Theme accentColor="iris" grayColor="slate" radius="large" panelBackground="translucent">
+        {children}
+      </Theme>
+    </ThemeProvider>
+  );
+}
+
+export function Providers({ children }: PropsWithChildren) {
   const appToast = useAppToast();
   const router = useRouter();
   const [queryClient] = useState(() => {
     const client = new QueryClient({
       mutationCache: new MutationCache({
-        onError(error) {
+        onError(error, _variables, _context, mutation) {
           if (handleUnauthorizedError(error)) {
+            return;
+          }
+          if (mutation.meta?.["inlineError"] === true) {
             return;
           }
           appToast.error(error);
@@ -54,13 +67,9 @@ export function Providers({ children, nonce }: ProvidersProps) {
   });
 
   return (
-    <ThemeProvider attribute="class" {...(nonce ? { nonce } : {})}>
-      <Theme accentColor="iris" grayColor="slate" radius="large" panelBackground="translucent">
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <Toaster position="bottom-right" richColors theme="system" />
-        </QueryClientProvider>
-      </Theme>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <Toaster position="bottom-right" richColors theme="system" />
+    </QueryClientProvider>
   );
 }

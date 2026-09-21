@@ -1,6 +1,5 @@
 import "client-only";
 
-import { type PropsWithChildren, useLayoutEffect } from "react";
 import { create } from "zustand";
 import type { ApiUser, ClientUser } from "@/lib/api/auth/user.type";
 
@@ -27,20 +26,3 @@ export const useAppSession = create<AppSessionState>((set) => ({
   signOut: () => set({ session: { status: "signed-out" } }),
   unlock: (user) => set({ session: { status: "unlocked", user } }),
 }));
-
-type AppSessionInitializerClientProps = PropsWithChildren<{
-  initialSession: InitialAppSession;
-}>;
-
-export function AppSessionInitializerClient({
-  children,
-  initialSession,
-}: AppSessionInitializerClientProps) {
-  const initialized = useAppSession((state) => state.initialized);
-
-  useLayoutEffect(() => {
-    useAppSession.getState().initialize(initialSession);
-  }, [initialSession]);
-
-  return initialized ? children : null;
-}
