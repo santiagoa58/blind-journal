@@ -179,6 +179,14 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
   await page.getByRole("button", { name: "New entry" }).click();
   await page.getByRole("textbox", { name: "Entry title" }).fill("First mobile entry");
   await page.getByRole("textbox", { name: "Journal entry" }).fill("Created on a mobile viewport");
+  await expect(page.getByRole("button", { name: "Text style" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Underline" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Bulleted list" })).toBeVisible();
+  await page.getByRole("button", { name: "Text style" }).click();
+  await page.getByRole("menuitem", { name: "Heading 1" }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Journal entry" }).getByRole("heading", { level: 1 }),
+  ).toHaveText("Created on a mobile viewport");
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(
     page.getByRole("article", { name: "First mobile entry" }).getByRole("status"),
