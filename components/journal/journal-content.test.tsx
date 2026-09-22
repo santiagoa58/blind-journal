@@ -94,7 +94,7 @@ describe("JournalContent", () => {
     const title = await makeCurrentEntryDirty(userEventController);
 
     const navigation = screen.getByRole("complementary", { name: "Journal navigation" });
-    const secondEntryOption = within(navigation).getByRole("button", {
+    const secondEntryOption = within(navigation).getByRole("radio", {
       name: `Open ${secondEntry.title}`,
     });
     await userEventController.click(secondEntryOption);
@@ -108,7 +108,7 @@ describe("JournalContent", () => {
     await waitFor(() =>
       expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue(secondEntry.title),
     );
-    expect(secondEntryOption).toHaveAttribute("aria-current", "page");
+    expect(secondEntryOption).toBeChecked();
   });
 
   it("keeps an unsaved entry open until the user confirms creating a new entry", async () => {
