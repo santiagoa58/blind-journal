@@ -139,7 +139,7 @@ export function JournalEditor({
         minWidth="0"
         minHeight="var(--space-8)"
       >
-        <Box flexGrow="1" flexShrink="1" minWidth="0" overflowX={{ initial: "hidden", sm: "auto" }}>
+        <Box flexGrow="1" flexShrink="1" minWidth="0" overflowX="auto">
           <JournalEditorToolbar disabled={saving} editor={editor} />
         </Box>
 

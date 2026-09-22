@@ -79,7 +79,7 @@ describe("EntryList", () => {
     expect(screen.getByRole("region", { name: "Journal entries" })).toBeInTheDocument();
     const firstEntryButton = screen.getByRole("button", { name: "Open First entry" });
     const secondEntryButton = screen.getByRole("button", { name: "Open Second entry" });
-    expect(firstEntryButton).toHaveAttribute("aria-current", "true");
+    expect(firstEntryButton).toHaveAttribute("aria-current", "page");
     expect(secondEntryButton).not.toHaveAttribute("aria-current");
 
     await user.click(secondEntryButton);

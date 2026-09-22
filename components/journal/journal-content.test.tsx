@@ -108,7 +108,7 @@ describe("JournalContent", () => {
     await waitFor(() =>
       expect(screen.getByRole("textbox", { name: "Entry title" })).toHaveValue(secondEntry.title),
     );
-    expect(secondEntryOption).toHaveAttribute("aria-current", "true");
+    expect(secondEntryOption).toHaveAttribute("aria-current", "page");
   });
 
   it("keeps an unsaved entry open until the user confirms creating a new entry", async () => {

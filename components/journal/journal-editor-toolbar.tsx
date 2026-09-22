@@ -4,7 +4,6 @@ import {
   ChevronDownIcon,
   CodeIcon,
   CounterClockwiseClockIcon,
-  DotsHorizontalIcon,
   FontBoldIcon,
   FontItalicIcon,
   HeadingIcon,
@@ -66,8 +65,21 @@ function ToolbarButton({ children, label, active, ...props }: ToolbarButtonProps
 function ToolbarGroup(props: FlexProps) {
   return <Flex align="center" gap="3" flexShrink="0" {...props} />;
 }
-function BlockStyleLabel(props: { activeState: { heading2?: boolean; heading3?: boolean } }) {
+
+const headingLevels = [1, 2, 3] as const;
+
+function BlockStyleLabel(props: {
+  activeState: { heading1?: boolean; heading2?: boolean; heading3?: boolean };
+}) {
   const t = useTranslations("journal-editor.formatting");
+  if (props.activeState.heading1) {
+    return (
+      <>
+        <HeadingIcon aria-hidden width={16} height={16} />
+        {t("heading1")}
+      </>
+    );
+  }
   if (props.activeState.heading2) {
     return (
       <>
@@ -103,6 +115,7 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
       canRedo: activeEditor?.can().redo() ?? false,
       canUndo: activeEditor?.can().undo() ?? false,
       code: activeEditor?.isActive("code") ?? false,
+      heading1: activeEditor?.isActive("heading", { level: 1 }) ?? false,
       heading2: activeEditor?.isActive("heading", { level: 2 }) ?? false,
       heading3: activeEditor?.isActive("heading", { level: 3 }) ?? false,
       italic: activeEditor?.isActive("italic") ?? false,
@@ -118,6 +131,7 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
     canRedo: false,
     canUndo: false,
     code: false,
+    heading1: false,
     heading2: false,
     heading3: false,
     italic: false,
@@ -186,7 +200,7 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
             >
               {t("paragraph")}
             </DropdownMenu.Item>
-            {([2, 3] as const).map((level) => (
+            {headingLevels.map((level) => (
               <DropdownMenu.Item
                 key={level}
                 disabled={controlsDisabled}
@@ -274,117 +288,139 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
       </Flex>
       <Flex
         display={{ initial: "flex", sm: "none" }}
-        align="center"
-        gap="3"
+        direction="column"
+        align="start"
+        gap="1"
+        width="max-content"
+        minWidth="100%"
         px="2"
-        py="1"
+        py="2"
         minHeight="var(--space-8)"
         role="group"
         aria-label={t("toolbarLabel")}
       >
-        <ToolbarButton
-          size="3"
-          label={t("bold")}
-          active={activeState.bold}
-          disabled={controlsDisabled}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-        >
-          <FontBoldIcon aria-hidden width={18} height={18} />
-        </ToolbarButton>
-        <ToolbarButton
-          size="3"
-          label={t("italic")}
-          active={activeState.italic}
-          disabled={controlsDisabled}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-        >
-          <FontItalicIcon aria-hidden width={18} height={18} />
-        </ToolbarButton>
-        <DropdownMenu.Root>
-          <Tooltip content={t("moreOptions")}>
+        <Flex align="center" gap="1">
+          <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <IconButton
-                size="3"
+              <Button
+                size="2"
                 variant="ghost"
                 color="gray"
-                aria-label={t("moreOptions")}
+                aria-label={t("textStyle")}
                 disabled={controlsDisabled}
               >
-                <DotsHorizontalIcon aria-hidden width={18} height={18} />
-              </IconButton>
+                <BlockStyleLabel activeState={activeState} />
+                <ChevronDownIcon aria-hidden width={14} height={14} />
+              </Button>
             </DropdownMenu.Trigger>
-          </Tooltip>
-          <DropdownMenu.Content
-            align="start"
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              editor?.commands.focus();
-            }}
-          >
-            <DropdownMenu.Item
-              disabled={!activeState.canUndo}
-              onSelect={() => editor?.chain().focus().undo().run()}
+            <DropdownMenu.Content
+              align="start"
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                editor?.commands.focus();
+              }}
             >
-              {t("undo")}
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              disabled={!activeState.canRedo}
-              onSelect={() => editor?.chain().focus().redo().run()}
-            >
-              {t("redo")}
-            </DropdownMenu.Item>
-            <DropdownMenu.Separator />
-            <DropdownMenu.Item onSelect={() => editor?.chain().focus().setParagraph().run()}>
-              {t("paragraph")}
-            </DropdownMenu.Item>
-            {([2, 3] as const).map((level) => (
               <DropdownMenu.Item
-                key={level}
-                onSelect={() => editor?.chain().focus().toggleHeading({ level }).run()}
+                disabled={controlsDisabled}
+                onSelect={() => editor?.chain().focus().setParagraph().run()}
               >
-                {t(`heading${level}`)}
+                {t("paragraph")}
               </DropdownMenu.Item>
-            ))}
-            <DropdownMenu.Separator />
-            <DropdownMenu.CheckboxItem
-              checked={activeState.underline}
-              onCheckedChange={() => editor?.chain().focus().toggleUnderline().run()}
-            >
-              {t("underline")}
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.CheckboxItem
-              checked={activeState.strike}
-              onCheckedChange={() => editor?.chain().focus().toggleStrike().run()}
-            >
-              {t("strike")}
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.CheckboxItem
-              checked={activeState.code}
-              onCheckedChange={() => editor?.chain().focus().toggleCode().run()}
-            >
-              {t("code")}
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.Separator />
-            <DropdownMenu.CheckboxItem
-              checked={activeState.bulletList}
-              onCheckedChange={() => editor?.chain().focus().toggleBulletList().run()}
-            >
-              {t("bulletedList")}
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.CheckboxItem
-              checked={activeState.orderedList}
-              onCheckedChange={() => editor?.chain().focus().toggleOrderedList().run()}
-            >
-              {t("numberedList")}
-            </DropdownMenu.CheckboxItem>
-            <DropdownMenu.CheckboxItem
-              checked={activeState.blockquote}
-              onCheckedChange={() => editor?.chain().focus().toggleBlockquote().run()}
-            >
-              {t("quote")}
-            </DropdownMenu.CheckboxItem>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+              {headingLevels.map((level) => (
+                <DropdownMenu.Item
+                  key={level}
+                  disabled={controlsDisabled}
+                  onSelect={() => editor?.chain().focus().toggleHeading({ level }).run()}
+                >
+                  {t(`heading${level}`)}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+          <Separator orientation="vertical" size="1" />
+          <ToolbarButton
+            label={t("bulletedList")}
+            active={activeState.bulletList}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+          >
+            <ListBulletIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("numberedList")}
+            active={activeState.orderedList}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          >
+            <NumberedListIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("quote")}
+            active={activeState.blockquote}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+          >
+            <QuoteIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+        </Flex>
+
+        <Flex align="center" gap="1">
+          <ToolbarButton
+            label={t("undo")}
+            disabled={disabled || !activeState.canUndo}
+            onClick={() => editor?.chain().focus().undo().run()}
+          >
+            <CounterClockwiseClockIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("redo")}
+            disabled={disabled || !activeState.canRedo}
+            onClick={() => editor?.chain().focus().redo().run()}
+          >
+            <UpdateIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <Separator orientation="vertical" size="1" />
+          <ToolbarButton
+            label={t("bold")}
+            active={activeState.bold}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+          >
+            <FontBoldIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("italic")}
+            active={activeState.italic}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+          >
+            <FontItalicIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("underline")}
+            active={activeState.underline}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+          >
+            <UnderlineIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("strike")}
+            active={activeState.strike}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleStrike().run()}
+          >
+            <StrikethroughIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+          <ToolbarButton
+            label={t("code")}
+            active={activeState.code}
+            disabled={controlsDisabled}
+            onClick={() => editor?.chain().focus().toggleCode().run()}
+          >
+            <CodeIcon aria-hidden width={17} height={17} />
+          </ToolbarButton>
+        </Flex>
       </Flex>
     </>
   );
