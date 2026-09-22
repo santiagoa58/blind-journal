@@ -20,6 +20,14 @@ vi.mock("@/app/app-font", () => ({
 beforeEach(() => {
   mocks.locale = "en";
   vi.stubGlobal("reportError", vi.fn());
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: false,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    }),
+  );
 });
 
 describe("route error boundaries", () => {

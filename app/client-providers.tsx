@@ -1,8 +1,6 @@
 "use client";
 
-import { Theme } from "@radix-ui/themes";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import { type PropsWithChildren, useState } from "react";
 import { Toaster } from "sonner";
 import { clearClientSession } from "@/client-state/client-session";
@@ -10,18 +8,6 @@ import { useAppToast } from "@/hooks/use-app-toast";
 import { useRouter } from "@/i18n/navigation";
 import { AUTH_ERROR_CODES } from "@/lib/api/auth/auth.error";
 import { isCodedError } from "@/lib/client.error";
-
-type AppThemeProviderProps = PropsWithChildren<{ nonce?: string | undefined }>;
-
-export function AppThemeProvider({ children, nonce }: AppThemeProviderProps) {
-  return (
-    <ThemeProvider attribute="class" {...(nonce ? { nonce } : {})}>
-      <Theme accentColor="iris" grayColor="slate" radius="large" panelBackground="translucent">
-        {children}
-      </Theme>
-    </ThemeProvider>
-  );
-}
 
 export function Providers({ children }: PropsWithChildren) {
   const appToast = useAppToast();

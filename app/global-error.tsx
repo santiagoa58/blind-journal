@@ -11,7 +11,7 @@ import { getErrorPageMessages } from "@/i18n/error-page-messages";
 import { routing } from "@/i18n/routing";
 import { reportClientError } from "@/lib/client.error";
 import { appFont } from "./app-font";
-import { AppThemeProvider } from "./client-providers";
+import { AppThemeProvider } from "./app-theme-provider";
 
 type GlobalErrorPageProps = {
   error: Error & { digest?: string };

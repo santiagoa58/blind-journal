@@ -8,7 +8,7 @@ import { routing } from "@/i18n/routing";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { appFont } from "./app-font";
 import { AppSessionInitializer } from "./app-session-initializer";
-import { AppThemeProvider } from "./client-providers";
+import { AppThemeProvider } from "./app-theme-provider";
 
 import "./globals.css";
 
