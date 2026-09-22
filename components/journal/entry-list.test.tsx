@@ -71,17 +71,16 @@ beforeEach(() => {
 });
 
 describe("EntryList", () => {
-  it("renders semantic entry options and reports the selected entry", async () => {
+  it("renders entry navigation and reports the current entry", async () => {
     const user = userEvent.setup();
     const onSelectEntry = vi.fn();
     renderEntryList({ onSelectEntry });
 
-    expect(screen.getByRole("radiogroup", { name: "Journal entries" })).toBeInTheDocument();
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
-    const firstEntryButton = screen.getByRole("radio", { name: "Open First entry" });
-    const secondEntryButton = screen.getByRole("radio", { name: "Open Second entry" });
-    expect(firstEntryButton).toBeChecked();
-    expect(secondEntryButton).not.toBeChecked();
+    expect(screen.getByRole("region", { name: "Journal entries" })).toBeInTheDocument();
+    const firstEntryButton = screen.getByRole("button", { name: "Open First entry" });
+    const secondEntryButton = screen.getByRole("button", { name: "Open Second entry" });
+    expect(firstEntryButton).toHaveAttribute("aria-current", "true");
+    expect(secondEntryButton).not.toHaveAttribute("aria-current");
 
     await user.click(secondEntryButton);
     expect(onSelectEntry).toHaveBeenCalledWith(secondEntry.id);
@@ -96,12 +95,12 @@ describe("EntryList", () => {
     expect(search).toHaveAttribute("placeholder", "Search by title");
 
     await user.type(search, "second");
-    expect(screen.getAllByRole("radio")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(1);
     expect(screen.getByRole("status")).toHaveTextContent("1 entry");
 
     await user.clear(search);
     await user.type(search, "missing");
-    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(screen.queryAllByRole("button", { name: /^Open / })).toHaveLength(0);
     expect(screen.getByText("No matching entries")).toBeInTheDocument();
     expect(screen.getByText("Try a different entry title.")).toBeInTheDocument();
   });
@@ -139,7 +138,7 @@ describe("EntryList", () => {
 
     await user.pointer({
       keys: "[MouseRight]",
-      target: screen.getByRole("radio", { name: "Open Second entry" }),
+      target: screen.getByRole("button", { name: "Open Second entry" }),
     });
 
     const deleteItem = await screen.findByRole("menuitem", { name: "Delete entry" });

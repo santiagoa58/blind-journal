@@ -1,7 +1,8 @@
 "use client";
 
 import { Flex } from "@radix-ui/themes";
-import { useId, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { EntryListHeader } from "@/components/journal/entry-list-header";
 import { EntryListResults } from "@/components/journal/entry-list-results";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
@@ -25,7 +26,7 @@ export function EntryList({
   onSelectEntry,
   selectedEntryId,
 }: EntryListProps) {
-  const headingId = useId();
+  const t = useTranslations("entry-list");
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
   const visibleEntries = entries.filter(
@@ -34,9 +35,8 @@ export function EntryList({
 
   return (
     <Flex asChild direction="column" width="100%" height="100%" minHeight="0">
-      <section aria-labelledby={headingId}>
+      <section aria-label={t("sectionLabel")}>
         <EntryListHeader
-          headingId={headingId}
           query={query}
           onQueryChange={setQuery}
           visibleEntryCount={visibleEntries.length}

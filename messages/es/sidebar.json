@@ -1,8 +1,6 @@
 {
   "journalNavigationLabel": "Navegación del diario",
-  "hideEntries": "Ocultar entradas",
   "newEntry": "Nueva entrada",
-  "showEntries": "Mostrar entradas",
   "account": {
     "menuLabel": "Menú de la cuenta",
     "signOut": "Cerrar sesión"

@@ -1,15 +1,21 @@
-import { CheckCircledIcon, TrashIcon } from "@radix-ui/react-icons";
-import { Box, ContextMenu, Flex, RadioCards, Separator, Text } from "@radix-ui/themes";
+import { FileTextIcon, TrashIcon } from "@radix-ui/react-icons";
+import { Box, Button, ContextMenu, Flex, Text } from "@radix-ui/themes";
 import { useFormatter, useTranslations } from "next-intl";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type EntryListItemProps = {
   entry: JournalEntry;
   onDeleteEntry: (entry: JournalEntry) => void;
+  onSelectEntry: (entryId: string) => void;
   selected: boolean;
 };
 
-export function EntryListItem({ entry, onDeleteEntry, selected }: EntryListItemProps) {
+export function EntryListItem({
+  entry,
+  onDeleteEntry,
+  onSelectEntry,
+  selected,
+}: EntryListItemProps) {
   const format = useFormatter();
   const t = useTranslations("entry-list");
   const updatedAt = new Date(entry.updatedAt);
@@ -17,49 +23,29 @@ export function EntryListItem({ entry, onDeleteEntry, selected }: EntryListItemP
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>
-        <Box as="span" width="100%" minWidth="0">
-          <Box asChild width="100%" minWidth="0">
-            <RadioCards.Item
-              value={entry.id}
-              aria-label={t("openEntryLabel", { title: entry.title })}
-            >
-              <Flex as="span" align="center" justify="between" gap="3" width="100%">
-                <Flex as="span" direction="column" align="start" gap="2" flexGrow="1" minWidth="0">
-                  <Box asChild minWidth="0" maxWidth="100%">
-                    <Text size="2" weight="bold" truncate align="left">
-                      {entry.title}
-                    </Text>
-                  </Box>
-
-                  <Flex as="span" align="center" gap="2">
-                    <Text asChild size="1" color="gray">
-                      <time dateTime={entry.updatedAt}>
-                        {format.dateTime(updatedAt, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </time>
-                    </Text>
-                    <Separator aria-hidden orientation="vertical" size="1" />
-                    <Text asChild size="1" color="gray">
-                      <time dateTime={entry.updatedAt}>
-                        {format.dateTime(updatedAt, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                      </time>
-                    </Text>
-                  </Flex>
-                </Flex>
-
-                {selected ? (
-                  <Text asChild color="iris" size="3">
-                    <CheckCircledIcon aria-hidden />
-                  </Text>
-                ) : null}
+        <Box asChild width="100%">
+          <Button
+            size="3"
+            variant={selected ? "soft" : "ghost"}
+            color={selected ? "iris" : "gray"}
+            aria-current={selected ? "true" : undefined}
+            aria-label={t("openEntryLabel", { title: entry.title })}
+            onClick={() => onSelectEntry(entry.id)}
+          >
+            <Flex align="start" gap="3" width="100%" minWidth="0" py="1">
+              <FileTextIcon aria-hidden width="16" height="16" />
+              <Flex direction="column" align="start" gap="1" flexGrow="1" minWidth="0">
+                <Text size="2" weight="medium" wrap="wrap" align="left">
+                  {entry.title}
+                </Text>
+                <Text asChild size="1" color="gray">
+                  <time dateTime={entry.updatedAt}>
+                    {format.dateTime(updatedAt, { dateStyle: "medium" })}
+                  </time>
+                </Text>
               </Flex>
-            </RadioCards.Item>
-          </Box>
+            </Flex>
+          </Button>
         </Box>
       </ContextMenu.Trigger>
       <ContextMenu.Content>

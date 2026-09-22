@@ -1,8 +1,6 @@
 {
   "journalNavigationLabel": "Journal navigation",
-  "hideEntries": "Hide entries",
   "newEntry": "New entry",
-  "showEntries": "Show entries",
   "account": {
     "menuLabel": "Account menu",
     "signOut": "Sign out"

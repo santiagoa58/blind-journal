@@ -2,7 +2,6 @@
 
 import { Box, Button, Container, Flex, Separator } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { LanguageSelector } from "@/components/language-selector";
 import { GuardedLink } from "@/components/navigation-blocker";
@@ -22,22 +21,10 @@ function HeaderBrand() {
 export function AppHeader() {
   const t = useTranslations("common.navigation");
   const pathname = usePathname();
-  const [skipFocused, setSkipFocused] = useState(false);
   const onHowItWorks = pathname === "/how-it-works";
 
   return (
     <>
-      <Box position="fixed" top={skipFocused ? "2" : "-9"} left="2">
-        <Button asChild size="2">
-          <a
-            href="#main-content"
-            onFocus={() => setSkipFocused(true)}
-            onBlur={() => setSkipFocused(false)}
-          >
-            {t("skipToContent")}
-          </a>
-        </Button>
-      </Box>
       <Box asChild py="2">
         <header>
           <Container size="4" px={{ initial: "4", sm: "6" }}>

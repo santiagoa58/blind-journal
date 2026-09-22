@@ -1,7 +1,6 @@
 "use client";
 
-import { ChevronRightIcon } from "@radix-ui/react-icons";
-import { Box, Button, Flex, Separator } from "@radix-ui/themes";
+import { Box, Flex, Separator } from "@radix-ui/themes";
 import { Placeholder } from "@tiptap/extensions";
 import { type Editor, EditorContent, useEditor } from "@tiptap/react";
 import { useTranslations } from "next-intl";
@@ -22,27 +21,22 @@ const css = styles as Record<
 type JournalEditorProps = {
   draftDirty: boolean;
   entry: JournalEntry | undefined;
-  navigationOpen: boolean;
   onDeleteEntry: (entry: JournalEntry) => void;
   onDraftChange: (dirty: boolean) => void;
   onSaved: (entry: JournalEntry) => void;
-  onShowNavigation: () => void;
   user: ClientUser;
 };
 
 export function JournalEditor({
   draftDirty,
   entry,
-  navigationOpen,
   onDeleteEntry,
   onDraftChange,
   onSaved,
-  onShowNavigation,
   user,
 }: JournalEditorProps) {
   const t = useTranslations("journal-editor");
   const tJournal = useTranslations("journal");
-  const tSidebar = useTranslations("sidebar");
   const defaultTitle = tJournal("newEntry.title");
   const [title, setTitle] = useState(entry?.title ?? "");
   const [saving, setSaving] = useState(false);
@@ -145,27 +139,6 @@ export function JournalEditor({
         minWidth="0"
         minHeight="var(--space-8)"
       >
-        {!navigationOpen ? (
-          <>
-            <Flex align="center" px="2" flexShrink="0" display={{ initial: "none", lg: "flex" }}>
-              <Button
-                size="2"
-                variant="ghost"
-                color="gray"
-                aria-label={tSidebar("showEntries")}
-                aria-expanded={false}
-                onClick={onShowNavigation}
-              >
-                <ChevronRightIcon aria-hidden />
-                {tSidebar("showEntries")}
-              </Button>
-            </Flex>
-            <Box asChild display={{ initial: "none", lg: "block" }}>
-              <Separator orientation="vertical" size="4" />
-            </Box>
-          </>
-        ) : null}
-
         <Box flexGrow="1" flexShrink="1" minWidth="0" overflowX={{ initial: "hidden", sm: "auto" }}>
           <JournalEditorToolbar disabled={saving} editor={editor} />
         </Box>

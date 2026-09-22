@@ -1,5 +1,5 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import { Avatar, Button, Flex, RadioCards, ScrollArea, Text } from "@radix-ui/themes";
+import { Avatar, Button, Flex, ScrollArea, Text } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import { EntryListItem } from "@/components/journal/entry-list-item";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
@@ -28,27 +28,18 @@ export function EntryListResults({
   const t = useTranslations("entry-list");
 
   return (
-    <Flex asChild flexGrow="1" minHeight="0">
+    <Flex asChild flexGrow="1" minHeight="0" maxHeight={{ initial: "55dvh", lg: "none" }}>
       <ScrollArea scrollbars="vertical">
-        <Flex direction="column" gap="2" p="3" pt="1" minWidth="100%" maxWidth="100%">
-          <RadioCards.Root
-            aria-label={t("sectionLabel")}
-            value={selectedEntryId ?? ""}
-            onValueChange={onSelectEntry}
-            columns="1"
-            gap="2"
-            size="2"
-            variant="surface"
-          >
-            {entries.map((entry) => (
-              <EntryListItem
-                key={entry.id}
-                entry={entry}
-                onDeleteEntry={onDeleteEntry}
-                selected={entry.id === selectedEntryId}
-              />
-            ))}
-          </RadioCards.Root>
+        <Flex direction="column" gap="1" px="3" pb="3" minWidth="100%" maxWidth="100%">
+          {entries.map((entry) => (
+            <EntryListItem
+              key={entry.id}
+              entry={entry}
+              onDeleteEntry={onDeleteEntry}
+              onSelectEntry={onSelectEntry}
+              selected={entry.id === selectedEntryId}
+            />
+          ))}
 
           {hasQuery && entries.length === 0 ? (
             <Flex direction="column" align="center" justify="center" py="9" px="5">
