@@ -201,9 +201,8 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
     "Created on a mobile viewport",
   );
 
-  await page.getByRole("button", { name: "Account menu" }).click();
-  await page.getByRole("menuitem", { name: "Language: English" }).hover();
-  await page.getByRole("menuitemradio", { name: "Español" }).click();
+  await page.getByRole("combobox", { name: "Language" }).click();
+  await page.getByRole("option", { name: "Español" }).click();
 
   await expect(page).toHaveURL(/\/es\/journal$/);
   await expect(page.locator("html")).toHaveAttribute("lang", "es");
