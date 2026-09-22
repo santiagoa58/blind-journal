@@ -140,7 +140,16 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
   const controlsDisabled = disabled || !editor;
 
   return (
-    <Flex asChild align="center" gap="2" width="max-content" minWidth="100%" px="3" py="2">
+    <Flex
+      asChild
+      align="center"
+      gap="4"
+      width="max-content"
+      minWidth="100%"
+      height="100%"
+      px="3"
+      py="2"
+    >
       <Toolbar.Root aria-label={t("toolbarLabel")}>
         <DropdownMenu.Root>
           <Toolbar.Button asChild>
@@ -186,7 +195,7 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
           <Separator orientation="vertical" size="1" />
         </Toolbar.Separator>
 
-        <Flex asChild align="center" gap="1" flexShrink="0">
+        <Flex asChild align="center" gap="4" flexShrink="0">
           <Toolbar.ToggleGroup type="multiple" value={activeMarks} aria-label={t("toolbarLabel")}>
             <ToolbarControl
               value="bold"
@@ -240,7 +249,7 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
           <Separator orientation="vertical" size="1" />
         </Toolbar.Separator>
 
-        <Flex align="center" gap="1" flexShrink="0">
+        <Flex align="center" gap="4" flexShrink="0">
           <ToolbarControl
             label={t("bulletedList")}
             active={activeState.bulletList}
@@ -271,7 +280,7 @@ export function JournalEditorToolbar({ disabled, editor }: JournalEditorToolbarP
           <Separator orientation="vertical" size="1" />
         </Toolbar.Separator>
 
-        <Flex align="center" gap="1" flexShrink="0">
+        <Flex align="center" gap="4" flexShrink="0">
           <ToolbarControl
             label={t("undo")}
             disabled={disabled || !activeState.canUndo}
