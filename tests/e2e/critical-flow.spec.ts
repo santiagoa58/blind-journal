@@ -182,6 +182,10 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
   await expect(page.getByRole("button", { name: "Text style" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Underline" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Bulleted list" })).toBeVisible();
+  await page.getByRole("button", { name: "Bold" }).click();
+  await expect(page.getByRole("button", { name: "Bold" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Bold" }).click();
+  await expect(page.getByRole("button", { name: "Bold" })).toHaveAttribute("aria-pressed", "false");
   await page.getByRole("button", { name: "Text style" }).click();
   await page.getByRole("menuitem", { name: "Heading 1" }).click();
   await expect(
@@ -203,7 +207,7 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
   await entriesButton.click();
   await page
     .getByRole("dialog", { name: "Your entries" })
-    .getByRole("button", { name: "Open First mobile entry" })
+    .getByRole("radio", { name: "Open First mobile entry" })
     .click();
   await expect(page.getByRole("textbox", { name: "Entry title" })).toHaveValue(
     "First mobile entry",

@@ -77,12 +77,12 @@ describe("EntryList", () => {
     renderEntryList({ onSelectEntry });
 
     expect(screen.getByRole("region", { name: "Journal entries" })).toBeInTheDocument();
-    const firstEntryButton = screen.getByRole("button", { name: "Open First entry" });
-    const secondEntryButton = screen.getByRole("button", { name: "Open Second entry" });
-    expect(firstEntryButton).toHaveAttribute("aria-current", "page");
-    expect(secondEntryButton).not.toHaveAttribute("aria-current");
+    const firstEntryRadio = screen.getByRole("radio", { name: "Open First entry" });
+    const secondEntryRadio = screen.getByRole("radio", { name: "Open Second entry" });
+    expect(firstEntryRadio).toBeChecked();
+    expect(secondEntryRadio).not.toBeChecked();
 
-    await user.click(secondEntryButton);
+    await user.click(secondEntryRadio);
     expect(onSelectEntry).toHaveBeenCalledWith(secondEntry.id);
   });
 
@@ -95,12 +95,12 @@ describe("EntryList", () => {
     expect(search).toHaveAttribute("placeholder", "Search by title");
 
     await user.type(search, "second");
-    expect(screen.getAllByRole("button", { name: /^Open / })).toHaveLength(1);
+    expect(screen.getAllByRole("radio", { name: /^Open / })).toHaveLength(1);
     expect(screen.getByRole("status")).toHaveTextContent("1 entry");
 
     await user.clear(search);
     await user.type(search, "missing");
-    expect(screen.queryAllByRole("button", { name: /^Open / })).toHaveLength(0);
+    expect(screen.queryAllByRole("radio", { name: /^Open / })).toHaveLength(0);
     expect(screen.getByText("No matching entries")).toBeInTheDocument();
     expect(screen.getByText("Try a different entry title.")).toBeInTheDocument();
   });
@@ -138,7 +138,7 @@ describe("EntryList", () => {
 
     await user.pointer({
       keys: "[MouseRight]",
-      target: screen.getByRole("button", { name: "Open Second entry" }),
+      target: screen.getByRole("radio", { name: "Open Second entry" }),
     });
 
     const deleteItem = await screen.findByRole("menuitem", { name: "Delete entry" });

@@ -1,21 +1,14 @@
 import { FileTextIcon, TrashIcon } from "@radix-ui/react-icons";
-import { Box, Card, ContextMenu, Flex, Text } from "@radix-ui/themes";
+import { Box, ContextMenu, Flex, RadioCards, Text } from "@radix-ui/themes";
 import { useFormatter, useTranslations } from "next-intl";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 
 type EntryListItemProps = {
   entry: JournalEntry;
   onDeleteEntry: (entry: JournalEntry) => void;
-  onSelectEntry: (entryId: string) => void;
-  selected: boolean;
 };
 
-export function EntryListItem({
-  entry,
-  onDeleteEntry,
-  onSelectEntry,
-  selected,
-}: EntryListItemProps) {
+export function EntryListItem({ entry, onDeleteEntry }: EntryListItemProps) {
   const format = useFormatter();
   const t = useTranslations("entry-list");
   const updatedAt = new Date(entry.updatedAt);
@@ -23,26 +16,18 @@ export function EntryListItem({
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>
-        <Box asChild width="100%">
-          <Card asChild size="1" variant={selected ? "surface" : "ghost"}>
-            <button
-              type="button"
-              aria-current={selected ? "page" : undefined}
+        <Box as="span" width="100%" minWidth="0">
+          <Box asChild width="100%" minWidth="0">
+            <RadioCards.Item
+              value={entry.id}
               aria-label={t("openEntryLabel", { title: entry.title })}
-              onClick={() => onSelectEntry(entry.id)}
             >
-              <Flex align="start" gap="3" width="100%" minWidth="0">
-                <Text asChild color={selected ? "iris" : "gray"} mt="1">
+              <Flex as="span" align="start" gap="3" width="100%" minWidth="0">
+                <Text asChild color="gray" mt="1">
                   <FileTextIcon aria-hidden width="16" height="16" />
                 </Text>
-                <Flex direction="column" align="start" gap="1" flexGrow="1" minWidth="0">
-                  <Text
-                    size="2"
-                    weight="medium"
-                    color={selected ? "iris" : undefined}
-                    wrap="wrap"
-                    align="left"
-                  >
+                <Flex as="span" direction="column" align="start" gap="1" flexGrow="1" minWidth="0">
+                  <Text as="span" size="2" weight="medium" wrap="wrap" align="left">
                     {entry.title}
                   </Text>
                   <Text asChild size="1" color="gray">
@@ -52,8 +37,8 @@ export function EntryListItem({
                   </Text>
                 </Flex>
               </Flex>
-            </button>
-          </Card>
+            </RadioCards.Item>
+          </Box>
         </Box>
       </ContextMenu.Trigger>
       <ContextMenu.Content>

@@ -65,7 +65,7 @@ describe("mobile journal entry dialog", () => {
     await user.click(screen.getByRole("button", { name: "Your entries" }));
     const dialog = screen.getByRole("dialog", { name: "Your entries" });
     expect(within(dialog).getByText(longTitle)).toBeInTheDocument();
-    const option = within(dialog).getByRole("button", { name: `Open ${longTitle}` });
+    const option = within(dialog).getByRole("radio", { name: `Open ${longTitle}` });
     await user.click(option);
     expect(onSelectEntry).toHaveBeenCalledExactlyOnceWith(entry.id);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
