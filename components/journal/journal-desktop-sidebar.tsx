@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
-import { Box, Button, Flex, IconButton, Separator, Tooltip } from "@radix-ui/themes";
+import { PlusIcon } from "@radix-ui/react-icons";
+import { Box, Button, Flex, Heading, Separator } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
@@ -14,7 +14,6 @@ type JournalDesktopSidebarProps = {
   hasMoreEntries: boolean;
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
-  onCollapse: () => void;
   onCreateEntry: () => void;
   onDeleteEntry: (entry: JournalEntry) => void;
   onSelectEntry: (entryId: string) => void;
@@ -28,7 +27,6 @@ export function JournalDesktopSidebar({
   hasMoreEntries,
   loadingMoreEntries,
   loadMoreEntries,
-  onCollapse,
   onCreateEntry,
   onDeleteEntry,
   onSelectEntry,
@@ -36,40 +34,26 @@ export function JournalDesktopSidebar({
   selectedEntryId,
 }: JournalDesktopSidebarProps) {
   const t = useTranslations("sidebar");
+  const tEntries = useTranslations("entry-list");
 
   return (
     <Flex
       asChild
       direction="column"
-      width="360px"
+      width="320px"
       height="100%"
       flexShrink="0"
       display={{ initial: "none", lg: "flex" }}
     >
       <aside aria-label={t("journalNavigationLabel")}>
-        <Flex direction="column" p="4" pb="0">
-          <Flex align="center" gap="2">
-            <Box asChild flexGrow="1">
-              <Button size="3" variant="surface" onClick={onCreateEntry}>
-                <PlusIcon aria-hidden />
-                {t("newEntry")}
-              </Button>
-            </Box>
-            {entries.length > 0 ? (
-              <Tooltip content={t("hideEntries")}>
-                <IconButton
-                  size="2"
-                  variant="ghost"
-                  color="gray"
-                  aria-label={t("hideEntries")}
-                  aria-expanded={true}
-                  onClick={onCollapse}
-                >
-                  <ChevronLeftIcon aria-hidden />
-                </IconButton>
-              </Tooltip>
-            ) : null}
-          </Flex>
+        <Flex direction="column" gap="3" p="4" pb="0">
+          <Heading as="h2" size="4">
+            {tEntries("title")}
+          </Heading>
+          <Button size="3" variant="surface" onClick={onCreateEntry}>
+            <PlusIcon aria-hidden />
+            {t("newEntry")}
+          </Button>
         </Flex>
 
         <EntryList

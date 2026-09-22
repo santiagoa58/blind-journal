@@ -91,11 +91,9 @@ function TestEditor({ newEntry = false }: { newEntry?: boolean }) {
         <JournalEditor
           draftDirty={draftDirty}
           entry={newEntry ? undefined : entry}
-          navigationOpen
           onDeleteEntry={vi.fn()}
           onDraftChange={setDraftDirty}
           onSaved={onSaved}
-          onShowNavigation={vi.fn()}
           user={user}
         />
       </Theme>

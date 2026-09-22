@@ -55,13 +55,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
               </Heading>
             </Container>
             <Container size="2">
-              <Text
-                as="p"
-                size={{ initial: "3", md: "4" }}
-                color="gray"
-                align="center"
-                wrap="pretty"
-              >
+              <Text as="p" size={{ initial: "3", md: "4" }} color="gray" align="left" wrap="pretty">
                 {t("hero.body")}
               </Text>
             </Container>
@@ -296,7 +290,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
             </Grid>
 
             <Container size="2">
-              <Text as="p" size="3" weight="medium" align="center" wrap="pretty">
+              <Text as="p" size="3" weight="medium" align="left" wrap="pretty">
                 {t("sections.visibility.summary")}
               </Text>
             </Container>
@@ -372,7 +366,7 @@ export default async function HowItWorksPage({ params }: HowItWorksPageProps) {
             <Heading id="how-it-works-technical-depth" as="h2" size="6" align="center">
               {t("sections.technicalDepth.title")}
             </Heading>
-            <Text as="p" size="3" color="gray" align="center" wrap="pretty">
+            <Text as="p" size="3" color="gray" align="left" wrap="pretty">
               {t("sections.technicalDepth.body")}
             </Text>
             <Button asChild variant="surface">

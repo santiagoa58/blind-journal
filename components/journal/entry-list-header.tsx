@@ -1,11 +1,10 @@
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import { Box, Flex, Heading, Text, TextField, VisuallyHidden } from "@radix-ui/themes";
+import { Box, Flex, Text, TextField, VisuallyHidden } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 
 type EntryListHeaderProps = {
   hasMoreEntries: boolean;
-  headingId: string;
   onQueryChange: (query: string) => void;
   query: string;
   visibleEntryCount: number;
@@ -13,7 +12,6 @@ type EntryListHeaderProps = {
 
 export function EntryListHeader({
   hasMoreEntries,
-  headingId,
   onQueryChange,
   query,
   visibleEntryCount,
@@ -22,18 +20,9 @@ export function EntryListHeader({
   const searchId = useId();
 
   return (
-    <Box asChild p="5" pb="3">
+    <Box asChild px="4" pt="4" pb="2">
       <header>
         <Box>
-          <Text size="1" weight="medium" color="iris">
-            {t("eyebrow")}
-          </Text>
-          <Heading id={headingId} as="h2" size="6" mt="1">
-            {t("title")}
-          </Heading>
-        </Box>
-
-        <Box mt="4">
           <VisuallyHidden asChild>
             <Text as="label" htmlFor={searchId}>
               {t(hasMoreEntries ? "searchLoadedLabel" : "searchLabel")}
@@ -54,7 +43,7 @@ export function EntryListHeader({
           </TextField.Root>
         </Box>
 
-        <Flex mt="3" justify="end">
+        <Flex mt="2" justify="end">
           <Text asChild size="1" color="gray">
             <output htmlFor={searchId} aria-live="polite" aria-atomic="true">
               {t(hasMoreEntries ? "loadedEntriesCount" : "entriesCount", {

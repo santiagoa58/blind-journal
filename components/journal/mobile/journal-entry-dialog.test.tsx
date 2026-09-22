@@ -7,7 +7,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import entryListMessages from "@/messages/en/entry-list.json";
-import { JournalEntrySelect } from "./journal-entry-select";
+import { JournalEntryDialog } from "./journal-entry-dialog";
 
 const longTitle = "An unusually long journal title ".repeat(4).slice(0, 120);
 const entry = {
@@ -29,7 +29,7 @@ beforeEach(() => {
   );
 });
 
-function renderPicker(
+function renderDialog(
   onSelectEntry = vi.fn(),
   loadMoreEntries = vi.fn(),
   hasMoreEntries = false,
@@ -42,12 +42,13 @@ function renderPicker(
       timeZone="UTC"
     >
       <Theme>
-        <JournalEntrySelect
+        <JournalEntryDialog
           entries={[entry]}
           selectedEntryId={selectedEntryId}
           hasMoreEntries={hasMoreEntries}
           loadingMoreEntries={false}
           loadMoreEntries={loadMoreEntries}
+          onDeleteEntry={vi.fn()}
           onSelectEntry={onSelectEntry}
         />
       </Theme>
@@ -55,27 +56,27 @@ function renderPicker(
   );
 }
 
-describe("mobile journal entry picker", () => {
+describe("mobile journal entry dialog", () => {
   it("shows the complete title and selects an entry from a dialog", async () => {
     const user = userEvent.setup();
     const onSelectEntry = vi.fn();
-    renderPicker(onSelectEntry, vi.fn(), false, undefined);
+    renderDialog(onSelectEntry, vi.fn(), false, undefined);
 
-    await user.click(screen.getByRole("button", { name: "Choose an entry" }));
+    await user.click(screen.getByRole("button", { name: "Your entries" }));
     const dialog = screen.getByRole("dialog", { name: "Your entries" });
     expect(within(dialog).getByText(longTitle)).toBeInTheDocument();
-    const option = within(dialog).getByRole("radio", { name: `Open ${longTitle}` });
+    const option = within(dialog).getByRole("button", { name: `Open ${longTitle}` });
     await user.click(option);
     expect(onSelectEntry).toHaveBeenCalledExactlyOnceWith(entry.id);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("keeps pagination available inside the picker", async () => {
+  it("keeps pagination available inside the dialog", async () => {
     const user = userEvent.setup();
     const loadMoreEntries = vi.fn();
-    renderPicker(vi.fn(), loadMoreEntries, true);
+    renderDialog(vi.fn(), loadMoreEntries, true);
 
-    await user.click(screen.getByRole("button", { name: "Choose an entry" }));
+    await user.click(screen.getByRole("button", { name: "Your entries" }));
     await user.click(screen.getByRole("button", { name: "Load more" }));
     expect(loadMoreEntries).toHaveBeenCalledOnce();
   });

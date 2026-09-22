@@ -33,7 +33,6 @@ export function JournalContent({
   const [selectedEntryId, setSelectedEntryId] = useState<string>();
   const [draftDirty, setDraftDirty] = useState(false);
   const [editorVersion, setEditorVersion] = useState(0);
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [newEntryOpen, setNewEntryOpen] = useState(false);
   const [entryPendingDeletion, setEntryPendingDeletion] = useState<JournalEntry>();
   const { run, setBlocked } = useNavigationBlocker();
@@ -96,7 +95,6 @@ export function JournalContent({
           onDeleted={(entryId) => {
             if (entryId === effectiveSelectedEntryId) {
               setDraftDirty(false);
-              setDesktopSidebarOpen(true);
               setNewEntryOpen(false);
               setSelectedEntryId(undefined);
             }
@@ -111,6 +109,7 @@ export function JournalContent({
         loadingMoreEntries={loadingMoreEntries}
         loadMoreEntries={loadMoreEntries}
         onCreateEntry={requestCreate}
+        onDeleteEntry={setEntryPendingDeletion}
         onSelectEntry={requestSelection}
         onSignOut={requestSignOut}
         selectedEntryId={effectiveSelectedEntryId}
@@ -118,33 +117,27 @@ export function JournalContent({
       <UnreadableEntriesNotice entries={unreadableEntries} />
 
       <Flex flexGrow="1" minHeight="0" overflow="hidden">
-        {desktopSidebarOpen ? (
-          <>
-            <JournalDesktopSidebar
-              currentUser={user}
-              entries={entries}
-              hasMoreEntries={hasMoreEntries}
-              loadingMoreEntries={loadingMoreEntries}
-              loadMoreEntries={loadMoreEntries}
-              onCollapse={() => setDesktopSidebarOpen(false)}
-              onCreateEntry={requestCreate}
-              onDeleteEntry={setEntryPendingDeletion}
-              onSelectEntry={requestSelection}
-              onSignOut={requestSignOut}
-              selectedEntryId={effectiveSelectedEntryId}
-            />
-            <Box asChild display={{ initial: "none", lg: "block" }}>
-              <Separator orientation="vertical" size="4" />
-            </Box>
-          </>
-        ) : null}
+        <JournalDesktopSidebar
+          currentUser={user}
+          entries={entries}
+          hasMoreEntries={hasMoreEntries}
+          loadingMoreEntries={loadingMoreEntries}
+          loadMoreEntries={loadMoreEntries}
+          onCreateEntry={requestCreate}
+          onDeleteEntry={setEntryPendingDeletion}
+          onSelectEntry={requestSelection}
+          onSignOut={requestSignOut}
+          selectedEntryId={effectiveSelectedEntryId}
+        />
+        <Box asChild display={{ initial: "none", lg: "block" }}>
+          <Separator orientation="vertical" size="4" />
+        </Box>
 
         {newEntryOpen || selectedEntry ? (
           <JournalEditor
             key={`${newEntryOpen ? "new" : selectedEntry?.id}:${editorVersion}`}
             draftDirty={draftDirty}
             entry={newEntryOpen ? undefined : selectedEntry}
-            navigationOpen={desktopSidebarOpen}
             user={user}
             onDeleteEntry={setEntryPendingDeletion}
             onDraftChange={setDraftDirty}
@@ -153,7 +146,6 @@ export function JournalContent({
               setNewEntryOpen(false);
               setSelectedEntryId(savedEntry.id);
             }}
-            onShowNavigation={() => setDesktopSidebarOpen(true)}
           />
         ) : (
           <Flex align="center" justify="center" flexGrow="1" p="5">

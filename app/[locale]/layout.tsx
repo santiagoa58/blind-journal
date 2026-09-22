@@ -56,14 +56,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         <NavigationBlockerProvider>
           <Flex direction="column" height="100dvh" overflow="hidden">
             <AppHeader />
-            <Flex
-              id="main-content"
-              tabIndex={-1}
-              direction="column"
-              flexGrow="1"
-              minHeight="0"
-              overflow="auto"
-            >
+            <Flex direction="column" flexGrow="1" minHeight="0" overflow="auto">
               <AppLockBoundary>{children}</AppLockBoundary>
             </Flex>
           </Flex>

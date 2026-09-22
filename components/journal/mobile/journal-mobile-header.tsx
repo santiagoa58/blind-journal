@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ClientUser } from "@/lib/api/auth/user.type";
 import type { JournalEntry } from "@/lib/api/journal/journal.type";
 import { JournalAccountMenu } from "../journal-account-menu";
-import { JournalEntrySelect } from "./journal-entry-select";
+import { JournalEntryDialog } from "./journal-entry-dialog";
 
 type JournalMobileHeaderProps = {
   currentUser: ClientUser;
@@ -13,6 +13,7 @@ type JournalMobileHeaderProps = {
   loadingMoreEntries: boolean;
   loadMoreEntries: () => void;
   onCreateEntry: () => void;
+  onDeleteEntry: (entry: JournalEntry) => void;
   onSelectEntry: (entryId: string) => void;
   onSignOut: () => void;
   selectedEntryId: string | undefined;
@@ -25,6 +26,7 @@ export function JournalMobileHeader({
   loadingMoreEntries,
   loadMoreEntries,
   onCreateEntry,
+  onDeleteEntry,
   onSelectEntry,
   onSignOut,
   selectedEntryId,
@@ -36,11 +38,12 @@ export function JournalMobileHeader({
       <header>
         <Flex align="center" gap={{ initial: "2", sm: "3" }} px={{ initial: "3", sm: "5" }} py="2">
           <Box flexGrow="1" minWidth="0">
-            <JournalEntrySelect
+            <JournalEntryDialog
               entries={entries}
               hasMoreEntries={hasMoreEntries}
               loadingMoreEntries={loadingMoreEntries}
               loadMoreEntries={loadMoreEntries}
+              onDeleteEntry={onDeleteEntry}
               onSelectEntry={onSelectEntry}
               selectedEntryId={selectedEntryId}
             />

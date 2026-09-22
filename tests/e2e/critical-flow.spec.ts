@@ -170,8 +170,8 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
   await page.setViewportSize({ width: 390, height: 844 });
   await createAccount(page, mobileUsername);
 
-  const entryPicker = page.getByRole("button", { name: "Choose an entry" });
-  await expect(entryPicker).toBeDisabled();
+  const entriesButton = page.getByRole("button", { name: "Your entries" });
+  await expect(entriesButton).toBeDisabled();
   await expect(page.getByRole("button", { name: "New entry" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Journal navigation" })).toBeHidden();
@@ -184,7 +184,7 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
     page.getByRole("article", { name: "First mobile entry" }).getByRole("status"),
   ).toHaveText("Saved and encrypted");
 
-  await expect(entryPicker).toBeEnabled();
+  await expect(entriesButton).toBeEnabled();
   await page.getByRole("button", { name: "New entry" }).click();
   await page.getByRole("textbox", { name: "Entry title" }).fill("Second mobile entry");
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -192,8 +192,11 @@ test("uses the compact journal actions on a mobile viewport", async ({ browserNa
     page.getByRole("article", { name: "Second mobile entry" }).getByRole("status"),
   ).toHaveText("Saved and encrypted");
 
-  await entryPicker.click();
-  await page.getByRole("radio", { name: "Open First mobile entry" }).click();
+  await entriesButton.click();
+  await page
+    .getByRole("dialog", { name: "Your entries" })
+    .getByRole("button", { name: "Open First mobile entry" })
+    .click();
   await expect(page.getByRole("textbox", { name: "Entry title" })).toHaveValue(
     "First mobile entry",
   );
