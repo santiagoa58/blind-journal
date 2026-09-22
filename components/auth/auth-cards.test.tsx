@@ -127,7 +127,7 @@ describe("authentication cards", () => {
     mocks.login.mockResolvedValueOnce(USER);
     renderCard(<UnlockCard user={USER} />);
 
-    const usernameField = document.querySelector<HTMLInputElement>('input[name="username"]');
+    const usernameField = screen.getByRole("textbox", { name: "Username" });
     expect(usernameField).toHaveValue(USER.username);
     expect(usernameField).toHaveAttribute("autocomplete", "username");
     expect(usernameField).toHaveAttribute("readonly");
